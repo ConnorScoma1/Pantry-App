@@ -142,6 +142,12 @@ export function GroceryView() {
 
         <div className="flex min-w-0 flex-col gap-4">
           <PricesCard pricing={pricing} hasItems={grocery.stats.left > 0} />
+          {grocery.stats.left > 0 ? (
+            <Link href="/cart" className="flex min-h-14 items-center justify-between gap-3 rounded-card bg-foreground px-5 font-semibold text-background">
+              <span>Build my cart</span>
+              <span className="text-[14px] font-medium opacity-80">Send to your store →</span>
+            </Link>
+          ) : null}
           <PlanCard
             weeks={weeks.slice(0, 2)}
             weekStart={weekStart}
@@ -446,7 +452,7 @@ function EditItemSheet({
   );
 }
 
-function PlanCard({
+export function PlanCard({
   weeks,
   weekStart,
   onWeek,

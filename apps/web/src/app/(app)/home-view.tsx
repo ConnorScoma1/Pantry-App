@@ -17,6 +17,7 @@ import { useKitchen } from "@/lib/kitchen/use-kitchen";
 import { useRecipes } from "@/lib/recipes/use-recipes";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { InSeasonCard } from "@/components/seasonal/in-season";
+import { SurpriseMe } from "@/components/recipes/surprise-me";
 import { seasonalContext } from "@kitchen-pantry/recipe-engine";
 
 export function HomeView() {
@@ -97,6 +98,10 @@ export function HomeView() {
           </div>
         )}
       </section>
+
+      <div className="mt-4">
+        <SurpriseMe data={recipesData} compact />
+      </div>
 
       {seasonal && !recipesData.loading ? <InSeasonCard seasonal={seasonal} ranked={everything} /> : null}
 

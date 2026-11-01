@@ -4,6 +4,7 @@ import { createLocalMealPlanRepository, CONFIRMED_PLAN, type MealPlanRepository,
 import {
   applyDessertPicks,
   applyPicks,
+  cookTheSpecialsTerms,
   confirmPlan,
   dessertDays,
   draftToInput,
@@ -18,6 +19,9 @@ import {
   type PlannedPick,
 } from "@kitchen-pantry/meal-planner";
 import type { RankedRecipe } from "@kitchen-pantry/recipe-engine";
+import { specialsResultSchema, type Special } from "@kitchen-pantry/grocery-pricing";
+import { pricingStatusAction, specialsAction } from "@/app/(app)/grocery/actions";
+import { loadSavedStore } from "@/lib/pricing/use-pricing";
 import type { MealPlan, PlanningMode, PlanSource, Recipe } from "@kitchen-pantry/shared-types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -136,6 +140,24 @@ export function useMealPlan(weekStart: string) {
     [repo],
   );
 
+  // Cook the Specials: the last sale prices used (kept for swaps).
+  const specialsRef = useRef<{ specials: Special[]; source: { storeName: string; checkedAt: string } | null }>({ specials: [], source: null });
+
+  /** Sale prices for what the candidate recipes need, from the household's store. Never invented. */
+  const loadSpecials = useCallback(async (): Promise<{ specials: Special[]; source: { storeName: string; checkedAt: string } | null; notice: string | null }> => {
+    const none = (notice: string) => ({ specials: [], source: null, notice });
+    const [status, store] = await Promise.all([pricingStatusAction(), loadSavedStore(dataMode)]);
+    if (!status.enabled) return none("Store prices aren't connected, so Cook the Specials planned like Balanced.");
+    if (!store.ok || !store.data) return none("Choose your store on the Grocery List to cook the specials — this week was planned like Balanced.");
+    const terms = cookTheSpecialsTerms(candidates);
+    if (terms.length === 0) return none("Nothing to check at the store this week.");
+    const r = await specialsAction({ storeId: store.data.storeId, terms });
+    if (!r.ok) return none(`${r.message} This week was planned like Balanced.`);
+    const parsed = specialsResultSchema.safeParse(r.data);
+    if (!parsed.success) return none("Sale prices came back in an unexpected shape, so this week was planned like Balanced.");
+    return { specials: parsed.data.specials as Special[], source: { storeName: store.data.name, checkedAt: parsed.data.fetchedAt }, notice: null };
+  }, [candidates, dataMode]);
+
   /** Build (or rebuild) the open nights. Locked and custom meals stay. */
   const build = useCallback(
     async (mode: PlanningMode, options: { regenerate?: boolean } = {}) => {
@@ -145,6 +167,12 @@ export function useMealPlan(weekStart: string) {
       const days = daysToPlan(draft, profile.household.dinnersPerWeek, recipesData.context.today);
       const fixed = draft.meals.filter((m) => m.locked || m.customTitle).map((m) => ({ date: m.date, recipeId: m.recipeId }));
       const avoid = options.regenerate ? draft.meals.filter((m) => !m.locked && m.recipeId).map((m) => m.recipeId!) : [];
+      let specialsNotice: string | null = null;
+      if (mode === "cook_the_specials") {
+        const loaded = await loadSpecials();
+        specialsRef.current = { specials: loaded.specials, source: loaded.source };
+        specialsNotice = loaded.notice;
+      }
       const localInput = {
         days,
         candidates,
@@ -154,6 +182,8 @@ export function useMealPlan(weekStart: string) {
         fixed,
         avoid: new Set(avoid),
         seed: seedRef.current,
+        specials: mode === "cook_the_specials" ? specialsRef.current.specials : [],
+        specialsSource: mode === "cook_the_specials" ? specialsRef.current.source : null,
       };
 
       let picks: PlannedPick[] = [];
@@ -178,7 +208,10 @@ export function useMealPlan(weekStart: string) {
               }
             : undefined;
         try {
-          const res = await generatePlanAction({ weekStart, days, mode, seed: seedRef.current, avoid, fixed }, preview);
+          const res = await generatePlanAction(
+            { weekStart, days, mode, seed: seedRef.current, avoid, fixed, specials: localInput.specials, specialsSource: localInput.specialsSource },
+            preview,
+          );
           if (res.ok) {
             // Double-check on this device: only recipes this household can have.
             const safe = new Set(candidates.map((c) => c.recipe.id));
@@ -219,9 +252,10 @@ export function useMealPlan(weekStart: string) {
       const next = withAutoDesserts(applyPicks(draft, picks, { source, summary, mode }));
       const saved = await save(next, true);
       setBusy(null);
-      if (saved.ok && notice) setMessage({ tone: "warning", text: notice });
+      const warn = [specialsNotice, notice].filter(Boolean).join(" ");
+      if (saved.ok && warn) setMessage({ tone: "warning", text: warn });
     },
-    [ai.enabled, candidates, dataMode, draft, profile, recipesData, save, weekStart, withAutoDesserts],
+    [ai.enabled, candidates, dataMode, draft, profile, recipesData, save, weekStart, withAutoDesserts, loadSpecials],
   );
 
   /** Next-best recipe for one night — instant and free (no AI call). */
@@ -236,6 +270,7 @@ export function useMealPlan(weekStart: string) {
           servings: current?.servings ?? profile.household.cookingFor,
           fixed: draft.meals.map((m) => ({ date: m.date, recipeId: m.recipeId })),
           seed: seedRef.current,
+          specials: draft.mode === "cook_the_specials" ? specialsRef.current.specials : [],
         },
         date,
         current?.recipeId ?? null,

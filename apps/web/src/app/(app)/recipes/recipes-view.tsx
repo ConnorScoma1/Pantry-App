@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import { useProfile } from "@/components/profile/profile-provider";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Card, PageHeader } from "@/components/ui/card";
+import { SurpriseMe } from "@/components/recipes/surprise-me";
 import { Chip, Segmented, Switch } from "@/components/ui/controls";
 import { useRecipes } from "@/lib/recipes/use-recipes";
 
@@ -50,6 +51,12 @@ export function RecipesView() {
         title="Recipes"
         subtitle="Picked for your household — your skills, your kitchen and what needs using up first."
       />
+
+      {course === "main" ? (
+        <div className="mb-5">
+          <SurpriseMe data={data} />
+        </div>
+      ) : null}
 
       <div className="mb-4 flex flex-col gap-3">
         <label className="flex h-12 items-center gap-3 rounded-full bg-surface px-5">

@@ -1,4 +1,4 @@
-import { CalendarDays, ChefHat, CircleUser, House, Refrigerator, ShoppingCart, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChefHat, CircleUser, House, Refrigerator, ShoppingCart, Tag, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -8,7 +8,7 @@ export interface NavItem {
   icon: LucideIcon;
   /** Other paths that highlight this item. */
   also?: string[];
-  /** Sidebar only — phones keep exactly five tabs. */
+  /** Sidebar only — phones keep exactly five tabs (Profile moves to the top bar). */
   desktopOnly?: boolean;
 }
 
@@ -17,8 +17,9 @@ export const navItems: NavItem[] = [
   { href: "/kitchen", label: "My Kitchen", shortLabel: "Kitchen", icon: Refrigerator },
   { href: "/plan", label: "Meal Plan", shortLabel: "Plan", icon: CalendarDays, also: ["/recipes"] },
   { href: "/recipes", label: "Recipes", shortLabel: "Recipes", icon: ChefHat, desktopOnly: true },
+  { href: "/specials", label: "Specials", shortLabel: "Specials", icon: Tag },
   { href: "/grocery", label: "Grocery List", shortLabel: "Grocery", icon: ShoppingCart },
-  { href: "/profile", label: "Profile", shortLabel: "Profile", icon: CircleUser },
+  { href: "/profile", label: "Profile", shortLabel: "Profile", icon: CircleUser, desktopOnly: true },
 ];
 
 function matches(pathname: string, href: string): boolean {

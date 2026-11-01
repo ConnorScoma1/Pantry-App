@@ -1,9 +1,9 @@
 "use server";
 
 import { createSupabaseGroceryRepository, createSupabaseStoreRepository, type GroceryRepository, type Result } from "@kitchen-pantry/database";
-import type { BasketPrice, KrogerStore } from "@kitchen-pantry/grocery-pricing";
+import type { BasketPrice, KrogerStore, RecipeCost, SpecialsResult } from "@kitchen-pantry/grocery-pricing";
 import type { GroceryItem, PricingStore } from "@kitchen-pantry/shared-types";
-import { findStores, priceItems, pricingStatus, verifyStore, type PricingStatus } from "@/lib/pricing/server";
+import { findSpecials, findStores, priceItems, priceRecipes, pricingStatus, verifyStore, type PricingStatus } from "@/lib/pricing/server";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -77,6 +77,18 @@ export async function priceListAction(request: unknown): Promise<Result<BasketPr
   const id = await who();
   if (!id) return { ok: false, message: "Your session expired. Please sign in again." };
   return priceItems(request, id);
+}
+
+export async function specialsAction(request: unknown): Promise<Result<SpecialsResult>> {
+  const id = await who();
+  if (!id) return { ok: false, message: "Your session expired. Please sign in again." };
+  return findSpecials(request, id);
+}
+
+export async function recipeCostsAction(request: unknown): Promise<Result<{ costs: RecipeCost[]; warning: string | null }>> {
+  const id = await who();
+  if (!id) return { ok: false, message: "Your session expired. Please sign in again." };
+  return priceRecipes(request, id);
 }
 
 export async function getStoreAction(): Promise<Result<PricingStore | null>> {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import { CircleUser } from "lucide-react";
 import { useProfile } from "@/components/profile/profile-provider";
 import { cn } from "@/lib/cn";
 import { BrandLockup, BrandMark } from "./brand";
@@ -60,9 +61,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             <BrandMark className="size-7" />
             <span className="text-[17px] font-bold tracking-tight">Kitchen Pantry</span>
           </Link>
-          {mode === "preview" ? (
-            <span className="rounded-full bg-warning/12 px-3 py-1 text-[13px] font-semibold text-warning">Preview</span>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {mode === "preview" ? (
+              <span className="rounded-full bg-warning/12 px-3 py-1 text-[13px] font-semibold text-warning">Preview</span>
+            ) : null}
+            <Link
+              href="/profile"
+              aria-label="Profile"
+              aria-current={pathname.startsWith("/profile") ? "page" : undefined}
+              className={cn(
+                "grid size-11 place-items-center rounded-full transition-colors",
+                pathname.startsWith("/profile") || pathname.startsWith("/household") ? "bg-surface-strong text-foreground" : "text-muted hover:bg-surface",
+              )}
+            >
+              <CircleUser className="size-6" strokeWidth={1.75} aria-hidden />
+            </Link>
+          </div>
         </header>
 
         <main id="main" className="mx-auto w-full max-w-[1080px] px-4 pb-32 sm:px-6 lg:px-10 lg:pt-8 lg:pb-16">

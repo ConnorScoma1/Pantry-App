@@ -173,5 +173,6 @@ export function useRecipes() {
     dismiss,
     undismiss,
     logEvent,
+    events,
   };
 }

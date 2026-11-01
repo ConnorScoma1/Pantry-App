@@ -229,6 +229,9 @@ function WeekPlanner({ weekStart }: { weekStart: string }) {
             </Link>{" "}
             for prices from your store — we never estimate them.
           </p>
+          <Link href="/cart" className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-full bg-foreground px-5 text-[15px] font-semibold text-background">
+            Build my cart
+          </Link>
         </Card>
       ) : null}
 

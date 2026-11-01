@@ -9,6 +9,7 @@ import {
   type SupabaseLike,
 } from "@kitchen-pantry/database";
 import { dismissedRecipeIds, rankRecipes, testKitchenRecipes, type RankingContext } from "@kitchen-pantry/recipe-engine";
+import { specialSchema, type Special } from "@kitchen-pantry/grocery-pricing";
 import type { OnboardingProfile, PantryItem, PlanningMode, Recipe, RecipeRating, RecommendationEvent } from "@kitchen-pantry/shared-types";
 import { generatePlanRequestSchema, onboardingProfileSchema, type GeneratePlanRequest } from "@kitchen-pantry/validation";
 import { z } from "zod";
@@ -107,7 +108,7 @@ export const previewContextSchema = z.object({
       z.object({
         recipeId: z.uuid(),
         event: z.enum(["shown", "opened", "cooked", "dismissed", "undismissed"]),
-        surface: z.enum(["home", "recipes", "detail", "plan"]),
+        surface: z.enum(["home", "recipes", "detail", "plan", "surprise"]),
         createdAt: z.string().max(40),
       }),
     )
@@ -239,6 +240,9 @@ export async function generateMealPlan(
     fixed: request.fixed,
     avoid: new Set(request.avoid),
     seed: request.seed,
+    // Cook the Specials: sale prices the store reported (re-validated here; they only steer this household's own plan).
+    specials: request.mode === "cook_the_specials" ? request.specials.map((x) => specialSchema.safeParse(x)).filter((r) => r.success).map((r) => r.data as Special) : [],
+    specialsSource: request.specialsSource,
   };
 
   const config = readAiConfig();
