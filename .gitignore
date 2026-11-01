@@ -1,0 +1,31 @@
+# dependencies
+node_modules/
+
+# builds
+.next/
+out/
+dist/
+build/
+.turbo/
+.expo/
+web-build/
+ios/
+android/
+
+# env — never commit real secrets
+.env
+.env.local
+.env.*.local
+apps/*/.env
+apps/*/.env.local
+
+# supabase local state
+supabase/.branches/
+supabase/.temp/
+
+# misc
+.DS_Store
+Thumbs.db
+*.log
+*.tsbuildinfo
+coverage/

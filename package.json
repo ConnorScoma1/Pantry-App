@@ -1,0 +1,38 @@
+{
+  "name": "kitchen-pantry",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Kitchen Pantry \u2014 AI-powered kitchen, meal planning and grocery budgeting platform.",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --filter=@kitchen-pantry/web",
+    "dev:web": "turbo run dev --filter=@kitchen-pantry/web",
+    "dev:mobile": "npm run start --workspace=@kitchen-pantry/mobile",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "tokens": "npm run generate --workspace=@kitchen-pantry/ui-tokens",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > packages/database/src/database.types.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.23.0",
+    "turbo": "^2.11.0",
+    "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "@types/react": "~19.3.0"
+  }
+}

@@ -1,0 +1,93 @@
+@import "tailwindcss";
+@import "../../../../packages/ui-tokens/generated/tokens.css";
+
+/* Map design tokens onto Tailwind utilities (bg-surface, text-muted, ...). */
+@theme inline {
+  --color-background: rgb(var(--kp-background));
+  --color-surface: rgb(var(--kp-surface));
+  --color-surface-strong: rgb(var(--kp-surface-strong));
+  --color-border: rgb(var(--kp-border));
+  --color-foreground: rgb(var(--kp-foreground));
+  --color-muted: rgb(var(--kp-muted));
+  --color-subtle: rgb(var(--kp-subtle));
+  --color-accent: rgb(var(--kp-accent));
+  --color-accent-foreground: rgb(var(--kp-accent-foreground));
+  --color-accent-soft: rgb(var(--kp-accent-soft));
+  --color-success: rgb(var(--kp-success));
+  --color-warning: rgb(var(--kp-warning));
+  --color-danger: rgb(var(--kp-danger));
+  --color-info: rgb(var(--kp-info));
+  --color-price-verified: rgb(var(--kp-price-verified));
+  --color-price-cached: rgb(var(--kp-price-cached));
+  --color-price-estimated: rgb(var(--kp-price-estimated));
+  --color-price-unavailable: rgb(var(--kp-price-unavailable));
+
+  --radius-card: var(--kp-radius-xl);
+  --radius-control: var(--kp-radius-lg);
+
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --ease-out-soft: var(--kp-ease);
+  --animate-enter: enter var(--kp-duration-slow) var(--kp-ease) both;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background-color: rgb(var(--kp-background));
+    color: rgb(var(--kp-foreground));
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--kp-accent));
+    outline-offset: 2px;
+  }
+  ::selection {
+    background-color: rgb(var(--kp-accent) / 0.2);
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

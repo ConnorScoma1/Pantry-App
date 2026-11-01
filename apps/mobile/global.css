@@ -1,0 +1,52 @@
+/* GENERATED FILE — do not edit by hand.
+ * Source: packages/ui-tokens/src/tokens.ts
+ * Regenerate with: npm run tokens
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --kp-background: 255 255 255;
+  --kp-surface: 246 246 243;
+  --kp-surface-strong: 236 236 230;
+  --kp-border: 227 227 220;
+  --kp-foreground: 22 24 26;
+  --kp-muted: 100 104 107;
+  --kp-subtle: 142 146 149;
+  --kp-accent: 47 107 79;
+  --kp-accent-foreground: 255 255 255;
+  --kp-accent-soft: 228 239 232;
+  --kp-success: 30 127 72;
+  --kp-warning: 168 107 18;
+  --kp-danger: 190 58 38;
+  --kp-info: 40 98 166;
+  --kp-price-verified: 30 127 72;
+  --kp-price-cached: 40 98 166;
+  --kp-price-estimated: 168 107 18;
+  --kp-price-unavailable: 142 146 149;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --kp-background: 14 15 16;
+    --kp-surface: 24 25 27;
+    --kp-surface-strong: 34 36 39;
+    --kp-border: 45 47 51;
+    --kp-foreground: 242 242 238;
+    --kp-muted: 166 170 173;
+    --kp-subtle: 116 120 124;
+    --kp-accent: 116 196 154;
+    --kp-accent-foreground: 11 26 18;
+    --kp-accent-soft: 27 45 35;
+    --kp-success: 85 198 138;
+    --kp-warning: 227 172 80;
+    --kp-danger: 240 125 103;
+    --kp-info: 114 170 232;
+    --kp-price-verified: 85 198 138;
+    --kp-price-cached: 114 170 232;
+    --kp-price-estimated: 227 172 80;
+    --kp-price-unavailable: 116 120 124;
+  }
+}

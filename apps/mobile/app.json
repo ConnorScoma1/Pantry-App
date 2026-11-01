@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Kitchen Pantry",
+    "slug": "kitchen-pantry",
+    "scheme": "kitchenpantry",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kitchenpantry.app"
+    },
+    "android": {
+      "package": "com.kitchenpantry.app",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

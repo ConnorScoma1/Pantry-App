@@ -1,0 +1,78 @@
+import { strict as assert } from "node:assert";
+import { test } from "node:test";
+import {
+  defaultOnboardingProfile,
+  householdStepSchema,
+  isValidPostalCode,
+  issuesToFieldErrors,
+  onboardingProfileSchema,
+  signUpSchema,
+} from "./index";
+
+function validProfile() {
+  const p = defaultOnboardingProfile();
+  p.household.postalCode = "53132";
+  p.goals.ranked = ["save_money", "reduce_waste"];
+  return p;
+}
+
+test("a completed default profile validates", () => {
+  const result = onboardingProfileSchema.safeParse(validProfile());
+  assert.ok(result.success, JSON.stringify(result.error?.issues));
+});
+
+test("US ZIP codes must be 5 digits (ZIP+4 allowed)", () => {
+  assert.ok(isValidPostalCode("US", "53132"));
+  assert.ok(isValidPostalCode("US", "53132-1234"));
+  assert.ok(!isValidPostalCode("US", "5313"));
+  assert.ok(isValidPostalCode("CA", "K1A 0B1"));
+  assert.ok(isValidPostalCode("OTHER", "75008"));
+});
+
+test("household step reports field-level errors", () => {
+  const p = validProfile();
+  const result = householdStepSchema.safeParse({ ...p.household, postalCode: "12", adults: 0 });
+  assert.ok(!result.success);
+  const errors = issuesToFieldErrors(result.error);
+  assert.match(errors.postalCode ?? "", /ZIP/);
+  assert.ok(errors.adults);
+});
+
+test("dinner selected with zero dinners per week is rejected", () => {
+  const p = validProfile();
+  const result = householdStepSchema.safeParse({ ...p.household, dinnersPerWeek: 0 });
+  assert.ok(!result.success);
+});
+
+test("goals must be non-empty and unique", () => {
+  const p = validProfile();
+  assert.ok(!onboardingProfileSchema.safeParse({ ...p, goals: { ranked: [] } }).success);
+  assert.ok(
+    !onboardingProfileSchema.safeParse({ ...p, goals: { ranked: ["save_money", "save_money"] } })
+      .success,
+  );
+});
+
+test("free-text tags are trimmed and de-duplicated case-insensitively", () => {
+  const p = validProfile();
+  p.diet.dislikes = ["  Olives ", "olives", "Mushrooms"];
+  const parsed = onboardingProfileSchema.parse(p);
+  assert.deepEqual(parsed.diet.dislikes, ["Olives", "Mushrooms"]);
+});
+
+test("unknown allergen codes are rejected", () => {
+  const p = validProfile();
+  const bad = { ...p, diet: { ...p.diet, allergies: ["peanut", "kryptonite"] } };
+  assert.ok(!onboardingProfileSchema.safeParse(bad).success);
+});
+
+test("no strict budget is represented as null", () => {
+  const p = validProfile();
+  p.budget.amountCents = null;
+  assert.ok(onboardingProfileSchema.safeParse(p).success);
+});
+
+test("sign-up requires a 10+ character password", () => {
+  assert.ok(!signUpSchema.safeParse({ email: "a@b.co", password: "short" }).success);
+  assert.ok(signUpSchema.safeParse({ email: " A@B.co ", password: "long-enough-pw" }).success);
+});
