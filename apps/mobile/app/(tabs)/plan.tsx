@@ -13,6 +13,7 @@ import {
 } from "@kitchen-pantry/shared-types";
 import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
+import { Button } from "@/components/controls";
 import { Card, Eyebrow, Screen } from "@/components/ui";
 import { useProfile } from "@/lib/app-state";
 
@@ -54,6 +55,7 @@ export default function PlanScreen() {
 
   return (
     <Screen title="Meal Plan" subtitle="These settings apply to every week you plan.">
+      <Button variant="secondary" icon="book-outline" label="Browse recipes" onPress={() => router.push("/recipes")} />
       <Settings title="Household">
         <Row label="Cooking for" value={`${p.household.cookingFor}`} />
         <Row label="Meals" value={list(p.household.mealsIncluded.map((m) => labelFor(mealTypes, m)))} />

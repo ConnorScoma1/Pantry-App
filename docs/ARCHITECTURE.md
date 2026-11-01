@@ -79,7 +79,7 @@ Product specs live in [`docs/specs`](specs): the original platform spec (01), **
 | --- | --- | --- | --- |
 | 1 | **Foundation** — monorepo, tokens, schema + RLS, auth, onboarding, web + mobile shells | 01 | **Done** |
 | 2 | **My Kitchen inventory** — items, staples checklist, use-by urgency, transaction log, category guessing; mobile sign-in + onboarding | 01 §5–6, 02 §9.1 | **Done (web + mobile)** · barcode/receipt import later |
-| 3 | **Recipes & ratings** — approved-source catalogue, recipe detail, skill/equipment/allergy filtering, ratings, favourites, recommendation history | 01 §7, 02 §4 | **Web done** · mobile recipes + recommendation history next |
+| 3 | **Recipes & ratings** — approved-source catalogue, recipe detail, skill/equipment/allergy filtering, ratings, favourites, recommendation history | 01 §7, 02 §4 | **Done (web + mobile)** · recommendation history next |
 | 4 | **AI weekly meal planning** — Claude-ranked plans from deterministic candidates; planning modes *Budget First / Balanced / Chef's Choice / Use What I Have* | 01 §8, 02 §3 | — |
 | 5 | **Consolidated grocery lists** — merge, convert units, subtract pantry, package math, mock pricing | 01 §9 | Engines built |
 | 6 | **Local pricing integration** — store preferences (several stores, radius, multi-store OK, loyalty cards), first verified provider, "Price unavailable" when none | 01 §10, 02 §1 | Needs provider decision |
@@ -143,7 +143,7 @@ Results are cached by a hash of inputs; arithmetic, conversions, list consolidat
 
 ## 8. Next step
 
-**Finish milestone 3 on mobile:** Recipes list + detail + rating on Expo (the shared `RecipeRepository` and ranking already work there), then `recommendation_events` so "shown / cooked / dismissed" feeds the repeat-avoidance in milestone 10. After that, **milestone 4 — AI weekly meal planning**, which needs `ANTHROPIC_API_KEY` on the server.
+**Close out milestone 3:** add `recommendation_events` (shown / opened / cooked / dismissed) so repeat-avoidance in milestone 10 has history to work from, plus a "Not for us" dismiss on recipe cards. Then **milestone 4 — AI weekly meal planning**, which needs `ANTHROPIC_API_KEY` on the server (mobile will call it through an authenticated Next.js route handler, never directly).
 
 ### How recipe recommendations work today
 

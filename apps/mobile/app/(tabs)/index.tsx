@@ -6,9 +6,11 @@ import { useMemo } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Notice } from "@/components/controls";
 import { UrgencyBadge } from "@/components/kitchen/urgency-badge";
+import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Body, Card, CardTitle, Eyebrow, PrimaryButton, Screen } from "@/components/ui";
 import { useApp, useProfile } from "@/lib/app-state";
 import { useKitchen } from "@/lib/use-kitchen";
+import { useRecipes } from "@/lib/use-recipes";
 import { useThemeColors } from "@/lib/theme";
 
 function greeting(date = new Date()): string {
@@ -21,6 +23,8 @@ export default function HomeScreen() {
   const { mode } = useApp();
   const profile = useProfile();
   const kitchen = useKitchen();
+  const recipes = useRecipes();
+  const forYou = useMemo(() => recipes.rank().recipes.slice(0, 3), [recipes.rank]);
   const useSoon = useMemo(() => summarizeKitchen(kitchen.items, kitchen.today).useSoon, [kitchen.items, kitchen.today]);
 
   const h = profile.household;
@@ -63,6 +67,25 @@ export default function HomeScreen() {
           ))}
         </View>
       </Card>
+
+      {forYou.length > 0 ? (
+        <View className="gap-3">
+          <View className="flex-row items-end justify-between gap-3 pt-2">
+            <View className="flex-1">
+              <Text accessibilityRole="header" className="text-2xl font-bold tracking-tight text-foreground">
+                Recipes for you
+              </Text>
+              <Text className="mt-0.5 text-[15px] text-muted">Matched to your skills, kitchen and what needs using up.</Text>
+            </View>
+            <Pressable accessibilityRole="link" onPress={() => router.push("/recipes")} className="min-h-10 justify-center">
+              <Text className="text-[16px] font-semibold text-accent">See all →</Text>
+            </Pressable>
+          </View>
+          {forYou.map((r) => (
+            <RecipeCard key={r.recipe.id} ranked={r} onToggleFavorite={() => void recipes.toggleFavorite(r.recipe.id)} />
+          ))}
+        </View>
+      ) : null}
 
       <Card>
         <Eyebrow>Use it before you lose it</Eyebrow>

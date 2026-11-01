@@ -21,7 +21,7 @@ export function HomeView() {
 
   const kitchen = useKitchen();
   const recipesData = useRecipes();
-  const forYou = useMemo(() => recipesData.rank().recipes.slice(0, 3), [recipesData]);
+  const forYou = useMemo(() => recipesData.rank().recipes.slice(0, 3), [recipesData.rank]);
   const useSoon = useMemo(() => summarizeKitchen(kitchen.items, kitchen.today).useSoon, [kitchen.items, kitchen.today]);
 
   const { household } = profile;

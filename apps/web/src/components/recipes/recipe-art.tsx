@@ -1,46 +1,30 @@
+import { recipeArt, type RecipeArtKind } from "@kitchen-pantry/recipe-engine";
 import type { Recipe } from "@kitchen-pantry/shared-types";
-import { Beef, CookingPot, Drumstick, Fish, Salad, Soup, Wheat } from "lucide-react";
+import { Beef, CookingPot, Drumstick, Fish, Salad, Soup, Wheat, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/cn";
+
+const ICONS: Record<RecipeArtKind, LucideIcon> = {
+  fish: Fish,
+  poultry: Drumstick,
+  meat: Beef,
+  soup: Soup,
+  pot: CookingPot,
+  grain: Wheat,
+  veg: Salad,
+};
 
 /**
  * Typographic recipe tile used until licensed food photography exists.
- * We never show stock or AI-generated "photos" of a dish.
+ * We never show stock or AI-generated "photos" of a dish. Colours come from
+ * the shared recipe-engine so web and mobile match.
  */
-const HUES: Record<string, number> = {
-  american: 18,
-  italian: 8,
-  mexican: 32,
-  chinese: 0,
-  japanese: 350,
-  korean: 340,
-  thai: 140,
-  vietnamese: 150,
-  indian: 38,
-  mediterranean: 195,
-  middle_eastern: 28,
-  french: 265,
-  spanish: 12,
-  southern: 24,
-  caribbean: 170,
-};
-
-function iconFor(recipe: Recipe) {
-  const text = recipe.ingredients.map((i) => i.item).join(" ").toLowerCase();
-  if (/salmon|scallop|shrimp|fish|cod/.test(text)) return Fish;
-  if (/chicken|turkey/.test(text)) return Drumstick;
-  if (/beef|short rib|steak|pork/.test(text)) return Beef;
-  if (/risotto|rice|chili|broth/.test(text) && !/tortilla/.test(text)) return recipe.title.toLowerCase().includes("chili") ? Soup : CookingPot;
-  if (/penne|pasta|noodle|spaghetti|tortilla/.test(text)) return Wheat;
-  return Salad;
-}
-
 export function RecipeArt({ recipe, className, size = "md" }: { recipe: Recipe; className?: string; size?: "md" | "lg" }) {
   if (recipe.imageUrl) {
     // eslint-disable-next-line @next/next/no-img-element -- licensed images may come from any partner CDN
     return <img src={recipe.imageUrl} alt="" loading="lazy" className={cn("object-cover", className)} />;
   }
-  const Icon = iconFor(recipe);
-  const hue = HUES[recipe.cuisine ?? ""] ?? 140;
+  const { hue, kind } = recipeArt(recipe);
+  const Icon = ICONS[kind];
   return (
     <div
       aria-hidden

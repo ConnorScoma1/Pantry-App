@@ -1,11 +1,16 @@
 import {
   createLocalKitchenRepository,
   createLocalProfileStore,
+  createLocalRecipeRepository,
   createSupabaseKitchenRepository,
   createSupabaseProfileStore,
+  createSupabaseRecipeRepository,
+  LOCAL_FAVORITES_KEY,
   LOCAL_PANTRY_KEY,
+  LOCAL_RATINGS_KEY,
   type KitchenRepository,
   type ProfileStore,
+  type RecipeRepository,
   type Result,
 } from "@kitchen-pantry/database";
 import type { OnboardingProfile, SkillLevel } from "@kitchen-pantry/shared-types";
@@ -24,6 +29,7 @@ interface AppState {
   signedIn: boolean;
   profile: OnboardingProfile | null;
   kitchen: KitchenRepository;
+  recipes: RecipeRepository;
   signIn(email: string, password: string): Promise<Result<null>>;
   signUp(email: string, password: string): Promise<Result<{ needsConfirmation: boolean }>>;
   signOut(): Promise<void>;
@@ -38,6 +44,8 @@ const localKitchen = createLocalKitchenRepository(deviceStorage);
 const localProfiles = createLocalProfileStore(deviceStorage);
 const remoteKitchen = supabase ? createSupabaseKitchenRepository(asSupabaseLike(supabase)) : null;
 const remoteProfiles = supabase ? createSupabaseProfileStore(asSupabaseLike(supabase)) : null;
+const localRecipes = createLocalRecipeRepository(deviceStorage);
+const remoteRecipes = supabase ? createSupabaseRecipeRepository(asSupabaseLike(supabase)) : null;
 
 /**
  * Session, profile and data stores for the whole app. Screens read from
@@ -47,6 +55,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const mode: DataMode = supabase ? "supabase" : "preview";
   const profiles: ProfileStore = remoteProfiles ?? localProfiles;
   const kitchen: KitchenRepository = remoteKitchen ?? localKitchen;
+  const recipes: RecipeRepository = remoteRecipes ?? localRecipes;
 
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
@@ -139,6 +148,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearPreview = useCallback(async () => {
     await localProfiles.clear();
     await deviceStorage.removeItem(LOCAL_PANTRY_KEY);
+    await deviceStorage.removeItem(LOCAL_FAVORITES_KEY);
+    await deviceStorage.removeItem(LOCAL_RATINGS_KEY);
     setProfile(null);
   }, []);
 
@@ -150,6 +161,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signedIn,
       profile,
       kitchen,
+      recipes,
       signIn,
       signUp,
       signOut,
@@ -157,7 +169,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSkillLevel,
       clearPreview,
     }),
-    [mode, loading, email, signedIn, profile, kitchen, signIn, signUp, signOut, saveProfile, setSkillLevel, clearPreview],
+    [mode, loading, email, signedIn, profile, kitchen, recipes, signIn, signUp, signOut, saveProfile, setSkillLevel, clearPreview],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

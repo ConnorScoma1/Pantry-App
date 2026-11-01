@@ -58,7 +58,7 @@ npm install
 npm run dev:mobile
 ```
 
-Scan the QR code with the **Expo Go** app on your phone (same Wi-Fi as your PC). The phone app has sign-in, the full questionnaire, **My Kitchen** (staples, add/edit, use-by urgency) and the same Home, Plan and Profile screens as the website.
+Scan the QR code with the **Expo Go** app on your phone (same Wi-Fi as your PC). The phone app has sign-in, the full questionnaire, **My Kitchen** (staples, add/edit, use-by urgency), **Recipes** (open from Home → "See all" or Plan → "Browse recipes": favourites, servings scaling, "I cooked this" ratings) and the same Home, Plan and Profile screens as the website.
 
 - **No Supabase keys → preview mode**: no sign-in, everything is saved on that phone only.
 - **With Supabase**: copy `apps/mobile/.env.example` to `apps/mobile/.env` and fill in the same project URL and anon key as the web app. Phones can't reach `127.0.0.1` on your PC — for local Supabase use your PC's network address, e.g. `http://192.168.1.20:54321` (find it with `ipconfig`). Same account works on web and phone.
@@ -113,7 +113,7 @@ packages/
   shared-types/        Domain types + option catalogues (allergens, equipment, skill levels…)
   validation/          Zod schemas shared by client, server and onboarding
   database/            Shared data access for web + mobile: kitchen, profile & recipe stores (Supabase or on-device)
-  recipe-engine/       Test Kitchen recipe catalogue, allergen screening, eligibility, pantry match + ranking, scaling
+  recipe-engine/       Test Kitchen recipe catalogue, allergen screening, eligibility, pantry match + ranking, scaling, recipe tile art
   inventory-engine/    Units, inventory subtraction, use-by urgency, staples, kitchen summaries
   grocery-pricing/     Pricing provider interface, package math, labelled mock provider
   meal-planner/        Week maths, budget verdicts (never "within budget" on estimates)

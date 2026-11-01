@@ -1,3 +1,4 @@
+export * from "./art";
 export * from "./allergens";
 export * from "./eligibility";
 export * from "./recipes";
