@@ -82,7 +82,12 @@ export default function HomeScreen() {
             </Pressable>
           </View>
           {forYou.map((r) => (
-            <RecipeCard key={r.recipe.id} ranked={r} onToggleFavorite={() => void recipes.toggleFavorite(r.recipe.id)} />
+            <RecipeCard
+              key={r.recipe.id}
+              ranked={r}
+              onToggleFavorite={() => void recipes.toggleFavorite(r.recipe.id)}
+              onDismiss={() => void recipes.dismiss(r.recipe.id, "home")}
+            />
           ))}
         </View>
       ) : null}

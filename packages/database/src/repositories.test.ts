@@ -210,7 +210,7 @@ test("supabase recipes: nested rows map to sorted recipes with numeric fields", 
           {
             id: CHILI, slug: "chili", title: "Chili", description: null, cuisine: "american", skill_level: 2,
             prep_minutes: 15, cook_minutes: 45, total_minutes: null, servings: 6, required_equipment: ["stove"],
-            tags: ["meal-prep"], tips: [], image_url: null, source_url: null,
+            tags: ["meal-prep"], tips: [], image_url: null, image_alt: null, image_credit: null, image_credit_url: null, image_source_url: null, image_license: null, image_is_representative: null, source_url: null,
             recipe_sources: { kind: "original", name: "Kitchen Pantry Test Kitchen", website: null },
             recipe_ingredients: [
               { position: 2, component: null, item: "black beans", original_quantity: "2.0000", original_unit: "can", preparation: null, is_optional: false },
@@ -263,4 +263,31 @@ test("local recipes: catalogue, favourites, ratings; no fake community ratings",
   assert.ok(mine.ok && mine.data.length === 1);
   assert.deepEqual(await repo.summaries([CHILI]), { ok: true, data: [] });
   assert.equal(latestRatingByRecipe(mine.data).get(CHILI)?.overall, 4);
+});
+
+test("recommendation events: supabase insert relies on defaults; bad input rejected", async () => {
+  const { db, calls } = fakeDb({
+    recommendation_events: [{ data: { recipe_id: CHILI, event: "dismissed", surface: "recipes", created_at: "2026-11-01T18:00:00Z" }, error: null }],
+  });
+  const repo = createSupabaseRecipeRepository(db);
+  const logged = await repo.logEvent({ recipeId: CHILI, event: "dismissed", surface: "recipes" });
+  assert.ok(logged.ok && logged.data.event === "dismissed");
+  const insert = calls[0]!.ops.find(([op]) => op === "insert")![1][0] as Record<string, unknown>;
+  assert.deepEqual(insert, { recipe_id: CHILI, event: "dismissed", surface: "recipes" });
+  assert.ok(!(await repo.logEvent({ recipeId: CHILI, event: "liked", surface: "recipes" })).ok);
+  assert.ok(!(await repo.logEvent({ recipeId: "nope", event: "opened", surface: "detail" })).ok);
+  assert.equal(calls.length, 1, "invalid events never reach the database");
+});
+
+test("recommendation events: local history is newest-first and capped", async () => {
+  let t = Date.parse("2026-11-01T12:00:00Z");
+  const repo = createLocalRecipeRepository(memoryStorage(), { now: () => new Date((t += 1000)) });
+  await repo.logEvent({ recipeId: CHILI, event: "opened", surface: "recipes" });
+  await repo.logEvent({ recipeId: CHILI, event: "dismissed", surface: "detail" });
+  const events = await repo.events();
+  assert.ok(events.ok);
+  assert.deepEqual(events.data.map((e) => e.event), ["dismissed", "opened"]);
+  for (let i = 0; i < 520; i++) await repo.logEvent({ recipeId: CHILI, event: "opened", surface: "home" });
+  const capped = await repo.events();
+  assert.ok(capped.ok && capped.data.length === 500);
 });

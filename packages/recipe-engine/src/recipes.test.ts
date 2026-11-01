@@ -15,6 +15,10 @@ import {
   screenAllergens,
   ingredientLines,
   testKitchenRecipes,
+  dismissedRecipeIds,
+  creditHref,
+  imageLibraryName,
+  recipeImageSrc,
   type RankingContext,
 } from "./index";
 
@@ -200,4 +204,61 @@ test("supabase/seed_recipes.sql is in sync with the catalogue (run the seed scri
   const { buildRecipeSeedSql } = await import("./catalog/seed-sql");
   const path = new URL("../../../supabase/seed_recipes.sql", import.meta.url);
   assert.equal(readFileSync(path, "utf8"), buildRecipeSeedSql());
+});
+
+test("every Test Kitchen photo is licensed, credited and labelled as a similar dish", () => {
+  for (const r of testKitchenRecipes) {
+    const img = r.image;
+    assert.ok(img, `${r.slug} has a photo`);
+    assert.equal(img.license, "unsplash");
+    assert.ok(img.creditName.length > 0 && img.creditUrl?.startsWith("https://unsplash.com/@"), `${r.slug} credits the photographer`);
+    assert.ok(img.sourceUrl.startsWith("https://unsplash.com/photos/"), `${r.slug} links the photo page`);
+    assert.equal(img.representative, true, `${r.slug} is labelled as a similar dish`);
+  }
+  assert.equal(new Set(testKitchenRecipes.map((r) => r.image!.url)).size, testKitchenRecipes.length, "no photo reused");
+});
+
+test("image helpers size CDN images and tag Unsplash credits", () => {
+  const img = byslug("mushroom-thyme-risotto").image!;
+  assert.equal(recipeImageSrc(img, 600), `${img.url}?auto=format&fit=crop&w=600&q=70`);
+  assert.equal(creditHref("https://unsplash.com/@x", "unsplash"), "https://unsplash.com/@x?utm_source=kitchen_pantry&utm_medium=referral");
+  assert.equal(creditHref("https://example.org/a", "cc-by"), "https://example.org/a");
+  assert.equal(imageLibraryName("unsplash"), "Unsplash");
+});
+
+test("photos from unapproved hosts are rejected", () => {
+  const r = byslug("mushroom-thyme-risotto");
+  const bad = { ...r, image: { ...r.image!, url: "https://some-food-blog.example/risotto.jpg" } };
+  assert.equal(recipeSchema.safeParse(bad).success, false);
+  const http = { ...r, image: { ...r.image!, url: "http://images.unsplash.com/photo-1" } };
+  assert.equal(recipeSchema.safeParse(http).success, false);
+});
+
+test("Not for us: latest dismiss/undo wins and dismissed recipes leave suggestions", () => {
+  const CHILI = byslug("turkey-black-bean-chili").id;
+  const QUES = byslug("black-bean-cheddar-quesadillas").id;
+  const ev = (recipeId: string, event: "dismissed" | "undismissed" | "opened", at: string) =>
+    ({ recipeId, event, surface: "recipes" as const, createdAt: `2026-11-01T12:00:0${at}Z` });
+  const ids = dismissedRecipeIds([ev(QUES, "undismissed", "3"), ev(CHILI, "dismissed", "1"), ev(QUES, "dismissed", "2"), ev(CHILI, "opened", "4")]);
+  assert.deepEqual([...ids], [CHILI]);
+
+  const list = rankRecipes(testKitchenRecipes, ctx(profile(), [], { dismissed: ids }), { includeAboveSkill: true });
+  assert.ok(!list.recipes.some((r) => r.recipe.id === CHILI));
+  assert.deepEqual(list.dismissed.map((r) => r.recipe.id), [CHILI]);
+});
+
+test("recently cooked recipes sink and say when you made them", () => {
+  const chili = byslug("turkey-black-bean-chili");
+  const rating = (createdAt: string): RecipeRating => ({
+    recipeId: chili.id, overall: 4, flavor: null, difficulty: null, wouldCookAgain: true,
+    actualMinutes: null, familyApproval: null, notes: null, createdAt,
+  });
+  const base = ctx(profile(), [], { today: "2026-11-01" });
+  const fresh = rankRecipe(chili, { ...base, myRatings: new Map([[chili.id, rating("2026-11-01T18:00:00Z")]]) });
+  const twoDays = rankRecipe(chili, { ...base, myRatings: new Map([[chili.id, rating("2026-10-30T18:00:00Z")]]) });
+  const old = rankRecipe(chili, { ...base, myRatings: new Map([[chili.id, rating("2026-09-01T18:00:00Z")]]) });
+  assert.ok(fresh.cautions.includes("You made this today"));
+  assert.ok(twoDays.cautions.includes("You made this 2 days ago"));
+  assert.ok(!old.cautions.some((c) => c.startsWith("You made this")));
+  assert.ok(fresh.score < twoDays.score && twoDays.score < old.score);
 });

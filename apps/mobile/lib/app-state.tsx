@@ -5,6 +5,7 @@ import {
   createSupabaseKitchenRepository,
   createSupabaseProfileStore,
   createSupabaseRecipeRepository,
+  LOCAL_EVENTS_KEY,
   LOCAL_FAVORITES_KEY,
   LOCAL_PANTRY_KEY,
   LOCAL_RATINGS_KEY,
@@ -150,6 +151,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await deviceStorage.removeItem(LOCAL_PANTRY_KEY);
     await deviceStorage.removeItem(LOCAL_FAVORITES_KEY);
     await deviceStorage.removeItem(LOCAL_RATINGS_KEY);
+    await deviceStorage.removeItem(LOCAL_EVENTS_KEY);
     setProfile(null);
   }, []);
 

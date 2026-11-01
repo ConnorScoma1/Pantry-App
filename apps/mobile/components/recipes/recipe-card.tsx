@@ -1,9 +1,19 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { formatMinutes, recipeArt, recipeArtColors, type RankedRecipe, type RecipeArtKind } from "@kitchen-pantry/recipe-engine";
+import {
+  creditHref,
+  formatMinutes,
+  imageLibraryName,
+  recipeArt,
+  recipeArtColors,
+  recipeImageSrc,
+  type RankedRecipe,
+  type RecipeArtKind,
+} from "@kitchen-pantry/recipe-engine";
 import type { Recipe } from "@kitchen-pantry/shared-types";
 import { router } from "expo-router";
 import type { ComponentProps } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, Linking, Pressable, Text, View } from "react-native";
 import { useThemeColors } from "@/lib/theme";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -18,21 +28,17 @@ const ART_ICONS: Record<RecipeArtKind, IconName> = {
   veg: "leaf-outline",
 };
 
-/**
- * Typographic tile (cuisine colour + icon). We never show stock or
- * AI-generated "photos" of a dish; licensed images can replace this later.
- */
-export function RecipeArt({ recipe, size = "md" }: { recipe: Recipe; size?: "md" | "lg" }) {
+/** Typographic tile (cuisine colour + icon): no photo, or the photo failed to load. */
+function ArtTile({ recipe, lg }: { recipe: Recipe; lg: boolean }) {
   const c = useThemeColors();
   const { hue, kind } = recipeArt(recipe);
   const colors = recipeArtColors(hue, c.isDark);
-  const lg = size === "lg";
   return (
     <View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={{ backgroundColor: colors.background }}
-      className={`items-center justify-center overflow-hidden ${lg ? "h-52 w-full rounded-card" : "w-28 self-stretch"}`}
+      className={`items-center justify-center overflow-hidden ${lg ? "h-56 w-full rounded-card" : "w-28 self-stretch"}`}
     >
       <View
         style={{ backgroundColor: colors.ring }}
@@ -41,6 +47,63 @@ export function RecipeArt({ recipe, size = "md" }: { recipe: Recipe; size?: "md"
         <Ionicons name={ART_ICONS[kind]} size={lg ? 56 : 32} color={colors.foreground} />
       </View>
     </View>
+  );
+}
+
+/**
+ * Recipe picture: only credited, openly licensed photos (recipe-engine
+ * catalog/photos.ts). A photo of a similar dish is labelled "Similar dish".
+ */
+export function RecipeArt({ recipe, size = "md" }: { recipe: Recipe; size?: "md" | "lg" }) {
+  const [failed, setFailed] = useState(false);
+  const lg = size === "lg";
+  const image = recipe.image;
+  if (!image || failed) return <ArtTile recipe={recipe} lg={lg} />;
+  return (
+    <View className={`overflow-hidden bg-surface-strong ${lg ? "h-56 w-full rounded-card" : "w-28 self-stretch"}`}>
+      <Image
+        source={{ uri: recipeImageSrc(image, lg ? 1200 : 400) }}
+        accessibilityLabel={image.alt}
+        accessibilityIgnoresInvertColors
+        resizeMode="cover"
+        onError={() => setFailed(true)}
+        style={{ position: "absolute", top: 0, right: 0, bottom: 0, left: 0 }}
+      />
+      {image.representative ? (
+        <View className="absolute bottom-2 left-2 rounded-full bg-black/55 px-2 py-0.5">
+          <Text className="text-[11px] font-medium text-white">Similar dish</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** "Similar dish · Photo by Name on Unsplash", linked as the licence asks. */
+export function PhotoCredit({ recipe }: { recipe: Recipe }) {
+  const image = recipe.image;
+  if (!image) return null;
+  const library = imageLibraryName(image.license);
+  const author = creditHref(image.creditUrl, image.license);
+  const source = creditHref(image.sourceUrl, image.license) ?? image.sourceUrl;
+  return (
+    <Text className="mt-2 px-1 text-[13px] leading-5 text-muted">
+      {image.representative ? "Similar dish, not this exact recipe · " : ""}Photo by{" "}
+      {author ? (
+        <Text accessibilityRole="link" className="underline" onPress={() => void Linking.openURL(author)}>
+          {image.creditName}
+        </Text>
+      ) : (
+        image.creditName
+      )}
+      {library ? (
+        <>
+          {" "}on{" "}
+          <Text accessibilityRole="link" className="underline" onPress={() => void Linking.openURL(source)}>
+            {library}
+          </Text>
+        </>
+      ) : null}
+    </Text>
   );
 }
 
@@ -63,7 +126,16 @@ export function SkillDots({ level }: { level: number }) {
   );
 }
 
-export function RecipeCard({ ranked, onToggleFavorite }: { ranked: RankedRecipe; onToggleFavorite: () => void }) {
+export function RecipeCard({
+  ranked,
+  onToggleFavorite,
+  onDismiss,
+}: {
+  ranked: RankedRecipe;
+  onToggleFavorite: () => void;
+  /** "Not for us": hides the recipe from suggestions (undoable). */
+  onDismiss?: () => void;
+}) {
   const c = useThemeColors();
   const { recipe, coverage, reasons, cautions, favorite } = ranked;
   const have = coverage.owned.length;
@@ -123,6 +195,17 @@ export function RecipeCard({ ranked, onToggleFavorite }: { ranked: RankedRecipe;
       >
         <Ionicons name={favorite ? "heart" : "heart-outline"} size={20} color={favorite ? c.danger : c.muted} />
       </Pressable>
+      {onDismiss ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Not for us: hide ${recipe.title} from suggestions`}
+          onPress={onDismiss}
+          hitSlop={6}
+          className="absolute bottom-2 right-2 size-10 items-center justify-center rounded-full bg-background"
+        >
+          <Ionicons name="eye-off-outline" size={18} color={c.muted} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }

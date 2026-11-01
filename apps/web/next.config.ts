@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
     "@kitchen-pantry/integrations",
     "@kitchen-pantry/inventory-engine",
     "@kitchen-pantry/meal-planner",
+    "@kitchen-pantry/recipe-engine",
     "@kitchen-pantry/shared-types",
     "@kitchen-pantry/ui-tokens",
     "@kitchen-pantry/validation",

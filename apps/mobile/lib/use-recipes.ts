@@ -1,6 +1,12 @@
 import { latestRatingByRecipe, type Result } from "@kitchen-pantry/database";
-import { rankRecipes, type RankingContext, type RecipeFilters } from "@kitchen-pantry/recipe-engine";
-import type { RatingSummary, Recipe, RecipeRating } from "@kitchen-pantry/shared-types";
+import { dismissedRecipeIds, rankRecipes, type RankingContext, type RecipeFilters } from "@kitchen-pantry/recipe-engine";
+import type {
+  RatingSummary,
+  Recipe,
+  RecipeRating,
+  RecommendationEvent,
+  RecommendationSurface,
+} from "@kitchen-pantry/shared-types";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { useApp, useProfile } from "./app-state";
@@ -22,11 +28,12 @@ export function useRecipes() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [summaries, setSummaries] = useState<Map<string, RatingSummary>>(new Map());
   const [myRatings, setMyRatings] = useState<RecipeRating[]>([]);
+  const [events, setEvents] = useState<RecommendationEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    const [list, favs, mine] = await Promise.all([repo.list(), repo.favorites(), repo.myRatings()]);
+    const [list, favs, mine, history] = await Promise.all([repo.list(), repo.favorites(), repo.myRatings(), repo.events()]);
     if (!list.ok) {
       setError(list.message);
       setLoading(false);
@@ -36,6 +43,7 @@ export function useRecipes() {
     setRecipes(list.data);
     if (favs.ok) setFavorites(new Set(favs.data));
     if (mine.ok) setMyRatings(mine.data);
+    if (history.ok) setEvents(history.data);
     const sums = await repo.summaries(list.data.map((r) => r.id));
     if (sums.ok) setSummaries(new Map(sums.data.map((s) => [s.recipeId, s])));
     setLoading(false);
@@ -55,8 +63,9 @@ export function useRecipes() {
       favorites,
       ratings: summaries,
       myRatings: latestRatingByRecipe(myRatings),
+      dismissed: dismissedRecipeIds(events),
     }),
-    [profile, kitchen.items, kitchen.today, favorites, summaries, myRatings],
+    [profile, kitchen.items, kitchen.today, favorites, summaries, myRatings, events],
   );
 
   const rank = useCallback((filters: RecipeFilters = {}) => rankRecipes(recipes, context, filters), [recipes, context]);
@@ -79,10 +88,28 @@ export function useRecipes() {
     [favorites, repo],
   );
 
+  /** Append to the history; optimistic so "Not for us" feels instant. */
+  const logEvent = useCallback(
+    async (recipeId: string, event: RecommendationEvent["event"], surface: RecommendationSurface): Promise<Result<RecommendationEvent>> => {
+      const optimistic: RecommendationEvent = { recipeId, event, surface, createdAt: new Date().toISOString() };
+      setEvents((prev) => [optimistic, ...prev]);
+      const result = await repo.logEvent({ recipeId, event, surface });
+      setEvents((prev) => {
+        const rest = prev.filter((e) => e !== optimistic);
+        return result.ok ? [result.data, ...rest] : rest;
+      });
+      return result;
+    },
+    [repo],
+  );
+  const dismiss = useCallback((recipeId: string, surface: RecommendationSurface) => logEvent(recipeId, "dismissed", surface), [logEvent]);
+  const undismiss = useCallback((recipeId: string, surface: RecommendationSurface) => logEvent(recipeId, "undismissed", surface), [logEvent]);
+
   const rate = useCallback(
     async (input: unknown): Promise<Result<RecipeRating>> => {
       const result = await repo.rate(input);
       if (result.ok) {
+        void logEvent(result.data.recipeId, "cooked", "detail");
         setMyRatings((prev) => [result.data, ...prev]);
         const sums = await repo.summaries([result.data.recipeId]);
         if (sums.ok) {
@@ -95,7 +122,7 @@ export function useRecipes() {
       }
       return result;
     },
-    [repo],
+    [repo, logEvent],
   );
 
   return {
@@ -108,5 +135,9 @@ export function useRecipes() {
     myRatings: context.myRatings,
     toggleFavorite,
     rate,
+    dismissed: context.dismissed ?? new Set<string>(),
+    dismiss,
+    undismiss,
+    logEvent,
   };
 }

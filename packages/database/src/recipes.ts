@@ -1,6 +1,13 @@
 import { testKitchenRecipes } from "@kitchen-pantry/recipe-engine";
-import type { RatingSummary, Recipe, RecipeRating } from "@kitchen-pantry/shared-types";
-import { issuesToFieldErrors, recipeRatingInputSchema } from "@kitchen-pantry/validation";
+import type {
+  RatingSummary,
+  Recipe,
+  RecipeImage,
+  RecipeImageLicense,
+  RecipeRating,
+  RecommendationEvent,
+} from "@kitchen-pantry/shared-types";
+import { issuesToFieldErrors, recipeRatingInputSchema, recommendationEventInputSchema } from "@kitchen-pantry/validation";
 import { z } from "zod";
 import { dbFailure, type KeyValueStorage, type Result, type SupabaseLike } from "./client";
 
@@ -18,6 +25,10 @@ export interface RecipeRepository {
   /** This household's ratings, newest first. */
   myRatings(): Promise<Result<RecipeRating[]>>;
   rate(input: unknown): Promise<Result<RecipeRating>>;
+  /** This household's recent recommendation history, newest first. */
+  events(): Promise<Result<RecommendationEvent[]>>;
+  /** Append to the history (opened, cooked, "Not for us", undo). */
+  logEvent(input: unknown): Promise<Result<RecommendationEvent>>;
 }
 
 const idSchema = z.uuid();
@@ -39,6 +50,12 @@ interface RecipeRow {
   tags: string[];
   tips: string[];
   image_url: string | null;
+  image_alt: string | null;
+  image_credit: string | null;
+  image_credit_url: string | null;
+  image_source_url: string | null;
+  image_license: RecipeImageLicense | null;
+  image_is_representative: boolean | null;
   source_url: string | null;
   recipe_sources: { kind: Recipe["source"]["kind"]; name: string; website: string | null } | null;
   recipe_ingredients: Array<{
@@ -61,12 +78,27 @@ interface RecipeRow {
 }
 
 const RECIPE_SELECT =
-  "id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, source_url, " +
+  "id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, source_url, " +
   "recipe_sources(kind, name, website), " +
   "recipe_ingredients(position, component, item, original_quantity, original_unit, preparation, is_optional), " +
   "recipe_instructions(position, component, body, timer_seconds, temperature_c, safe_internal_temp_c)";
 
 const num = (v: number | string | null): number | null => (v === null ? null : Number(v));
+
+/** A photo is only shown when its licence and credit are recorded. */
+function rowImage(row: RecipeRow): RecipeImage | null {
+  if (!row.image_url || !row.image_license || !row.image_source_url) return null;
+  if (row.image_license !== "owned" && !row.image_credit) return null;
+  return {
+    url: row.image_url,
+    alt: row.image_alt ?? "",
+    license: row.image_license,
+    creditName: row.image_credit ?? "",
+    creditUrl: row.image_credit_url,
+    sourceUrl: row.image_source_url,
+    representative: row.image_is_representative ?? true,
+  };
+}
 
 export function recipeRowToRecipe(row: RecipeRow): Recipe {
   const prep = row.prep_minutes ?? 0;
@@ -85,7 +117,7 @@ export function recipeRowToRecipe(row: RecipeRow): Recipe {
     requiredEquipment: row.required_equipment ?? [],
     tags: row.tags ?? [],
     tips: row.tips ?? [],
-    imageUrl: row.image_url,
+    image: rowImage(row),
     source: {
       kind: row.recipe_sources?.kind ?? "editorial",
       name: row.recipe_sources?.name ?? "Kitchen Pantry",
@@ -146,6 +178,21 @@ function ratingRowToRating(r: RatingRow): RecipeRating {
 function invalidRating(error: z.ZodError): Result<never> {
   return { ok: false, message: "Please check your rating.", fieldErrors: issuesToFieldErrors(error) };
 }
+
+interface EventRow {
+  recipe_id: string;
+  event: RecommendationEvent["event"];
+  surface: RecommendationEvent["surface"];
+  created_at: string;
+}
+const EVENT_SELECT = "recipe_id, event, surface, created_at";
+const eventRowToEvent = (r: EventRow): RecommendationEvent => ({
+  recipeId: r.recipe_id,
+  event: r.event,
+  surface: r.surface,
+  createdAt: r.created_at,
+});
+const MAX_EVENTS = 500;
 
 export function createSupabaseRecipeRepository(db: SupabaseLike): RecipeRepository {
   return {
@@ -219,6 +266,27 @@ export function createSupabaseRecipeRepository(db: SupabaseLike): RecipeReposito
       if (error) return dbFailure("rate", error, SAVE_FAILED);
       return { ok: true, data: ratingRowToRating(data as RatingRow) };
     },
+    async events() {
+      const { data, error } = await db
+        .from("recommendation_events")
+        .select(EVENT_SELECT)
+        .order("created_at", { ascending: false })
+        .limit(MAX_EVENTS);
+      if (error) return dbFailure("recommendation events", error, LOAD_FAILED);
+      return { ok: true, data: (data as EventRow[]).map(eventRowToEvent) };
+    },
+    async logEvent(input) {
+      const parsed = recommendationEventInputSchema.safeParse(input);
+      if (!parsed.success) return { ok: false, message: "That recipe no longer exists." };
+      const v = parsed.data;
+      const { data, error } = await db
+        .from("recommendation_events")
+        .insert({ recipe_id: v.recipeId, event: v.event, surface: v.surface })
+        .select(EVENT_SELECT)
+        .single();
+      if (error) return dbFailure("log event", error, SAVE_FAILED);
+      return { ok: true, data: eventRowToEvent(data as EventRow) };
+    },
   };
 }
 
@@ -228,6 +296,7 @@ export function createSupabaseRecipeRepository(db: SupabaseLike): RecipeReposito
 
 export const LOCAL_FAVORITES_KEY = "kp-preview-favorites-v1";
 export const LOCAL_RATINGS_KEY = "kp-preview-ratings-v1";
+export const LOCAL_EVENTS_KEY = "kp-preview-recommendation-events-v1";
 
 export function createLocalRecipeRepository(
   storage: KeyValueStorage,
@@ -283,6 +352,19 @@ export function createLocalRecipeRepository(
       const rating: RecipeRating = { ...parsed.data, notes: parsed.data.notes || null, createdAt: now().toISOString() };
       await writeJson(LOCAL_RATINGS_KEY, [...(await readJson<RecipeRating[]>(LOCAL_RATINGS_KEY, [])), rating]);
       return { ok: true, data: rating };
+    },
+    async events() {
+      const all = await readJson<RecommendationEvent[]>(LOCAL_EVENTS_KEY, []);
+      return { ok: true, data: [...all].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
+    },
+    async logEvent(input) {
+      const parsed = recommendationEventInputSchema.safeParse(input);
+      if (!parsed.success) return { ok: false, message: "That recipe no longer exists." };
+      const event: RecommendationEvent = { ...parsed.data, createdAt: now().toISOString() };
+      const all = await readJson<RecommendationEvent[]>(LOCAL_EVENTS_KEY, []);
+      // Keep the newest entries only, so on-device history can't grow without bound.
+      await writeJson(LOCAL_EVENTS_KEY, [...all, event].slice(-MAX_EVENTS));
+      return { ok: true, data: event };
     },
   };
 }

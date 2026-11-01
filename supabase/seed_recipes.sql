@@ -2,15 +2,18 @@
 -- Source: packages/recipe-engine/src/catalog/test-kitchen.ts
 -- Regenerate with: npm run seed --workspace=@kitchen-pantry/recipe-engine
 -- Original Kitchen Pantry Test Kitchen recipes. No ratings are seeded.
+-- Photos are credited, free-licence photos of similar dishes (see catalog/photos.ts).
 
 -- Sheet-Pan Lemon Herb Chicken & Potatoes
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000001', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'sheet-pan-lemon-herb-chicken-potatoes', 'Sheet-Pan Lemon Herb Chicken & Potatoes', 'Crisp-skinned chicken thighs and golden potatoes roasted together on one pan, finished with bright lemon.', 'mediterranean', 1, 15, 40, 55, 4, array['oven']::text[], array['one-pan', 'weeknight']::text[], array['Dry the chicken skin well with paper towels — dry skin is crisp skin.', 'Leave space between pieces so they roast instead of steam.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000001', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'sheet-pan-lemon-herb-chicken-potatoes', 'Sheet-Pan Lemon Herb Chicken & Potatoes', 'Crisp-skinned chicken thighs and golden potatoes roasted together on one pan, finished with bright lemon.', 'mediterranean', 1, 15, 40, 55, 4, array['oven']::text[], array['one-pan', 'weeknight']::text[], array['Dry the chicken skin well with paper towels — dry skin is crisp skin.', 'Leave space between pieces so they roast instead of steam.']::text[], 'https://images.unsplash.com/photo-1768238907887-023b7ac9f450', 'Roasted chicken with herbs and vegetables in a pan', 'Anto Meneghini', 'https://unsplash.com/@antomeneghini', 'https://unsplash.com/photos/roasted-chicken-with-herbs-and-vegetables-in-a-pan-mlQ2_HrjccU', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000001';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000001', 1, null, '2 lb bone-in, skin-on chicken thighs', 'bone-in, skin-on chicken thighs', 2, 'lb', null, false),
@@ -31,13 +34,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000001', 5, null, 'Squeeze the lemon over everything, rest 5 minutes, then scatter with parsley.', 300, null, null);
 
 -- Black Bean & Cheddar Quesadillas
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000002', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'black-bean-cheddar-quesadillas', 'Black Bean & Cheddar Quesadillas', 'Melty, crisp quesadillas with cumin-spiced black beans and sweet corn — dinner in 20 minutes.', 'mexican', 1, 10, 10, 20, 2, array['stove']::text[], array['vegetarian', 'quick', 'kid-friendly']::text[], array['Medium heat is the secret: hot enough to crisp, gentle enough to melt the cheese through.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000002', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'black-bean-cheddar-quesadillas', 'Black Bean & Cheddar Quesadillas', 'Melty, crisp quesadillas with cumin-spiced black beans and sweet corn — dinner in 20 minutes.', 'mexican', 1, 10, 10, 20, 2, array['stove']::text[], array['vegetarian', 'quick', 'kid-friendly']::text[], array['Medium heat is the secret: hot enough to crisp, gentle enough to melt the cheese through.']::text[], 'https://images.unsplash.com/photo-1673990349292-ed2dfa7988c9', 'A quesadilla cut in half on a plate', 'Benjamin Guardia', 'https://unsplash.com/@benjaminguardia', 'https://unsplash.com/photos/a-plate-topped-with-a-quesadilla-cut-in-half-_BW-YmENFcM', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000002';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000002', 1, null, '1 can black beans, 15 oz, drained and rinsed', 'black beans', 1, 'can', '15 oz, drained and rinsed', false),
@@ -55,13 +60,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000002', 4, null, 'Rest 1 minute, cut into wedges and serve with salsa.', 60, null, null);
 
 -- Weeknight Vegetable Fried Rice
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000003', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'weeknight-vegetable-fried-rice', 'Weeknight Vegetable Fried Rice', 'A smart way to use leftover rice — fluffy egg, peas and carrots, and a glossy soy-sesame finish.', 'chinese', 1, 10, 12, 22, 3, array['stove']::text[], array['vegetarian', 'use-it-up', 'quick']::text[], array['Cold, day-old rice fries best. Use rice that was cooled and refrigerated promptly and eat it within 3–4 days of cooking.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000003', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'weeknight-vegetable-fried-rice', 'Weeknight Vegetable Fried Rice', 'A smart way to use leftover rice — fluffy egg, peas and carrots, and a glossy soy-sesame finish.', 'chinese', 1, 10, 12, 22, 3, array['stove']::text[], array['vegetarian', 'use-it-up', 'quick']::text[], array['Cold, day-old rice fries best. Use rice that was cooled and refrigerated promptly and eat it within 3–4 days of cooking.']::text[], 'https://images.unsplash.com/photo-1603133872878-684f208fb84b', 'Fried rice with peas and carrots on a white plate', 'Christopher Alvarenga', 'https://unsplash.com/@krizphoto', 'https://unsplash.com/photos/fried-rice-with-peas-and-carrots-rQX9eVpSFz8', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000003';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000003', 1, null, '3 cups cooked white rice, cold', 'cooked white rice', 3, 'cup', 'cold', false),
@@ -80,13 +87,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000003', 4, null, 'Stir in the soy sauce, sesame oil, eggs and green onion tops. Taste and serve.', null, null, null);
 
 -- Honey Garlic Chicken with Broccoli
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000004', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'honey-garlic-chicken-broccoli', 'Honey Garlic Chicken with Broccoli', 'Juicy chicken thigh pieces in a sticky honey-garlic glaze with crisp-tender broccoli over rice.', 'chinese', 2, 15, 20, 35, 4, array['stove']::text[], array['weeknight', 'high-protein']::text[], array['Mix the sauce before you start cooking — it comes together fast at the end.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000004', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'honey-garlic-chicken-broccoli', 'Honey Garlic Chicken with Broccoli', 'Juicy chicken thigh pieces in a sticky honey-garlic glaze with crisp-tender broccoli over rice.', 'chinese', 2, 15, 20, 35, 4, array['stove']::text[], array['weeknight', 'high-protein']::text[], array['Mix the sauce before you start cooking — it comes together fast at the end.']::text[], 'https://images.unsplash.com/photo-1633030175953-ac5a41b7353c', 'A plate of chicken and broccoli', 'IamCristian', 'https://unsplash.com/@iamcristian', 'https://unsplash.com/photos/a-plate-of-broccoli-and-chicken-on-a-table-yF2Gkkwd6Ak', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000004';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000004', 1, null, '1½ lb boneless chicken thighs, cut into 1-inch pieces', 'boneless chicken thighs', 1.5, 'lb', 'cut into 1-inch pieces', false),
@@ -109,13 +118,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000004', 5, null, 'Toss the broccoli back in and serve over rice with sesame seeds.', null, null, null);
 
 -- Smoky Turkey & Black Bean Chili
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000005', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'turkey-black-bean-chili', 'Smoky Turkey & Black Bean Chili', 'A hearty, freezer-friendly chili with smoked paprika and plenty of beans.', 'american', 2, 15, 45, 60, 6, array['stove']::text[], array['meal-prep', 'freezer-friendly', 'high-protein']::text[], array['Chili tastes even better the next day. Cool it quickly and refrigerate within 2 hours.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000005', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'turkey-black-bean-chili', 'Smoky Turkey & Black Bean Chili', 'A hearty, freezer-friendly chili with smoked paprika and plenty of beans.', 'american', 2, 15, 45, 60, 6, array['stove']::text[], array['meal-prep', 'freezer-friendly', 'high-protein']::text[], array['Chili tastes even better the next day. Cool it quickly and refrigerate within 2 hours.']::text[], 'https://images.unsplash.com/photo-1790701909034-6c7b45c7b58a', 'A bowl of chili topped with cheese, sour cream and green onions', 'Chad Montano', 'https://unsplash.com/@briewilly', 'https://unsplash.com/photos/chili-bowl-with-cheese-and-cream-HNVi6m5KCr8', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000005';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000005', 1, null, '1¼ lb ground turkey', 'ground turkey', 1.25, 'lb', null, false),
@@ -139,13 +150,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000005', 4, null, 'Taste for salt and spice. Serve with sour cream.', null, null, null);
 
 -- Roasted Salmon with Lemon-Dill Yogurt
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000006', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'salmon-lemon-dill-yogurt-green-beans', 'Roasted Salmon with Lemon-Dill Yogurt', 'Tender roasted salmon and green beans with a cool, garlicky dill yogurt sauce.', 'mediterranean', 2, 10, 15, 25, 4, array['oven']::text[], array['high-protein', 'quick', 'healthy']::text[], '{}'::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000006', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'salmon-lemon-dill-yogurt-green-beans', 'Roasted Salmon with Lemon-Dill Yogurt', 'Tender roasted salmon and green beans with a cool, garlicky dill yogurt sauce.', 'mediterranean', 2, 10, 15, 25, 4, array['oven']::text[], array['high-protein', 'quick', 'healthy']::text[], '{}'::text[], 'https://images.unsplash.com/photo-1748712831461-9fbf45338e13', 'Salmon fillet with green vegetables and sauce', 'Ксения Лунарис', 'https://unsplash.com/@kseniavisuals', 'https://unsplash.com/photos/grilled-salmon-with-asparagus-and-sauce-C9XlhByIf70', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000006';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000006', 1, 'Salmon & beans', '4 salmon fillets, about 6 oz each', 'salmon fillets', 4, null, 'about 6 oz each', false),
@@ -165,13 +178,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000006', 4, null, 'Meanwhile, stir the yogurt, dill, garlic, lemon juice and a pinch of salt. Serve with the salmon.', null, null, null);
 
 -- Creamy Tomato & Spinach Penne
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000007', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'creamy-tomato-spinach-penne', 'Creamy Tomato & Spinach Penne', 'A silky tomato-cream sauce with garlic, wilted spinach and Parmesan — on the table in 30 minutes.', 'italian', 2, 10, 20, 30, 4, array['stove']::text[], array['vegetarian', 'weeknight', 'use-it-up']::text[], array['Save a mug of pasta water before draining — a splash makes the sauce cling.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000007', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'creamy-tomato-spinach-penne', 'Creamy Tomato & Spinach Penne', 'A silky tomato-cream sauce with garlic, wilted spinach and Parmesan — on the table in 30 minutes.', 'italian', 2, 10, 20, 30, 4, array['stove']::text[], array['vegetarian', 'weeknight', 'use-it-up']::text[], array['Save a mug of pasta water before draining — a splash makes the sauce cling.']::text[], 'https://images.unsplash.com/photo-1777333033368-6bbb5d022a08', 'Penne in a creamy tomato sauce', 'Brelyn Bashrum', 'https://unsplash.com/@brelynkk', 'https://unsplash.com/photos/penne-pasta-with-creamy-tomato-sauce-on-a-white-plate-nfZlM7xe1k4', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000007';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000007', 1, null, '12 oz penne', 'penne', 12, 'oz', null, false),
@@ -191,13 +206,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000007', 4, null, 'Toss in the pasta, Parmesan and a splash of pasta water until glossy. Season to taste.', null, null, null);
 
 -- Crispy Chickpea Tacos with Lime Slaw
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000008', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'air-fryer-crispy-chickpea-tacos', 'Crispy Chickpea Tacos with Lime Slaw', 'Smoky air-fried chickpeas, crunchy cabbage slaw and creamy avocado in warm corn tortillas.', 'mexican', 2, 15, 15, 30, 4, array['air_fryer']::text[], array['vegan', 'budget']::text[], array['No air fryer? Roast the chickpeas at 425°F for 20–25 minutes, shaking the pan halfway.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000008', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'air-fryer-crispy-chickpea-tacos', 'Crispy Chickpea Tacos with Lime Slaw', 'Smoky air-fried chickpeas, crunchy cabbage slaw and creamy avocado in warm corn tortillas.', 'mexican', 2, 15, 15, 30, 4, array['air_fryer']::text[], array['vegan', 'budget']::text[], array['No air fryer? Roast the chickpeas at 425°F for 20–25 minutes, shaking the pan halfway.']::text[], 'https://images.unsplash.com/photo-1578880711837-b028df1bcd06', 'Tacos on a wooden board', 'Jakob Owens', 'https://unsplash.com/@jakobowens1', 'https://unsplash.com/photos/a-couple-of-tacos-sitting-on-top-of-a-wooden-cutting-board-vw7cL9CyvlE', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000008';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000008', 1, null, '2 cans chickpeas, 15 oz each, drained and patted very dry', 'chickpeas', 2, 'can', '15 oz each, drained and patted very dry', false),
@@ -219,13 +236,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000008', 4, null, 'Warm the tortillas in a dry skillet. Fill with chickpeas, slaw, avocado and cilantro; serve with lime wedges.', null, null, null);
 
 -- Red Wine Braised Short Ribs
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000009', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'red-wine-braised-short-ribs', 'Red Wine Braised Short Ribs', 'Deeply browned short ribs braised low and slow until spoon-tender in a glossy red wine sauce.', 'french', 3, 30, 180, 210, 4, array['stove', 'oven', 'dutch_oven']::text[], array['weekend', 'make-ahead']::text[], array['Salt the ribs up to a day ahead (uncovered in the fridge) for deeper seasoning.', 'Braise a day early and chill: the fat sets on top and lifts right off.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000009', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'red-wine-braised-short-ribs', 'Red Wine Braised Short Ribs', 'Deeply browned short ribs braised low and slow until spoon-tender in a glossy red wine sauce.', 'french', 3, 30, 180, 210, 4, array['stove', 'oven', 'dutch_oven']::text[], array['weekend', 'make-ahead']::text[], array['Salt the ribs up to a day ahead (uncovered in the fridge) for deeper seasoning.', 'Braise a day early and chill: the fat sets on top and lifts right off.']::text[], 'https://images.unsplash.com/photo-1747972312968-daeb233e6bcb', 'A braised short rib on a plate', 'hongzhou qian', 'https://unsplash.com/@shyuncle', 'https://unsplash.com/photos/braised-short-rib-garnished-with-microgreens-on-a-plate-hzxOdom4InE', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000009';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000009', 1, null, '4 lb bone-in beef short ribs', 'bone-in beef short ribs', 4, 'lb', null, false),
@@ -251,13 +270,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000009', 6, null, 'Lift out the ribs. Skim the fat, strain the liquid and boil until it coats a spoon. Season and spoon over the ribs.', null, null, null);
 
 -- Peanut Noodles with Chicken & Crunchy Vegetables
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000010', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'peanut-noodles-chicken-crunchy-vegetables', 'Peanut Noodles with Chicken & Crunchy Vegetables', 'Slurpable noodles in a tangy peanut sauce with seared chicken, cucumber, carrot and lime.', 'thai', 2, 20, 15, 35, 4, array['stove']::text[], array['high-protein', 'make-ahead']::text[], '{}'::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000010', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'peanut-noodles-chicken-crunchy-vegetables', 'Peanut Noodles with Chicken & Crunchy Vegetables', 'Slurpable noodles in a tangy peanut sauce with seared chicken, cucumber, carrot and lime.', 'thai', 2, 20, 15, 35, 4, array['stove']::text[], array['high-protein', 'make-ahead']::text[], '{}'::text[], 'https://images.unsplash.com/photo-1781332152753-1199601d73d2', 'Chicken noodles with cucumber and carrot', 'Zayed Ahmed Zadu', 'https://unsplash.com/@zayed_ahmed_zadu', 'https://unsplash.com/photos/delicious-chicken-noodles-garnished-with-cucumber-and-carrots-p-uqtfkS0BI', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000010';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000010', 1, 'Noodles', '8 oz rice noodles', 'rice noodles', 8, 'oz', null, false),
@@ -284,13 +305,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000010', 4, null, 'Toss the noodles with most of the sauce, the vegetables and chicken. Top with peanuts and the rest of the sauce; serve with lime.', null, null, null);
 
 -- Yogurt-Spiced Roast Chicken with Cardamom Rice
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000011', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'yogurt-spiced-chicken-cardamom-rice', 'Yogurt-Spiced Roast Chicken with Cardamom Rice', 'Warmly spiced, yogurt-marinated chicken roasted until charred at the edges, with a fragrant buttery pilaf.', 'indian', 3, 25, 35, 60, 4, array['stove', 'oven']::text[], array['make-ahead', 'high-protein']::text[], array['Marinate at least 1 hour and up to 12, always in the fridge.', 'Resting the rice off the heat, lid on, is what makes every grain separate.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000011', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'yogurt-spiced-chicken-cardamom-rice', 'Yogurt-Spiced Roast Chicken with Cardamom Rice', 'Warmly spiced, yogurt-marinated chicken roasted until charred at the edges, with a fragrant buttery pilaf.', 'indian', 3, 25, 35, 60, 4, array['stove', 'oven']::text[], array['make-ahead', 'high-protein']::text[], array['Marinate at least 1 hour and up to 12, always in the fridge.', 'Resting the rice off the heat, lid on, is what makes every grain separate.']::text[], 'https://images.unsplash.com/photo-1708184528306-f75a0a5118ee', 'Spiced chicken and rice with sauces', 'Md Shohan Ridoy', 'https://unsplash.com/@cherrylake', 'https://unsplash.com/photos/a-plate-of-chicken-and-rice-with-sauces-LPYP9_8dscU', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000011';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000011', 1, 'Chicken', '2 lb boneless chicken thighs', 'boneless chicken thighs', 2, 'lb', null, false),
@@ -323,13 +346,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000011', 7, 'To serve', 'Serve the chicken over the rice with cilantro and lemon wedges.', null, null, null);
 
 -- Golden Mushroom & Thyme Risotto
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000012', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'mushroom-thyme-risotto', 'Golden Mushroom & Thyme Risotto', 'Hard-seared mushrooms folded into a creamy, loose risotto finished with butter and Parmesan.', 'italian', 3, 15, 35, 50, 4, array['stove']::text[], array['vegetarian']::text[], array['Sear the mushrooms in batches without stirring too soon — crowding makes them steam.', 'Finished risotto should flow slowly when you tilt the plate.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000012', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'mushroom-thyme-risotto', 'Golden Mushroom & Thyme Risotto', 'Hard-seared mushrooms folded into a creamy, loose risotto finished with butter and Parmesan.', 'italian', 3, 15, 35, 50, 4, array['stove']::text[], array['vegetarian']::text[], array['Sear the mushrooms in batches without stirring too soon — crowding makes them steam.', 'Finished risotto should flow slowly when you tilt the plate.']::text[], 'https://images.unsplash.com/photo-1572424075298-e17403e6f3bf', 'Mushroom risotto topped with parsley and parmesan', 'khloe arledge', 'https://unsplash.com/@khloephoto', 'https://unsplash.com/photos/mushroom-risotto-dinner-with-parmesan-gg_PV3EvCaM', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000012';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000012', 1, null, '6 cups vegetable broth, kept at a bare simmer', 'vegetable broth', 6, 'cup', 'kept at a bare simmer', false),
@@ -352,13 +377,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000012', 5, null, 'Off the heat, beat in the remaining butter, Parmesan and thyme. Fold in the mushrooms, add a splash of broth to loosen, and rest 1 minute.', 60, null, null);
 
 -- Pan-Roasted Chicken Supreme, Pommes Purée, Glazed Carrots & Tarragon Jus
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000013', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'chicken-supreme-pommes-puree-tarragon-jus', 'Pan-Roasted Chicken Supreme, Pommes Purée, Glazed Carrots & Tarragon Jus', 'A restaurant-style composed plate: crisp-skinned chicken, silky buttered potato purée, glossy carrots and a bright tarragon pan jus.', 'french', 4, 45, 60, 105, 2, array['stove', 'oven']::text[], array['date-night', 'composed-plate']::text[], array['Service timeline: start the potatoes first, carrots 25 minutes before plating, chicken 25 minutes before, jus while the chicken rests.', 'Salt the chicken 1 hour ahead (or overnight, uncovered in the fridge) for crisper skin.', 'Spoon the jus around the chicken, not over the skin, so it stays crisp.', 'Warm the plates in a low oven before plating.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000013', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'chicken-supreme-pommes-puree-tarragon-jus', 'Pan-Roasted Chicken Supreme, Pommes Purée, Glazed Carrots & Tarragon Jus', 'A restaurant-style composed plate: crisp-skinned chicken, silky buttered potato purée, glossy carrots and a bright tarragon pan jus.', 'french', 4, 45, 60, 105, 2, array['stove', 'oven']::text[], array['date-night', 'composed-plate']::text[], array['Service timeline: start the potatoes first, carrots 25 minutes before plating, chicken 25 minutes before, jus while the chicken rests.', 'Salt the chicken 1 hour ahead (or overnight, uncovered in the fridge) for crisper skin.', 'Spoon the jus around the chicken, not over the skin, so it stays crisp.', 'Warm the plates in a low oven before plating.']::text[], 'https://images.unsplash.com/photo-1788462612914-44793f2980f2', 'Chicken breast with sauce, mashed potatoes and vegetables', 'gabbiistudios', 'https://unsplash.com/@gabrielonodegba', 'https://unsplash.com/photos/chicken-dinner-with-mushroom-sauce-UdO-JP67I-4', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000013';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000013', 1, 'Chicken', '2 chicken supremes, skin-on breasts with wing bone', 'chicken supremes', 2, null, 'skin-on breasts with wing bone', false),
@@ -397,13 +424,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000013', 12, 'Plating', 'Spoon a swoosh of purée onto warm plates. Set the chicken beside it, add the carrots, and spoon the jus around — not over the skin.', null, null, null);
 
 -- Seared Scallops, Beurre Blanc, Pea Purée & Crispy Shallots
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000014', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'seared-scallops-beurre-blanc-pea-puree', 'Seared Scallops, Beurre Blanc, Pea Purée & Crispy Shallots', 'Deeply caramelised scallops on vivid pea purée with a classic beurre blanc and crisp shallot rings — a chef''s-table plate.', 'french', 5, 40, 30, 70, 2, array['stove', 'blender']::text[], array['date-night', 'composed-plate', 'technique']::text[], array['Buy dry-packed scallops; wet-packed ones release water and won''t brown.', 'Beurre blanc is an emulsion: keep it warm, never hot. Above roughly 135°F it can break.', 'If the beurre blanc breaks, whisk a spoonful of cream in a clean pan and slowly whisk the broken sauce into it.', 'USDA guidance for scallops is 145°F, or until the flesh is opaque and firm.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000014', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'seared-scallops-beurre-blanc-pea-puree', 'Seared Scallops, Beurre Blanc, Pea Purée & Crispy Shallots', 'Deeply caramelised scallops on vivid pea purée with a classic beurre blanc and crisp shallot rings — a chef''s-table plate.', 'french', 5, 40, 30, 70, 2, array['stove', 'blender']::text[], array['date-night', 'composed-plate', 'technique']::text[], array['Buy dry-packed scallops; wet-packed ones release water and won''t brown.', 'Beurre blanc is an emulsion: keep it warm, never hot. Above roughly 135°F it can break.', 'If the beurre blanc breaks, whisk a spoonful of cream in a clean pan and slowly whisk the broken sauce into it.', 'USDA guidance for scallops is 145°F, or until the flesh is opaque and firm.']::text[], 'https://images.unsplash.com/photo-1732321501974-1ec272b68ecf', 'Seared scallops in sauce', 'Meg von Haartman', 'https://unsplash.com/@traveleroohlala', 'https://unsplash.com/photos/a-green-plate-topped-with-scallops-covered-in-sauce-Wf9aOQoBJ7g', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000014';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000014', 1, 'Pea purée', '2 cups frozen peas', 'frozen peas', 2, 'cup', null, false),
@@ -434,13 +463,15 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('7e570000-0000-4000-8000-000000000014', 8, 'Plating', 'Spread pea purée on warm plates, set four scallops on each, spoon beurre blanc around and finish with crispy shallots and a pinch of flaky salt.', null, null, null);
 
 -- Creamy Garlic Chicken with Spinach & Parmesan
-insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, visibility, is_mock)
-values ('7e570000-0000-4000-8000-000000000015', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'creamy-garlic-chicken-spinach-parmesan', 'Creamy Garlic Chicken with Spinach & Parmesan', 'Golden chicken thighs in a garlicky Parmesan cream sauce with wilted spinach — great for using up cream and greens.', 'italian', 2, 10, 25, 35, 4, array['stove']::text[], array['use-it-up', 'weeknight', 'high-protein']::text[], array['Serve with crusty bread, rice or pasta to catch every bit of sauce.']::text[], 'public', false)
+insert into public.recipes (id, source_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock)
+values ('7e570000-0000-4000-8000-000000000015', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'creamy-garlic-chicken-spinach-parmesan', 'Creamy Garlic Chicken with Spinach & Parmesan', 'Golden chicken thighs in a garlicky Parmesan cream sauce with wilted spinach — great for using up cream and greens.', 'italian', 2, 10, 25, 35, 4, array['stove']::text[], array['use-it-up', 'weeknight', 'high-protein']::text[], array['Serve with crusty bread, rice or pasta to catch every bit of sauce.']::text[], 'https://images.unsplash.com/photo-1762631383471-41fca144ca64', 'Cream sauce being poured over chicken with vegetables', 'joe boshra', 'https://unsplash.com/@joestudios', 'https://unsplash.com/photos/sauce-being-poured-over-a-dish-with-vegetables-QTh0Lbiju80', 'unsplash', true, 'public', false)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
   skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
   total_minutes = excluded.total_minutes, servings = excluded.servings, required_equipment = excluded.required_equipment,
-  tags = excluded.tags, tips = excluded.tips;
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative;
 delete from public.recipe_ingredients where recipe_id = '7e570000-0000-4000-8000-000000000015';
 insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
   ('7e570000-0000-4000-8000-000000000015', 1, null, '1½ lb boneless chicken thighs', 'boneless chicken thighs', 1.5, 'lb', null, false),

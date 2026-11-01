@@ -84,6 +84,7 @@ Database checks (with local Supabase running):
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/rls_smoke_test.sql
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/pantry_smoke_test.sql
 psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/recipes_smoke_test.sql
+psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -f supabase/tests/recommendations_smoke_test.sql
 ```
 
 Every result line should end in `t`.
@@ -123,10 +124,21 @@ supabase/
   migrations/          Schema, row-level security, onboarding functions
   seed.sql             Reference data only — no fake prices, stores or ratings
   seed_recipes.sql     Generated from the recipe catalogue (don't edit by hand)
-  tests/               SQL smoke tests (RLS, pantry, recipes)
+  tests/               SQL smoke tests (RLS, pantry, recipes, recommendation history)
 docs/ARCHITECTURE.md   Decisions, risks, roadmap
 docs/specs/            Product specs (platform, AI & specials, one store vs best deals)
 ```
+
+## Recipe photos
+
+Recipe photos are free-licence photos of a **similar dish** (not our exact recipe) from Unsplash, each credited to its photographer and labelled "Similar dish" in the app. They're listed in `packages/recipe-engine/src/catalog/photos.ts`. Rules:
+
+- Only use photos whose licence you've checked on the photo's own page (Unsplash, Pexels, or Wikimedia Commons with CC0 / CC BY / CC BY-SA). Never copy photos from recipe sites, blogs or search results — they're copyrighted.
+- Only `images.unsplash.com`, `images.pexels.com` and `upload.wikimedia.org` are accepted; validation and a database constraint reject anything else, and every photo needs a credit and a source page.
+- When you have your own photos, set `license: "owned"` and `representative: false`.
+- If a photo fails to load, the app falls back to the coloured recipe tile.
+
+After changing photos, run `npm run seed --workspace=@kitchen-pantry/recipe-engine` to regenerate `supabase/seed_recipes.sql`.
 
 ## Troubleshooting
 

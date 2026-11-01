@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMinutes, type RankedRecipe } from "@kitchen-pantry/recipe-engine";
-import { Clock, Heart, Sparkles, Star, TriangleAlert } from "lucide-react";
+import { Clock, EyeOff, Heart, Sparkles, Star, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { RecipeArt } from "./recipe-art";
@@ -41,10 +41,13 @@ export function SkillDots({ level }: { level: number }) {
 export function RecipeCard({
   ranked,
   onToggleFavorite,
+  onDismiss,
   compact = false,
 }: {
   ranked: RankedRecipe;
   onToggleFavorite?: () => void;
+  /** "Not for us": hides the recipe from suggestions (undoable). */
+  onDismiss?: () => void;
   compact?: boolean;
 }) {
   const { recipe, coverage, reasons, cautions, favorite } = ranked;
@@ -54,7 +57,7 @@ export function RecipeCard({
   return (
     <article className="group relative flex overflow-hidden rounded-card bg-surface transition-shadow hover:shadow-[0_6px_24px_rgb(0_0_0/0.06)] sm:flex-col">
       <RecipeArt recipe={recipe} className={cn("shrink-0", compact ? "w-28 sm:h-36 sm:w-full" : "w-32 sm:h-44 sm:w-full")} />
-      <div className="flex min-w-0 flex-1 flex-col p-4 sm:p-5">
+      <div className={cn("flex min-w-0 flex-1 flex-col p-4 sm:p-5", onDismiss && "pr-12 sm:pr-5")}>
         <h3 className="text-[17px] font-semibold leading-snug sm:text-lg">
           <Link href={`/recipes/${recipe.slug}`} className="after:absolute after:inset-0 hover:underline">
             {recipe.title}
@@ -103,6 +106,17 @@ export function RecipeCard({
           className="absolute top-2.5 left-2.5 z-10 grid size-10 place-items-center rounded-full bg-background/90 shadow-sm backdrop-blur transition-transform active:scale-90 sm:right-2.5 sm:left-auto"
         >
           <Heart className={cn("size-5", favorite ? "fill-danger text-danger" : "text-muted")} aria-hidden />
+        </button>
+      ) : null}
+      {onDismiss ? (
+        <button
+          type="button"
+          onClick={onDismiss}
+          aria-label={`Not for us: hide ${recipe.title} from suggestions`}
+          title="Not for us"
+          className="absolute top-2.5 right-2.5 z-10 grid size-10 place-items-center rounded-full bg-background/90 shadow-sm backdrop-blur transition-transform active:scale-90 sm:right-14"
+        >
+          <EyeOff className="size-[18px] text-muted" aria-hidden />
         </button>
       ) : null}
     </article>

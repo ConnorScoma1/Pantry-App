@@ -1,8 +1,9 @@
 "use client";
 
 import { cuisines, skillLevels } from "@kitchen-pantry/shared-types";
-import { ChevronDown, Search, ShieldAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronDown, EyeOff, Search, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useProfile } from "@/components/profile/profile-provider";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Card, PageHeader } from "@/components/ui/card";
@@ -19,8 +20,10 @@ export function RecipesView() {
   const [cuisine, setCuisine] = useState<string>("");
   const [stretch, setStretch] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
+  const [showDismissed, setShowDismissed] = useState(false);
+  const [lastDismissed, setLastDismissed] = useState<{ id: string; title: string } | null>(null);
 
-  const { recipes, hidden } = useMemo(
+  const { recipes, hidden, dismissed } = useMemo(
     () =>
       data.rank({
         query,
@@ -119,11 +122,65 @@ export function RecipesView() {
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recipes.map((r) => (
-              <RecipeCard key={r.recipe.id} ranked={r} onToggleFavorite={() => void data.toggleFavorite(r.recipe.id)} />
+              <RecipeCard
+                key={r.recipe.id}
+                ranked={r}
+                onToggleFavorite={() => void data.toggleFavorite(r.recipe.id)}
+                onDismiss={() => {
+                  setLastDismissed({ id: r.recipe.id, title: r.recipe.title });
+                  void data.dismiss(r.recipe.id, "recipes");
+                }}
+              />
             ))}
           </div>
         </>
       )}
+
+      {lastDismissed && data.dismissed.has(lastDismissed.id) ? (
+        <UndoToast
+          message={`Hidden ${lastDismissed.title}`}
+          onUndo={() => {
+            void data.undismiss(lastDismissed.id, "recipes");
+            setLastDismissed(null);
+          }}
+          onTimeout={() => setLastDismissed(null)}
+        />
+      ) : null}
+
+      {!data.loading && dismissed.length > 0 ? (
+        <Card className="mt-6">
+          <button
+            type="button"
+            onClick={() => setShowDismissed((v) => !v)}
+            aria-expanded={showDismissed}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span className="flex items-center gap-2.5">
+              <EyeOff className="size-5 text-muted" aria-hidden />
+              <span className="text-[16px] font-semibold">
+                {dismissed.length} {dismissed.length === 1 ? "recipe" : "recipes"} you said &ldquo;Not for us&rdquo; to
+              </span>
+            </span>
+            <ChevronDown className={`size-5 text-muted transition-transform ${showDismissed ? "rotate-180" : ""}`} aria-hidden />
+          </button>
+          {showDismissed ? (
+            <ul className="mt-3 space-y-2 text-[15px]">
+              {dismissed.map((d) => (
+                <li key={d.recipe.id} className="flex items-center justify-between gap-3 rounded-2xl bg-background px-4 py-3">
+                  <span className="font-medium">{d.recipe.title}</span>
+                  <button
+                    type="button"
+                    onClick={() => void data.undismiss(d.recipe.id, "recipes")}
+                    className="shrink-0 rounded-full border border-border px-3 py-1.5 text-[14px] font-semibold hover:bg-surface"
+                  >
+                    Show again
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Card>
+      ) : null}
 
       {!data.loading && hidden.length > 0 ? (
         <Card className="mt-6">
@@ -159,5 +216,35 @@ export function RecipesView() {
         appear once households rate them — we never invent ratings.
       </p>
     </div>
+  );
+}
+
+/**
+ * Bottom toast with Undo. Rendered into <body> so the page's entry
+ * animation (a transform) can't trap its fixed position.
+ */
+function UndoToast({ message, onUndo, onTimeout }: { message: string; onUndo: () => void; onTimeout: () => void }) {
+  // Keep the latest callback without restarting the 8-second timer on every render.
+  const timeout = useRef(onTimeout);
+  timeout.current = onTimeout;
+  useEffect(() => {
+    const t = window.setTimeout(() => timeout.current(), 8000);
+    return () => window.clearTimeout(t);
+  }, [message]);
+  return createPortal(
+    <div
+      role="status"
+      className="fixed inset-x-4 bottom-28 z-40 mx-auto flex max-w-md items-center justify-between gap-3 rounded-2xl bg-foreground px-4 py-3 text-[15px] text-background shadow-lg lg:bottom-8"
+    >
+      <span className="min-w-0 truncate">{message}</span>
+      <button
+        type="button"
+        onClick={onUndo}
+        className="shrink-0 rounded-full px-3 py-1.5 font-semibold underline-offset-2 hover:underline"
+      >
+        Undo
+      </button>
+    </div>,
+    document.body,
   );
 }

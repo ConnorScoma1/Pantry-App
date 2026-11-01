@@ -12,6 +12,8 @@ import type {
  * Temperatures are written in °F (how US home cooks think) and stored in °C.
  */
 
+import { TEST_KITCHEN_PHOTOS } from "./photos";
+
 export const fToC = (f: number): number => Math.round((((f - 32) * 5) / 9) * 10) / 10;
 
 export interface IngredientDef {
@@ -119,7 +121,7 @@ export function defineRecipe(def: RecipeDef): Recipe {
     requiredEquipment: def.equipment,
     tags: def.tags ?? [],
     tips: def.tips ?? [],
-    imageUrl: null,
+    image: TEST_KITCHEN_PHOTOS[def.slug] ?? null,
     source: TEST_KITCHEN_SOURCE,
     ingredients,
     steps,

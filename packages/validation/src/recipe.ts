@@ -28,6 +28,31 @@ export const recipeStepSchema = z.object({
   safeInternalTempC: z.number().min(40).max(100).nullable(),
 });
 
+/** Hosts whose licences we've checked. Anything else is rejected. */
+export const ALLOWED_IMAGE_HOSTS = ["images.unsplash.com", "images.pexels.com", "upload.wikimedia.org"] as const;
+
+const allowedImageUrl = z.url().refine(
+  (u) => {
+    try {
+      const url = new URL(u);
+      return url.protocol === "https:" && (ALLOWED_IMAGE_HOSTS as readonly string[]).includes(url.hostname);
+    } catch {
+      return false;
+    }
+  },
+  { message: "Images must be https and come from an approved, licensed source" },
+);
+
+export const recipeImageSchema = z.object({
+  url: allowedImageUrl,
+  alt: z.string().trim().min(5).max(200),
+  license: z.enum(["unsplash", "pexels", "cc0", "cc-by", "cc-by-sa", "owned"]),
+  creditName: z.string().trim().min(1).max(120),
+  creditUrl: z.url().nullable(),
+  sourceUrl: z.url(),
+  representative: z.boolean(),
+});
+
 export const recipeSchema = z
   .object({
     id: z.uuid(),
@@ -43,7 +68,7 @@ export const recipeSchema = z
     requiredEquipment: z.array(equipmentSchema).min(1),
     tags: z.array(z.string().regex(/^[a-z0-9-]+$/)).max(20),
     tips: z.array(z.string().min(5).max(400)).max(12),
-    imageUrl: z.url().nullable(),
+    image: recipeImageSchema.nullable(),
     source: z.object({
       kind: z.enum(["licensed_api", "partner", "user_submitted", "original", "editorial", "ai_generated"]),
       name: z.string().min(2).max(120),
@@ -77,3 +102,10 @@ export const recipeRatingInputSchema = z.object({
   notes: z.string().trim().max(2000).nullable(),
 });
 export type RecipeRatingInput = z.output<typeof recipeRatingInputSchema>;
+
+export const recommendationEventInputSchema = z.object({
+  recipeId: z.uuid(),
+  event: z.enum(["shown", "opened", "cooked", "dismissed", "undismissed"]),
+  surface: z.enum(["home", "recipes", "detail", "plan"]),
+});
+export type RecommendationEventInput = z.infer<typeof recommendationEventInputSchema>;

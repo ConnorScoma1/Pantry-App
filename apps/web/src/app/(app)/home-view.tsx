@@ -95,7 +95,12 @@ export function HomeView() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-3">
             {forYou.map((r) => (
-              <RecipeCard key={r.recipe.id} ranked={r} onToggleFavorite={() => void recipesData.toggleFavorite(r.recipe.id)} />
+              <RecipeCard
+                key={r.recipe.id}
+                ranked={r}
+                onToggleFavorite={() => void recipesData.toggleFavorite(r.recipe.id)}
+                onDismiss={() => void recipesData.dismiss(r.recipe.id, "home")}
+              />
             ))}
           </div>
         )}

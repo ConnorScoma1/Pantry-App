@@ -11,6 +11,7 @@ import {
   type Recipe,
   type RecipeIngredient,
   type RecipeRating,
+  type RecommendationEvent,
 } from "@kitchen-pantry/shared-types";
 import { matchesAnyTerm } from "./allergens";
 import { checkEligibility, recommendationLabel, type EligibilityResult, type RecommendationLabel } from "./eligibility";
@@ -174,6 +175,8 @@ export interface RankingContext {
   ratings: ReadonlyMap<string, RatingSummary>;
   /** This household's own most recent rating per recipe. */
   myRatings: ReadonlyMap<string, RecipeRating>;
+  /** Recipes the household said "Not for us" to (latest event wins). */
+  dismissed?: ReadonlySet<string>;
 }
 
 export interface RankedRecipe {
@@ -185,6 +188,8 @@ export interface RankedRecipe {
   cautions: string[];
   coverage: PantryCoverage;
   eligibility: EligibilityResult;
+  /** The household said "Not for us"; kept out of suggestions until undone. */
+  dismissed: boolean;
   /** Passes hard filters (allergies, diet, never-recommend, equipment). */
   allowed: boolean;
   aboveSkill: boolean;
@@ -323,6 +328,12 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
     if (rating.count >= 20 && rating.average >= 4.3) reasons.push([7, `Rated ${rating.average.toFixed(1)}★ by ${rating.count} households`]);
   }
   if (mine) {
+    // Avoid repeats: anything cooked in the last week sinks, gently.
+    const daysAgo = daysBetween(mine.createdAt.slice(0, 10), ctx.today);
+    if (daysAgo >= 0 && daysAgo < 7) {
+      score -= 18 - daysAgo * 2;
+      cautions.push(daysAgo === 0 ? "You made this today" : `You made this ${daysAgo} day${daysAgo === 1 ? "" : "s"} ago`);
+    }
     if (mine.wouldCookAgain === false || mine.overall <= 2) {
       score -= 25;
       cautions.push("You rated this low last time");
@@ -352,6 +363,7 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
     coverage,
     eligibility,
     allowed: eligibility.eligible,
+    dismissed: ctx.dismissed?.has(recipe.id) ?? false,
     aboveSkill,
     label: recommendationLabel(rating ? { average: rating.average, count: rating.count } : null, recipe.source.kind),
     rating,
@@ -373,15 +385,19 @@ export interface RankedList {
   recipes: RankedRecipe[];
   /** Recipes hidden by hard filters, with the reason — shown on request. */
   hidden: RankedRecipe[];
+  /** Recipes the household hid with "Not for us" — listed so they can undo it. */
+  dismissed: RankedRecipe[];
 }
 
 export function rankRecipes(recipes: Recipe[], ctx: RankingContext, filters: RecipeFilters = {}): RankedList {
   const q = filters.query?.trim().toLowerCase() ?? "";
   const ranked = recipes.map((r) => rankRecipe(r, ctx));
   const hidden = ranked.filter((r) => !r.allowed);
+  const dismissed = ranked.filter((r) => r.allowed && r.dismissed);
   const visible = ranked.filter(
     (r) =>
       r.allowed &&
+      !r.dismissed &&
       (filters.includeAboveSkill || !r.aboveSkill) &&
       (!q ||
         r.recipe.title.toLowerCase().includes(q) ||
@@ -393,7 +409,26 @@ export function rankRecipes(recipes: Recipe[], ctx: RankingContext, filters: Rec
       (filters.maxMissing === null || filters.maxMissing === undefined || r.coverage.missing.length <= filters.maxMissing),
   );
   visible.sort((a, b) => b.score - a.score || a.recipe.totalMinutes - b.recipe.totalMinutes);
-  return { recipes: visible, hidden };
+  return { recipes: visible, hidden, dismissed };
+}
+
+function daysBetween(fromIso: string, toIso: string): number {
+  const ms = Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`);
+  return Math.round(ms / 86_400_000);
+}
+
+/**
+ * Recipes currently hidden with "Not for us": for each recipe, the latest
+ * dismissed/undismissed event decides. Events may arrive in any order.
+ */
+export function dismissedRecipeIds(events: readonly RecommendationEvent[]): Set<string> {
+  const latest = new Map<string, RecommendationEvent>();
+  for (const e of events) {
+    if (e.event !== "dismissed" && e.event !== "undismissed") continue;
+    const prev = latest.get(e.recipeId);
+    if (!prev || e.createdAt >= prev.createdAt) latest.set(e.recipeId, e);
+  }
+  return new Set([...latest.values()].filter((e) => e.event === "dismissed").map((e) => e.recipeId));
 }
 
 /** Group a recipe's ingredients or steps by component, preserving order. */

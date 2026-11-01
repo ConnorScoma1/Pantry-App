@@ -13,6 +13,7 @@ import {
   Check,
   ChefHat,
   Clock,
+  EyeOff,
   Heart,
   Minus,
   Plus,
@@ -24,9 +25,9 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RatingLabel, SkillDots } from "@/components/recipes/recipe-card";
-import { RecipeArt } from "@/components/recipes/recipe-art";
+import { PhotoCredit, RecipeArt } from "@/components/recipes/recipe-art";
 import { RateSheet } from "@/components/recipes/rate-sheet";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow } from "@/components/ui/card";
@@ -40,6 +41,15 @@ export function RecipeDetailView({ slug }: { slug: string }) {
   const [servings, setServings] = useState<number | null>(null);
   const [rating, setRating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Record that the recipe was opened (once per visit) for repeat-avoidance later.
+  const logged = useRef<string | null>(null);
+  const { logEvent } = data;
+  useEffect(() => {
+    if (!recipe || logged.current === recipe.id) return;
+    logged.current = recipe.id;
+    void logEvent(recipe.id, "opened", "detail");
+  }, [recipe, logEvent]);
 
   if (data.loading) {
     return (
@@ -73,7 +83,12 @@ export function RecipeDetailView({ slug }: { slug: string }) {
       </Link>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-start">
-        <RecipeArt recipe={recipe} size="lg" className="h-52 rounded-card sm:h-72" />
+        <figure>
+          <RecipeArt recipe={recipe} size="lg" className="h-56 rounded-card sm:h-80" />
+          <figcaption>
+            <PhotoCredit recipe={recipe} className="mt-2 px-1" />
+          </figcaption>
+        </figure>
         <div>
           <p className="text-[14px] font-semibold uppercase tracking-[0.12em] text-muted">
             {recipe.cuisine ? labelFor(cuisines, recipe.cuisine) : "Recipe"}
@@ -120,7 +135,20 @@ export function RecipeDetailView({ slug }: { slug: string }) {
             <Button variant="secondary" onClick={() => setRating(true)} icon={<Star className="size-5" aria-hidden />}>
               {mine ? "Rate again" : "I cooked this"}
             </Button>
+            {ranked.allowed ? (
+              <Button
+                variant="ghost"
+                aria-pressed={ranked.dismissed}
+                onClick={() => void (ranked.dismissed ? data.undismiss(recipe.id, "detail") : data.dismiss(recipe.id, "detail"))}
+                icon={<EyeOff className="size-5" aria-hidden />}
+              >
+                {ranked.dismissed ? "Show in suggestions" : "Not for us"}
+              </Button>
+            ) : null}
           </div>
+          {ranked.dismissed ? (
+            <p className="mt-2 text-[14px] text-muted">Hidden from your suggestions. You can still open and cook it any time.</p>
+          ) : null}
           {mine ? (
             <p className="mt-2 text-[14px] text-muted">
               You rated it {mine.overall}★{mine.wouldCookAgain === false ? " and wouldn't cook it again" : ""}.

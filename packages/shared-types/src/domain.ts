@@ -175,6 +175,26 @@ export interface RecipeSourceInfo {
   url: string | null;
 }
 
+export type RecipeImageLicense = "unsplash" | "pexels" | "cc0" | "cc-by" | "cc-by-sa" | "owned";
+
+/**
+ * A photo we have the right to show, with credit. Photos from free-licence
+ * libraries usually show a *similar* dish, not our exact recipe — the UI
+ * must say so when `representative` is true.
+ */
+export interface RecipeImage {
+  url: string;
+  alt: string;
+  license: RecipeImageLicense;
+  /** Photographer / author, as the licence asks us to credit them. */
+  creditName: string;
+  creditUrl: string | null;
+  /** The photo's own page (where its licence is stated). */
+  sourceUrl: string;
+  /** True when the photo shows a similar dish rather than this exact recipe. */
+  representative: boolean;
+}
+
 export interface Recipe {
   id: Uuid;
   slug: string;
@@ -189,8 +209,8 @@ export interface Recipe {
   requiredEquipment: EquipmentCode[];
   tags: string[];
   tips: string[];
-  /** null until a licensed photo exists — never a stock or generated "food photo". */
-  imageUrl: string | null;
+  /** Only openly licensed or owned photos, always credited; null shows a typographic tile. */
+  image: RecipeImage | null;
   source: RecipeSourceInfo;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
@@ -213,6 +233,17 @@ export interface RecipeRating {
   actualMinutes: number | null;
   familyApproval: number | null;
   notes: string | null;
+  createdAt: IsoTimestamp;
+}
+
+export type RecommendationEventType = "shown" | "opened" | "cooked" | "dismissed" | "undismissed";
+export type RecommendationSurface = "home" | "recipes" | "detail" | "plan";
+
+/** Append-only history of how the household responded to a recipe. */
+export interface RecommendationEvent {
+  recipeId: Uuid;
+  event: RecommendationEventType;
+  surface: RecommendationSurface;
   createdAt: IsoTimestamp;
 }
 

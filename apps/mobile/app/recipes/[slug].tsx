@@ -9,12 +9,12 @@ import {
 import { allergens, cuisines, equipment, labelFor, skillLevels } from "@kitchen-pantry/shared-types";
 import { router, useLocalSearchParams } from "expo-router";
 import type { ComponentProps, ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Linking, Pressable, Text, View } from "react-native";
 import { Button, Notice } from "@/components/controls";
 import { PushedPage } from "@/components/recipes/page";
 import { RateSheet } from "@/components/recipes/rate-sheet";
-import { RecipeArt, ratingText, SkillDots } from "@/components/recipes/recipe-card";
+import { PhotoCredit, RecipeArt, ratingText, SkillDots } from "@/components/recipes/recipe-card";
 import { useRecipes } from "@/lib/use-recipes";
 import { useThemeColors } from "@/lib/theme";
 
@@ -47,6 +47,15 @@ function RecipeDetail({ slug }: { slug: string }) {
   const [rating, setRating] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Record that the recipe was opened (once per visit) for repeat-avoidance later.
+  const logged = useRef<string | null>(null);
+  const { logEvent } = data;
+  useEffect(() => {
+    if (!recipe || logged.current === recipe.id) return;
+    logged.current = recipe.id;
+    void logEvent(recipe.id, "opened", "detail");
+  }, [recipe, logEvent]);
+
   if (data.loading) {
     return (
       <View className="items-center py-16">
@@ -75,6 +84,7 @@ function RecipeDetail({ slug }: { slug: string }) {
   return (
     <View>
       <RecipeArt recipe={recipe} size="lg" />
+      <PhotoCredit recipe={recipe} />
 
       <Text className="mt-5 text-[13px] font-semibold uppercase tracking-widest text-muted">
         {recipe.cuisine ? labelFor(cuisines, recipe.cuisine) : "Recipe"}
@@ -121,6 +131,20 @@ function RecipeDetail({ slug }: { slug: string }) {
           onPress={() => setRating(true)}
         />
       </View>
+      {ranked.allowed ? (
+        <Button
+          className="mt-2"
+          variant="ghost"
+          icon="eye-off-outline"
+          label={ranked.dismissed ? "Show in suggestions" : "Not for us"}
+          onPress={() => void (ranked.dismissed ? data.undismiss(recipe.id, "detail") : data.dismiss(recipe.id, "detail"))}
+        />
+      ) : null}
+      {ranked.dismissed ? (
+        <Text className="mt-1 text-center text-[14px] text-muted">
+          Hidden from your suggestions. You can still open and cook it any time.
+        </Text>
+      ) : null}
       {mine ? (
         <Text className="mt-2 text-[14px] text-muted">
           You rated it {mine.overall}★{mine.wouldCookAgain === false ? " and wouldn't cook it again" : ""}.
