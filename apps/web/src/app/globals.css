@@ -82,6 +82,31 @@
   }
 }
 
+/* Recipe tiles (until licensed photography exists): hue set per cuisine. */
+.recipe-art {
+  background: hsl(var(--h) 42% 90%);
+  color: hsl(var(--h) 35% 32%);
+}
+.recipe-art-ring {
+  background: hsl(var(--h) 45% 84%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .recipe-art {
+    background: hsl(var(--h) 22% 18%);
+    color: hsl(var(--h) 40% 72%);
+  }
+  :root:not([data-theme="light"]) .recipe-art-ring {
+    background: hsl(var(--h) 22% 23%);
+  }
+}
+:root[data-theme="dark"] .recipe-art {
+  background: hsl(var(--h) 22% 18%);
+  color: hsl(var(--h) 40% 72%);
+}
+:root[data-theme="dark"] .recipe-art-ring {
+  background: hsl(var(--h) 22% 23%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -29,7 +29,18 @@ export function PlanView() {
 
   return (
     <div className="animate-enter">
-      <PageHeader title="Meal Plan" subtitle="These settings apply to every week you plan." />
+      <PageHeader
+        title="Meal Plan"
+        subtitle="These settings apply to every week you plan."
+        action={
+          <Link
+            href="/recipes"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-foreground px-5 text-[15px] font-semibold text-background hover:opacity-90"
+          >
+            Browse recipes
+          </Link>
+        }
+      />
       <WeekTabs />
 
       <div className="grid gap-4 lg:grid-cols-2">

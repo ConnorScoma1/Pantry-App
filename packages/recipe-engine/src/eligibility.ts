@@ -5,6 +5,7 @@ import type {
   RecipeSourceKind,
   SkillLevel,
 } from "@kitchen-pantry/shared-types";
+import { allergens, dietStyles, equipment, labelFor } from "@kitchen-pantry/shared-types";
 import { matchesAnyTerm, screenAllergens, type AllergenScreenResult } from "./allergens";
 
 /**
@@ -119,22 +120,22 @@ export function checkEligibility(
   const reasons: string[] = [];
   const allergenResult = screenAllergens(recipe.ingredientLines, household.allergies);
   if (allergenResult.conflicts.length > 0) {
-    const names = [...new Set(allergenResult.conflicts.map((c) => c.allergen))].join(", ");
+    const names = [...new Set(allergenResult.conflicts.map((c) => labelFor(allergens, c.allergen).toLowerCase()))].join(", ");
     reasons.push(`Contains allergens: ${names}`);
   }
 
   const dietHits = matchesAnyTerm(recipe.ingredientLines, DIET_EXCLUDED_TERMS[household.dietStyle]);
-  if (dietHits.length > 0) reasons.push(`Not ${household.dietStyle}: ${dietHits.join(", ")}`);
+  if (dietHits.length > 0) reasons.push(`Not ${labelFor(dietStyles, household.dietStyle).toLowerCase()}: ${dietHits.join(", ")}`);
 
   const neverHits = matchesAnyTerm(recipe.ingredientLines, household.neverRecommend);
   if (neverHits.length > 0) reasons.push(`Excluded ingredients: ${neverHits.join(", ")}`);
 
   if (recipe.skillLevel > household.maxSkillLevel) {
-    reasons.push(`Needs skill level ${recipe.skillLevel}`);
+    reasons.push(`Above your skill level (level ${recipe.skillLevel})`);
   }
 
   const equipmentResult = checkEquipment(recipe.requiredEquipment, household.equipment);
-  if (!equipmentResult.ok) reasons.push(`Needs: ${equipmentResult.missing.join(", ")}`);
+  if (!equipmentResult.ok) reasons.push(`Needs equipment you don't have: ${equipmentResult.missing.map((e) => labelFor(equipment, e)).join(", ")}`);
 
   return {
     eligible: reasons.length === 0,

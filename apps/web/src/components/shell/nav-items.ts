@@ -1,4 +1,4 @@
-import { CalendarDays, CircleUser, House, Refrigerator, ShoppingCart, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChefHat, CircleUser, House, Refrigerator, ShoppingCart, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -6,16 +6,27 @@ export interface NavItem {
   /** Shorter label for the mobile tab bar. */
   shortLabel: string;
   icon: LucideIcon;
+  /** Other paths that highlight this item. */
+  also?: string[];
+  /** Sidebar only — phones keep exactly five tabs. */
+  desktopOnly?: boolean;
 }
 
 export const navItems: NavItem[] = [
   { href: "/", label: "Home", shortLabel: "Home", icon: House },
   { href: "/kitchen", label: "My Kitchen", shortLabel: "Kitchen", icon: Refrigerator },
-  { href: "/plan", label: "Meal Plan", shortLabel: "Plan", icon: CalendarDays },
+  { href: "/plan", label: "Meal Plan", shortLabel: "Plan", icon: CalendarDays, also: ["/recipes"] },
+  { href: "/recipes", label: "Recipes", shortLabel: "Recipes", icon: ChefHat, desktopOnly: true },
   { href: "/grocery", label: "Grocery List", shortLabel: "Grocery", icon: ShoppingCart },
   { href: "/profile", label: "Profile", shortLabel: "Profile", icon: CircleUser },
 ];
 
-export function isActive(pathname: string, href: string): boolean {
+function matches(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/** On desktop each item matches its own path; on phones "Plan" also covers recipes. */
+export function isActive(pathname: string, item: NavItem, surface: "desktop" | "mobile"): boolean {
+  if (matches(pathname, item.href)) return true;
+  return surface === "mobile" && (item.also ?? []).some((p) => matches(pathname, p));
 }

@@ -163,6 +163,33 @@ export const onboardingSteps = [
 ] as const;
 export type OnboardingStepId = (typeof onboardingSteps)[number]["id"];
 
+/** The slice of the profile each step edits and validates. */
+export function onboardingStepValue(id: OnboardingStepId, p: OnboardingProfile): unknown {
+  switch (id) {
+    case "household":
+      return p.household;
+    case "budget":
+      return p.budget;
+    case "goals":
+      return p.goals;
+    case "diet":
+      return p.diet;
+    case "skill":
+      return { skillLevel: p.skillLevel };
+    case "equipment":
+      return { equipment: p.equipment };
+    case "store":
+      return p.store;
+  }
+}
+
+/** Validate one step; returns field errors keyed within the step ({} when valid). */
+export function validateOnboardingStep(id: OnboardingStepId, p: OnboardingProfile): Record<string, string> {
+  const step = onboardingSteps.find((s) => s.id === id)!;
+  const result = step.schema.safeParse(onboardingStepValue(id, p));
+  return result.success ? {} : issuesToFieldErrors(result.error);
+}
+
 /** Sensible starting values for a fresh questionnaire. */
 export function defaultOnboardingProfile(): OnboardingProfile {
   return {

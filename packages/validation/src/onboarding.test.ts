@@ -76,3 +76,11 @@ test("sign-up requires a 10+ character password", () => {
   assert.ok(!signUpSchema.safeParse({ email: "a@b.co", password: "short" }).success);
   assert.ok(signUpSchema.safeParse({ email: " A@B.co ", password: "long-enough-pw" }).success);
 });
+
+test("validateOnboardingStep checks only that step", async () => {
+  const { validateOnboardingStep } = await import("./index");
+  const p = defaultOnboardingProfile();
+  assert.ok(validateOnboardingStep("household", p).postalCode);
+  assert.deepEqual(validateOnboardingStep("budget", p), {});
+  assert.ok(validateOnboardingStep("goals", p).ranked);
+});

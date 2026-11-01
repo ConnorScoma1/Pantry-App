@@ -10,9 +10,14 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test --test-reporter=spec \"src/**/*.test.ts\""
+    "test": "tsx --test --test-reporter=spec \"src/**/*.test.ts\"",
+    "seed": "tsx scripts/generate-seed.ts"
   },
   "dependencies": {
+    "@kitchen-pantry/inventory-engine": "*",
     "@kitchen-pantry/shared-types": "*"
+  },
+  "devDependencies": {
+    "@kitchen-pantry/validation": "*"
   }
 }

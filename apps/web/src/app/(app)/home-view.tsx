@@ -11,6 +11,8 @@ import { Card, Eyebrow, Hint } from "@/components/ui/card";
 import { WeekTabs } from "@/components/ui/week-tabs";
 import { budgetSummary, dietLabel, greeting, plural, skillLabel } from "@/lib/format";
 import { useKitchen } from "@/lib/kitchen/use-kitchen";
+import { useRecipes } from "@/lib/recipes/use-recipes";
+import { RecipeCard } from "@/components/recipes/recipe-card";
 
 export function HomeView() {
   const { profile } = useProfile();
@@ -18,6 +20,8 @@ export function HomeView() {
   useEffect(() => setHello(greeting()), []);
 
   const kitchen = useKitchen();
+  const recipesData = useRecipes();
+  const forYou = useMemo(() => recipesData.rank().recipes.slice(0, 3), [recipesData]);
   const useSoon = useMemo(() => summarizeKitchen(kitchen.items, kitchen.today).useSoon, [kitchen.items, kitchen.today]);
 
   const { household } = profile;
@@ -69,6 +73,33 @@ export function HomeView() {
           </Link>
         </Card>
       </div>
+
+      <section className="mt-8" aria-labelledby="for-you">
+        <div className="mb-3 flex items-end justify-between gap-4">
+          <div>
+            <h2 id="for-you" className="text-2xl font-bold tracking-tight">
+              Recipes for you
+            </h2>
+            <p className="text-[15px] text-muted">Matched to your skills, kitchen and what needs using up.</p>
+          </div>
+          <Link href="/recipes" className="inline-flex shrink-0 items-center gap-1 text-[15px] font-semibold text-accent hover:underline">
+            See all <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        </div>
+        {recipesData.loading ? (
+          <div className="grid gap-4 sm:grid-cols-3" aria-busy="true">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-60 animate-pulse rounded-card bg-surface" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-3">
+            {forYou.map((r) => (
+              <RecipeCard key={r.recipe.id} ranked={r} onToggleFavorite={() => void recipesData.toggleFavorite(r.recipe.id)} />
+            ))}
+          </div>
+        )}
+      </section>
 
       <Card className="mt-4">
         <div className="flex items-start gap-4">

@@ -17,6 +17,8 @@
         └───────────────────────────────────────────┘
 ```
 
+**Shared data layer.** `@kitchen-pantry/database` exposes `KitchenRepository` and `ProfileStore`, each with a Supabase implementation and an on-device implementation (preview mode). The web app calls the Supabase versions from server actions; the mobile app calls them directly with the user's session. Both run the same validation and mapping code, covered by tests with a fake Supabase client.
+
 **Rules that shape the code**
 
 1. **Business logic lives in packages, not apps.** Allergen screening, unit conversion, package-size pricing and budget verdicts are pure TypeScript with unit tests, used by web, mobile and server alike.
@@ -46,7 +48,7 @@
 These need a product/business decision before or during the named phase.
 
 1. **Real grocery prices (Phase 5) — biggest risk.** Most retailers don't offer public pricing APIs; options include retailer partner programs (e.g. Kroger's developer API, which has terms limiting use), commerce platforms (Instacart Developer Platform), or licensed data providers. Each has different coverage, cost and display terms. *Decision needed:* which provider(s) to pursue first, and budget for data licensing. Until then every price is labelled an estimate.
-2. **Recipe content licensing (Phase 2).** We need a legal source of high-quality recipes. The Performance Foodservice culinary pages referenced in the brief are publicly visible, but that does not grant rights to copy or republish them — we'd need written permission or a licence. Options: licensed recipe API, partnership, or an in-house test kitchen of original recipes. *Decision needed:* which, and at what volume, before Phase 2 seeds the catalogue. Without real ratings, recipes are labelled "editorial" or "AI suggestion".
+2. **Recipe content licensing (Phase 2).** We need a legal source of high-quality recipes. The Performance Foodservice culinary pages referenced in the brief are publicly visible, but that does not grant rights to copy or republish them — we'd need written permission or a licence. Options: licensed recipe API, partnership, or an in-house test kitchen of original recipes. **Current approach:** an original in-house *Kitchen Pantry Test Kitchen* catalogue (15 recipes, levels 1–5), stored in `packages/recipe-engine/src/catalog` and generated into `supabase/seed_recipes.sql`. Licensed or partner sources can be added later through `recipe_sources`. *Still open:* whether to license a larger catalogue. Without real ratings, recipes are labelled "Editorial" (or "AI suggestion" once AI recipes exist).
 3. **Store locator (Phase 5).** Showing nearby stores needs an authorized places/location provider (Google Places, Mapbox, a retailer's own locator). Cost and display terms vary.
 4. **Allergen liability.** The app reduces risk but cannot guarantee safety. Product copy already says so; get a legal review of the wording before launch.
 5. **Food-safety guidance for "Use it before you lose it".** Urgency currently uses only the user's dates. Adding default shelf-life guidance (e.g. USDA FoodKeeper data) needs a licensed/public-domain source and conservative defaults.
@@ -76,8 +78,8 @@ Product specs live in [`docs/specs`](specs): the original platform spec (01), **
 | # | Milestone | Specs | Status |
 | --- | --- | --- | --- |
 | 1 | **Foundation** — monorepo, tokens, schema + RLS, auth, onboarding, web + mobile shells | 01 | **Done** |
-| 2 | **My Kitchen inventory** — items, staples checklist, use-by urgency, transaction log, category guessing | 01 §5–6, 02 §9.1 | **Web done** · mobile next · barcode/receipt import later |
-| 3 | **Recipes & ratings** — approved-source catalogue, recipe detail, skill/equipment/allergy filtering, ratings, favourites, recommendation history | 01 §7, 02 §4 | Blocked on recipe-source decision (§3.2) |
+| 2 | **My Kitchen inventory** — items, staples checklist, use-by urgency, transaction log, category guessing; mobile sign-in + onboarding | 01 §5–6, 02 §9.1 | **Done (web + mobile)** · barcode/receipt import later |
+| 3 | **Recipes & ratings** — approved-source catalogue, recipe detail, skill/equipment/allergy filtering, ratings, favourites, recommendation history | 01 §7, 02 §4 | **Web done** · mobile recipes + recommendation history next |
 | 4 | **AI weekly meal planning** — Claude-ranked plans from deterministic candidates; planning modes *Budget First / Balanced / Chef's Choice / Use What I Have* | 01 §8, 02 §3 | — |
 | 5 | **Consolidated grocery lists** — merge, convert units, subtract pantry, package math, mock pricing | 01 §9 | Engines built |
 | 6 | **Local pricing integration** — store preferences (several stores, radius, multi-store OK, loyalty cards), first verified provider, "Price unavailable" when none | 01 §10, 02 §1 | Needs provider decision |
@@ -123,7 +125,7 @@ Results are cached by a hash of inputs; arithmetic, conversions, list consolidat
 
 | Milestone | Tables / columns |
 | --- | --- |
-| 3 | `recommendation_events`; `recipes.quality_score` cache |
+| 3 | ✅ `recipes.tags`, `recipes.tips`, `recipe_ingredients.item`, `recipe_ratings.household_id` default, `recipe_rating_summaries()` · still to add: `recommendation_events`; `recipes.quality_score` cache |
 | 4 | `meal_plans.planning_mode` (`budget_first`, `balanced`, `chefs_choice`, `use_what_i_have`, `cook_the_specials`), `meal_plans.confirmed_at` |
 | 6 | `household_store_preferences` (store, preferred/excluded, rank), `household_loyalty_memberships`, `households.max_travel_km`, `households.multi_store_ok`; `product_price_observations.source_url`, `requires_membership`, `requires_coupon` |
 | 7 | `promotions` (store, product, type, regular/sale price, requirements, valid dates, source URL, provider, retrieved_at) |
@@ -133,7 +135,7 @@ Results are cached by a hash of inputs; arithmetic, conversions, list consolidat
 ## 7. Open decisions (added by specs 02 & 03)
 
 1. **Promotion/price sources** — which retailers or data partners allow commercial use of their weekly ads and prices (e.g. retailer partner APIs, Instacart Developer Platform, Flipp-style circular partners). Same blocker as pricing.
-2. **Recipe source** — still needed before milestone 3 (see §3.2).
+2. **Recipe source** — original Test Kitchen catalogue for now; licensing a bigger catalogue is still open (see §3.2).
 3. **Routing provider** for store distances/routes — cost and terms (Mapbox, Google Routes, self-hosted OSRM).
 4. **Fuel price** — user-entered default vs a licensed regional fuel-price feed.
 5. **Notifications** — email first (Supabase Auth email) vs push (Expo notifications) for "your plan is ready".
@@ -141,4 +143,11 @@ Results are cached by a hash of inputs; arithmetic, conversions, list consolidat
 
 ## 8. Next step
 
-Finish **milestone 2** on mobile (sign-in, onboarding, My Kitchen), then **milestone 3: recipes & ratings** once the recipe source is chosen.
+**Finish milestone 3 on mobile:** Recipes list + detail + rating on Expo (the shared `RecipeRepository` and ranking already work there), then `recommendation_events` so "shown / cooked / dismissed" feeds the repeat-avoidance in milestone 10. After that, **milestone 4 — AI weekly meal planning**, which needs `ANTHROPIC_API_KEY` on the server.
+
+### How recipe recommendations work today
+
+1. **Hard filters first** (`checkEligibility`): allergens (with aliases and cross-contact warnings), diet style, never-recommend terms, skill level (unless the user opts into harder recipes), and equipment with viable substitutions (air fryer → oven). Anything filtered out is listed under "hidden" with a plain reason — never silently dropped.
+2. **Deterministic score** (`rankRecipe`): pantry coverage, ingredients that need using up soon, favourites, the household's own ratings and real community rating summaries, cooking goals and cuisine preferences. Each recipe carries the plain-English reasons shown on the card.
+3. **Ratings are only ever real.** Summaries come from `recipe_rating_summaries()` (aggregated across households without exposing anyone's rows). A recipe with no ratings shows "Editorial".
+4. Later, Claude may re-rank the *eligible* list; it can never re-introduce a filtered recipe.

@@ -1,6 +1,8 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import type { ComponentProps } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { useApp } from "@/lib/app-state";
 import { useThemeColors } from "@/lib/theme";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
@@ -16,6 +18,19 @@ const tabs: Array<{ name: string; title: string; icon: IconName; activeIcon: Ico
 
 export default function TabsLayout() {
   const c = useThemeColors();
+  const { loading, signedIn, profile } = useApp();
+
+  // Gate the app: sign in (Supabase mode) → finish onboarding → tabs.
+  if (loading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background">
+        <ActivityIndicator color={c.muted} accessibilityLabel="Loading" />
+      </View>
+    );
+  }
+  if (!signedIn) return <Redirect href="/sign-in" />;
+  if (!profile) return <Redirect href="/onboarding" />;
+
   return (
     <Tabs
       screenOptions={{

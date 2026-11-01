@@ -32,7 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </Link>
         <nav aria-label="Main" className="flex flex-col gap-1">
           {navItems.map((item) => {
-            const active = isActive(pathname, item.href);
+            const active = isActive(pathname, item, "desktop");
             const Icon = item.icon;
             return (
               <Link
@@ -76,8 +76,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         className="fixed inset-x-3 bottom-[max(env(safe-area-inset-bottom),12px)] z-40 mx-auto max-w-lg rounded-[28px] border border-border bg-background/90 px-2 py-1.5 shadow-[0_8px_30px_rgb(0_0_0/0.08)] backdrop-blur-xl lg:hidden"
       >
         <ul className="grid grid-cols-5">
-          {navItems.map((item) => {
-            const active = isActive(pathname, item.href);
+          {navItems.filter((item) => !item.desktopOnly).map((item) => {
+            const active = isActive(pathname, item, "mobile");
             const Icon = item.icon;
             return (
               <li key={item.href}>

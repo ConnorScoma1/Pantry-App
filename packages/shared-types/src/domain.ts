@@ -145,18 +145,75 @@ export type RecipeSourceKind =
   | "editorial"
   | "ai_generated";
 
-export interface RecipeSummary {
+export interface RecipeIngredient {
+  position: number;
+  /** Groups ingredients for multi-component dishes, e.g. "Tarragon jus". */
+  component: string | null;
+  quantity: number | null;
+  unit: string | null;
+  /** The ingredient itself, e.g. "chicken thighs" — used for pantry and allergen matching. */
+  item: string;
+  /** "finely chopped", "at room temperature" … */
+  preparation: string | null;
+  optional: boolean;
+}
+
+export interface RecipeStep {
+  position: number;
+  component: string | null;
+  body: string;
+  timerSeconds: number | null;
+  /** Oven / pan / water temperature, stored in °C. */
+  temperatureC: number | null;
+  /** Food-safety minimum internal temperature for this step, °C. */
+  safeInternalTempC: number | null;
+}
+
+export interface RecipeSourceInfo {
+  kind: RecipeSourceKind;
+  name: string;
+  url: string | null;
+}
+
+export interface Recipe {
   id: Uuid;
+  slug: string;
   title: string;
-  imageUrl: string | null;
+  description: string;
   cuisine: Cuisine | null;
   skillLevel: SkillLevel;
-  totalMinutes: number | null;
+  prepMinutes: number;
+  cookMinutes: number;
+  totalMinutes: number;
   servings: number;
   requiredEquipment: EquipmentCode[];
-  sourceKind: RecipeSourceKind;
-  /** Only real, verified ratings. null when there are none — never invented. */
-  rating: { average: number; count: number } | null;
+  tags: string[];
+  tips: string[];
+  /** null until a licensed photo exists — never a stock or generated "food photo". */
+  imageUrl: string | null;
+  source: RecipeSourceInfo;
+  ingredients: RecipeIngredient[];
+  steps: RecipeStep[];
+}
+
+/** Aggregate of real ratings. Absent when nobody has rated the recipe. */
+export interface RatingSummary {
+  recipeId: Uuid;
+  average: number;
+  count: number;
+  wouldCookAgainPct: number | null;
+}
+
+export interface RecipeRating {
+  recipeId: Uuid;
+  overall: number;
+  flavor: number | null;
+  difficulty: number | null;
+  wouldCookAgain: boolean | null;
+  actualMinutes: number | null;
+  familyApproval: number | null;
+  notes: string | null;
+  createdAt: IsoTimestamp;
 }
 
 export interface PriceQuote {
