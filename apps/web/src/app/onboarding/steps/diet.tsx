@@ -23,6 +23,8 @@ export function DietStep({ profile, setProfile, errors }: StepProps) {
         ? d.dislikes.filter((x) => x.toLowerCase() !== item.toLowerCase())
         : [...d.dislikes, item],
     });
+  const shared = profile.householdDiet && profile.householdDiet.memberCount > 1 ? profile.householdDiet : null;
+  const othersAvoid = shared ? shared.allergies.filter((a) => !d.allergies.includes(a)) : [];
   const customDislikes = d.dislikes.filter((x) => !commonDislikes.some((c) => c.toLowerCase() === x.toLowerCase()));
 
   const numberField = (value: number | null, onChange: (v: number | null) => void) => ({
@@ -37,9 +39,16 @@ export function DietStep({ profile, setProfile, errors }: StepProps) {
   return (
     <div className="space-y-4">
       <Section
-        title="Allergies"
+        title={shared ? "Your allergies" : "Allergies"}
         description="Treated as strict exclusions — including hidden sources like whey, tahini or soy sauce."
       >
+        {shared ? (
+          <p className="mb-4 rounded-2xl bg-background px-4 py-3 text-[15px] leading-snug">
+            {othersAvoid.length > 0
+              ? `Meal plans already avoid ${othersAvoid.map((c) => allergens.find((a) => a.code === c)?.label ?? c).join(", ")} for others in your household. Just pick your own.`
+              : "Just pick your own — meal plans avoid everyone's allergies in your household."}
+          </p>
+        ) : null}
         <ChipGroup label="Allergies">
           {allergens.map((a) => (
             <Chip key={a.code} selected={d.allergies.includes(a.code)} onToggle={() => set({ allergies: toggle(d.allergies, a.code) })}>

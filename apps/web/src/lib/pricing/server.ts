@@ -1,0 +1,122 @@
+import "server-only";
+import {
+  createMemoryCache,
+  KrogerClient,
+  KrogerPricingProvider,
+  priceBasket,
+  PricingProviderError,
+  pricingRequestSchema,
+  type BasketPrice,
+  type KrogerStore,
+} from "@kitchen-pantry/grocery-pricing";
+import type { Result } from "@kitchen-pantry/database";
+
+/**
+ * Live store prices (Kroger Developer API). SERVER ONLY — the client secret
+ * stays here. Browsers and phones send item names and amounts; prices only
+ * ever come from Kroger, labelled with how old they are.
+ */
+const clientId = process.env.KROGER_CLIENT_ID ?? "";
+const clientSecret = process.env.KROGER_CLIENT_SECRET ?? "";
+const cacheMinutes = Math.min(Math.max(Number(process.env.PRICING_CACHE_MINUTES ?? 30) || 30, 0), 360);
+const hourlyLimit = Math.max(Number(process.env.PRICING_HOURLY_LIMIT ?? 30) || 30, 1);
+
+let client: KrogerClient | null = null;
+function kroger(): KrogerClient | null {
+  if (!clientId || !clientSecret) return null;
+  client ??= new KrogerClient({ clientId, clientSecret });
+  return client;
+}
+
+const searchCache = createMemoryCache(cacheMinutes * 60_000);
+const storeCache = new Map<string, { at: number; stores: KrogerStore[] }>();
+const usage = new Map<string, number[]>();
+
+export interface PricingStatus {
+  enabled: boolean;
+  provider: "kroger" | null;
+}
+
+export function pricingStatus(): PricingStatus {
+  return kroger() ? { enabled: true, provider: "kroger" } : { enabled: false, provider: null };
+}
+
+const NOT_CONFIGURED = "Store prices aren't connected yet. Add Kroger API keys on the server (see the README).";
+
+function friendly(error: unknown): string {
+  if (error instanceof PricingProviderError) {
+    if (error.kind === "auth") return "The store price connection needs attention (Kroger rejected the API keys).";
+    if (error.kind === "rate_limited") return "Kroger's daily price lookups are used up. Try again tomorrow.";
+    if (error.kind === "bad_request") return error.message;
+    return "Kroger isn't responding right now. Try again in a minute.";
+  }
+  console.error("[pricing] unexpected error", error);
+  return "Couldn't load prices. Please try again.";
+}
+
+/** Simple per-user guard so one person can't use up the shared daily quota. */
+function allow(key: string, now = Date.now()): boolean {
+  const recent = (usage.get(key) ?? []).filter((t) => now - t < 3_600_000);
+  if (recent.length >= hourlyLimit) {
+    usage.set(key, recent);
+    return false;
+  }
+  recent.push(now);
+  usage.set(key, recent);
+  return true;
+}
+
+export async function findStores(postalCode: unknown, who: string): Promise<Result<KrogerStore[]>> {
+  const k = kroger();
+  if (!k) return { ok: false, message: NOT_CONFIGURED };
+  const zip = String(postalCode ?? "").trim().slice(0, 5);
+  if (!/^\d{5}$/.test(zip)) return { ok: false, message: "Enter a 5-digit ZIP code." };
+  const hit = storeCache.get(zip);
+  if (hit && Date.now() - hit.at < 24 * 3_600_000) return { ok: true, data: hit.stores };
+  if (!allow(`stores:${who}`)) return { ok: false, message: "Too many store searches. Try again in a bit." };
+  try {
+    const stores = await k.findStores({ postalCode: zip, radiusMiles: 15, limit: 15 });
+    storeCache.set(zip, { at: Date.now(), stores });
+    return { ok: true, data: stores };
+  } catch (error) {
+    return { ok: false, message: friendly(error) };
+  }
+}
+
+/** Confirms a store id with Kroger before the household saves it. */
+export async function verifyStore(locationId: unknown): Promise<Result<KrogerStore>> {
+  const k = kroger();
+  if (!k) return { ok: false, message: NOT_CONFIGURED };
+  const id = String(locationId ?? "");
+  for (const { stores } of storeCache.values()) {
+    const s = stores.find((x) => x.locationId === id);
+    if (s) return { ok: true, data: s };
+  }
+  try {
+    const store = await k.getStore(id);
+    return store ? { ok: true, data: store } : { ok: false, message: "Kroger doesn't know that store." };
+  } catch (error) {
+    return { ok: false, message: friendly(error) };
+  }
+}
+
+export async function priceItems(request: unknown, who: string): Promise<Result<BasketPrice>> {
+  const k = kroger();
+  if (!k) return { ok: false, message: NOT_CONFIGURED };
+  const parsed = pricingRequestSchema.safeParse(request);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Nothing to price." };
+  if (!allow(`price:${who}`)) return { ok: false, message: "Prices were refreshed a lot this hour. Try again a little later." };
+  try {
+    const basket = await priceBasket({
+      provider: new KrogerPricingProvider(k),
+      storeId: parsed.data.storeId,
+      needs: parsed.data.items,
+      cache: searchCache,
+    });
+    // Nothing could be priced because Kroger failed: say why instead of showing an empty basket.
+    if (basket.warning && basket.pricedCount === 0) return { ok: false, message: basket.warning };
+    return { ok: true, data: basket };
+  } catch (error) {
+    return { ok: false, message: friendly(error) };
+  }
+}

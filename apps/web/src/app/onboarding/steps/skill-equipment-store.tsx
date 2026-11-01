@@ -1,7 +1,7 @@
 "use client";
 
 import { hasStoreLookup } from "@kitchen-pantry/integrations";
-import { equipment, knownRetailers, skillLevels } from "@kitchen-pantry/shared-types";
+import { dessertFrequencies, equipment, knownRetailers, skillLevels } from "@kitchen-pantry/shared-types";
 import { Store } from "lucide-react";
 import { Chip, ChipGroup, ChoiceCard, FieldError, TextInput } from "@/components/ui/controls";
 import { Section } from "./section";
@@ -9,6 +9,7 @@ import { toggle, type StepProps } from "./types";
 
 export function SkillStep({ profile, setProfile }: StepProps) {
   return (
+    <div className="space-y-4">
     <Section title="How comfortable are you in the kitchen?" description="You can change this any time from your profile.">
       <div role="radiogroup" aria-label="Cooking skill" className="space-y-2.5">
         {skillLevels.map((s) => (
@@ -26,6 +27,27 @@ export function SkillStep({ profile, setProfile }: StepProps) {
           />
         ))}
       </div>
+    </Section>
+    <DessertQuestion profile={profile} setProfile={setProfile} />
+    </div>
+  );
+}
+
+/** One quick, optional question — dessert skill and categories live in Profile. */
+function DessertQuestion({ profile, setProfile }: Pick<StepProps, "profile" | "setProfile">) {
+  return (
+    <Section title="Desserts" description="Optional. We'll never plan one every day, and you can add one any time.">
+      <ChipGroup label="How often should we plan a dessert?">
+        {dessertFrequencies.map((f) => (
+          <Chip
+            key={f.code}
+            selected={profile.desserts.frequency === f.code}
+            onToggle={() => setProfile((p) => ({ ...p, desserts: { ...p.desserts, frequency: f.code } }))}
+          >
+            {f.label}
+          </Chip>
+        ))}
+      </ChipGroup>
     </Section>
   );
 }

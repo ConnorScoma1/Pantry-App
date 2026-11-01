@@ -2,7 +2,7 @@
 
 import { cookingGoals, labelFor, type CookingGoal } from "@kitchen-pantry/shared-types";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
-import { Chip, ChipGroup, FieldError } from "@/components/ui/controls";
+import { Chip, ChipGroup, FieldError, Switch } from "@/components/ui/controls";
 import { Section } from "./section";
 import { toggle, type StepProps } from "./types";
 
@@ -60,6 +60,15 @@ export function GoalsStep({ profile, setProfile, errors }: StepProps) {
           </ol>
         </Section>
       ) : null}
+
+      <Section title="Seasons" description="Optional — you can fine-tune this any time in Profile.">
+        <Switch
+          label="Enjoy seasonal recipes"
+          description="A gentle nudge toward what's in season where you live. Nothing is ever left out."
+          checked={profile.seasonal.enabled}
+          onChange={(enabled) => setProfile((p) => ({ ...p, seasonal: { ...p.seasonal, enabled } }))}
+        />
+      </Section>
     </div>
   );
 }

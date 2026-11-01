@@ -70,16 +70,19 @@ const REVIEW_INDEX = onboardingSteps.length;
 export function OnboardingFlow({
   mode,
   initialProfile,
+  joinDraft = null,
   initialStep,
 }: {
   mode: "preview" | "supabase";
   initialProfile: OnboardingProfile | null;
+  /** Joined a household before onboarding: its shared answers, pre-filled. */
+  joinDraft?: OnboardingProfile | null;
   initialStep: string | null;
 }) {
   const router = useRouter();
   const requestedIndex = onboardingSteps.findIndex((s) => s.id === initialStep);
   const [isEditing, setIsEditing] = useState(initialProfile !== null);
-  const [profile, setProfileState] = useState<OnboardingProfile>(initialProfile ?? defaultOnboardingProfile());
+  const [profile, setProfileState] = useState<OnboardingProfile>(initialProfile ?? joinDraft ?? defaultOnboardingProfile());
   const [index, setIndex] = useState(requestedIndex >= 0 ? requestedIndex : 0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -89,7 +92,7 @@ export function OnboardingFlow({
 
   // Restore preview profile (editing) or an unfinished draft (new user).
   useEffect(() => {
-    if (initialProfile) {
+    if (initialProfile || joinDraft) {
       setHydrated(true);
       return;
     }
@@ -247,6 +250,12 @@ export function OnboardingFlow({
             >
               {isReview ? (isEditing ? "Your answers" : "Looks good?") : step!.title}
             </h1>
+            {joinDraft && !isEditing && index === requestedIndex ? (
+              <p className="mt-4 rounded-2xl bg-accent-soft px-4 py-3 text-[16px]">
+                You&apos;ve joined a household, so its size, budget, equipment and store are already filled in. These next answers
+                are just yours.
+              </p>
+            ) : null}
             <p className="mt-2 mb-6 text-[17px] text-muted">
               {isReview
                 ? "Check everything over. You can change any of this later."

@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { useProfile } from "@/components/profile/profile-provider";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Card, PageHeader } from "@/components/ui/card";
-import { Chip, Switch } from "@/components/ui/controls";
+import { Chip, Segmented, Switch } from "@/components/ui/controls";
 import { useRecipes } from "@/lib/recipes/use-recipes";
 
 export function RecipesView() {
@@ -19,6 +19,7 @@ export function RecipesView() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [cuisine, setCuisine] = useState<string>("");
   const [stretch, setStretch] = useState(false);
+  const [course, setCourse] = useState<"main" | "dessert">("main");
   const [showHidden, setShowHidden] = useState(false);
   const [showDismissed, setShowDismissed] = useState(false);
   const [lastDismissed, setLastDismissed] = useState<{ id: string; title: string } | null>(null);
@@ -32,14 +33,16 @@ export function RecipesView() {
         favoritesOnly,
         cuisine: cuisine || null,
         includeAboveSkill: stretch,
+        course,
       }),
-    [data, query, quick, haveMost, favoritesOnly, cuisine, stretch],
+    [data, query, quick, haveMost, favoritesOnly, cuisine, stretch, course],
   );
   const availableCuisines = useMemo(
     () => cuisines.filter((c) => data.recipes.some((r) => r.cuisine === c.code)),
     [data.recipes],
   );
-  const levelLabel = skillLevels.find((s) => s.level === profile.skillLevel)?.label;
+  const mySkill = course === "dessert" ? (profile.desserts.skillLevel ?? profile.skillLevel) : profile.skillLevel;
+  const levelLabel = skillLevels.find((s) => s.level === mySkill)?.label;
 
   return (
     <div className="animate-enter">
@@ -59,6 +62,17 @@ export function RecipesView() {
             className="h-full flex-1 bg-transparent text-[17px] outline-none placeholder:text-subtle"
           />
         </label>
+        <div className="max-w-xs">
+          <Segmented
+            label="Show"
+            value={course}
+            onChange={setCourse}
+            options={[
+              { value: "main", label: "Dinners" },
+              { value: "dessert", label: "Desserts" },
+            ]}
+          />
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <Chip selected={quick} onToggle={() => setQuick((v) => !v)}>
             30 minutes or less
@@ -86,7 +100,7 @@ export function RecipesView() {
             <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted" aria-hidden />
           </label>
         </div>
-        {profile.skillLevel < 5 ? (
+        {mySkill < 5 ? (
           <div className="max-w-md">
             <Switch
               label="Include harder recipes"

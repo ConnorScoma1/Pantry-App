@@ -27,3 +27,21 @@ export async function resetLearnedPreferencesAction(): Promise<ActionResult> {
   }
   return { ok: true };
 }
+
+export async function setDessertsAction(settings: unknown): Promise<ActionResult> {
+  if (!isSupabaseConfigured) return { ok: false, message: "Supabase isn't configured." };
+  const supabase = await createSupabaseServerClient();
+  const result = await createSupabaseProfileStore(asSupabaseLike(supabase)).setDesserts(settings);
+  if (!result.ok) return { ok: false, message: result.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function setSeasonalAction(settings: unknown): Promise<ActionResult> {
+  if (!isSupabaseConfigured) return { ok: false, message: "Supabase isn't configured." };
+  const supabase = await createSupabaseServerClient();
+  const result = await createSupabaseProfileStore(asSupabaseLike(supabase)).setSeasonal(settings);
+  if (!result.ok) return { ok: false, message: result.message };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}

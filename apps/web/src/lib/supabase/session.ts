@@ -32,6 +32,8 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+  // API routes answer 401 themselves (the phone app sends a bearer token, not cookies).
+  if (pathname.startsWith("/api/")) return response;
   if (!user && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";

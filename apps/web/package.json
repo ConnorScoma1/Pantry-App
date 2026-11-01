@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@kitchen-pantry/ai": "*",
     "@kitchen-pantry/database": "*",
     "@kitchen-pantry/grocery-pricing": "*",
     "@kitchen-pantry/integrations": "*",

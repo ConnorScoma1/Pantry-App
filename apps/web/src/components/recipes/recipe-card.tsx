@@ -1,7 +1,7 @@
 "use client";
 
 import { formatMinutes, type RankedRecipe } from "@kitchen-pantry/recipe-engine";
-import { Clock, EyeOff, Heart, Sparkles, Star, TriangleAlert } from "lucide-react";
+import { Clock, EyeOff, Heart, Leaf, Sparkles, Star, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { RecipeArt } from "./recipe-art";
@@ -71,6 +71,12 @@ export function RecipeCard({
           <span aria-hidden>·</span>
           <SkillDots level={recipe.skillLevel} />
           <RatingLabel ranked={ranked} />
+          {ranked.inSeason && ranked.inSeason.length > 0 ? (
+            <span className="inline-flex items-center gap-1 font-medium text-accent" title={`In season: ${ranked.inSeason.join(", ")}`}>
+              <Leaf className="size-3.5" aria-hidden />
+              In season
+            </span>
+          ) : null}
         </p>
 
         {total > 0 && have > 0 ? (

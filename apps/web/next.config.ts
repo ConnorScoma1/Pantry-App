@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Workspace packages ship TypeScript source; Next compiles them.
   transpilePackages: [
+    "@kitchen-pantry/ai",
     "@kitchen-pantry/database",
     "@kitchen-pantry/grocery-pricing",
     "@kitchen-pantry/integrations",

@@ -7,6 +7,7 @@ import {
   cookingGoals,
   countries,
   cuisines,
+  dessertFrequencies,
   dietaryRestrictions,
   equipment,
   knownRetailers,
@@ -54,6 +55,7 @@ export function ReviewStep({
       </ReviewCard>
       <ReviewCard title="Goals" onEdit={() => onEdit("goals")}>
         <Line>{list(profile.goals.ranked.map((g, i) => `${i + 1}. ${labelFor(cookingGoals, g)}`))}</Line>
+        <Line muted>Seasonal recipes: {profile.seasonal.enabled ? "on" : "off"}</Line>
       </ReviewCard>
       <ReviewCard title="What you eat" onEdit={() => onEdit("diet")}>
         <Line>
@@ -70,6 +72,7 @@ export function ReviewStep({
         <Line>
           Level {profile.skillLevel} · {skillLabel(profile.skillLevel)}
         </Line>
+        <Line muted>Desserts: {labelFor(dessertFrequencies, profile.desserts.frequency)}</Line>
       </ReviewCard>
       <ReviewCard title="Kitchen" onEdit={() => onEdit("equipment")}>
         <Line>{list(profile.equipment.map((e) => labelFor(equipment, e)))}</Line>

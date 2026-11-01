@@ -8,11 +8,16 @@ import { UrgencyBadge } from "@/components/kitchen/urgency-badge";
 import { useProfile } from "@/components/profile/profile-provider";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, Hint } from "@/components/ui/card";
-import { WeekTabs } from "@/components/ui/week-tabs";
+import { useWeekOptions } from "@/components/ui/week-tabs";
+import { useMealPlan } from "@/lib/meal-plan/use-meal-plan";
+import { nightsLeft } from "@kitchen-pantry/meal-planner";
+import { dayLabel } from "@/components/plan/meal-card";
 import { budgetSummary, dietLabel, greeting, plural, skillLabel } from "@/lib/format";
 import { useKitchen } from "@/lib/kitchen/use-kitchen";
 import { useRecipes } from "@/lib/recipes/use-recipes";
 import { RecipeCard } from "@/components/recipes/recipe-card";
+import { InSeasonCard } from "@/components/seasonal/in-season";
+import { seasonalContext } from "@kitchen-pantry/recipe-engine";
 
 export function HomeView() {
   const { profile } = useProfile();
@@ -22,6 +27,8 @@ export function HomeView() {
   const kitchen = useKitchen();
   const recipesData = useRecipes();
   const forYou = useMemo(() => recipesData.rank().recipes.slice(0, 3), [recipesData.rank]);
+  const seasonal = useMemo(() => seasonalContext(profile, kitchen.today), [profile, kitchen.today]);
+  const everything = useMemo(() => recipesData.rank({ course: "any" }).recipes, [recipesData.rank]);
   const useSoon = useMemo(() => summarizeKitchen(kitchen.items, kitchen.today).useSoon, [kitchen.items, kitchen.today]);
 
   const { household } = profile;
@@ -34,23 +41,8 @@ export function HomeView() {
         <h1 className="text-[34px] font-bold leading-tight tracking-tight lg:text-[40px]">Your week</h1>
       </header>
 
-      <WeekTabs />
-
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-        <Card className="flex flex-col">
-          <Eyebrow>Dinners</Eyebrow>
-          <h2 className="mt-1.5 text-2xl font-bold tracking-tight">Nothing planned yet</h2>
-          <p className="mt-2 text-[16px] text-muted">
-            We&apos;ll plan {plural(dinners, "dinner")} for {plural(household.cookingFor, "person", "people")}, matched to
-            your budget, skill level and what&apos;s already in your kitchen.
-          </p>
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button size="lg" disabled icon={<Sparkles className="size-5" aria-hidden />}>
-              Build my week
-            </Button>
-            <span className="text-[14px] text-muted sm:ml-2">Meal planning is the next feature we&apos;re building.</span>
-          </div>
-        </Card>
+        <ThisWeekCard dinners={dinners} cookingFor={household.cookingFor} />
 
         <Card>
           <Eyebrow>Planning around</Eyebrow>
@@ -69,7 +61,7 @@ export function HomeView() {
             href="/plan"
             className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-semibold text-accent hover:underline"
           >
-            Adjust plan settings <ArrowRight className="size-4" aria-hidden />
+            Planning settings <ArrowRight className="size-4" aria-hidden />
           </Link>
         </Card>
       </div>
@@ -105,6 +97,8 @@ export function HomeView() {
           </div>
         )}
       </section>
+
+      {seasonal && !recipesData.loading ? <InSeasonCard seasonal={seasonal} ranked={everything} /> : null}
 
       <Card className="mt-4">
         <div className="flex items-start gap-4">
@@ -157,5 +151,76 @@ function SummaryRow({ icon, children }: { icon: React.ReactNode; children: React
       <span className="text-muted">{icon}</span>
       <span>{children}</span>
     </li>
+  );
+}
+
+/** This week's dinners, or a one-tap "Build my week". */
+function ThisWeekCard({ dinners, cookingFor }: { dinners: number; cookingFor: number }) {
+  const weeks = useWeekOptions();
+  const today = useKitchen().today;
+  // Late in the week (e.g. Sunday) the useful week to show is next week.
+  const upcoming = nightsLeft(weeks[0]!.weekStart, today) < 2;
+  const weekStart = weeks[upcoming ? 1 : 0]!.weekStart;
+  const label = upcoming ? "Next week" : "This week";
+  const p = useMealPlan(weekStart);
+  const meals = p.draft.meals;
+
+  if (p.loading) return <Card className="min-h-56 min-w-0 animate-pulse" aria-busy="true" aria-label="Loading this week" />;
+
+  if (meals.length === 0) {
+    return (
+      <Card className="flex min-w-0 flex-col">
+        <Eyebrow>{label}&apos;s dinners</Eyebrow>
+        <h2 className="mt-1.5 text-2xl font-bold tracking-tight">Nothing planned yet</h2>
+        <p className="mt-2 text-[16px] text-muted">
+          We&apos;ll plan {plural(dinners, "dinner")} for {plural(cookingFor, "person", "people")}, matched to your skill level and
+          what&apos;s already in your kitchen.
+        </p>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button size="lg" disabled={p.busy !== null || dinners === 0} onClick={() => void p.build("balanced")} icon={<Sparkles className="size-5" aria-hidden />}>
+            {p.busy === "building" ? "Planning your week…" : "Build my week"}
+          </Button>
+          <Link href="/plan" className="min-h-11 content-center text-[15px] font-semibold text-accent hover:underline sm:ml-2">
+            Choose how to plan
+          </Link>
+        </div>
+        {p.message ? <p className="mt-3 text-[14px] text-muted">{p.message.text}</p> : null}
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="flex min-w-0 flex-col">
+      <div className="flex items-center justify-between gap-3">
+        <Eyebrow>{label}&apos;s dinners</Eyebrow>
+        {p.draft.confirmedAt ? (
+          <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-accent">
+            <CalendarDays className="size-4" aria-hidden /> Confirmed
+          </span>
+        ) : (
+          <span className="text-[13px] font-medium text-muted">Draft</span>
+        )}
+      </div>
+      <ul className="mt-3 divide-y divide-border">
+        {meals.map((m) => {
+          const ranked = m.recipeId ? p.byId.get(m.recipeId) : undefined;
+          return (
+            <li key={m.date} className="flex items-baseline gap-3 py-2.5 text-[16px]">
+              <span className="w-10 shrink-0 text-[14px] font-semibold text-muted">{dayLabel(m.date).weekday}</span>
+              {ranked ? (
+                <Link href={`/recipes/${ranked.recipe.slug}`} className="min-w-0 flex-1 truncate hover:underline">
+                  {ranked.recipe.title}
+                </Link>
+              ) : (
+                <span className="min-w-0 flex-1 truncate">{m.customTitle ?? "Recipe unavailable"}</span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      <Link href="/plan" className="mt-4 inline-flex items-center gap-1.5 text-[15px] font-semibold text-accent hover:underline">
+        Open meal plan <ArrowRight className="size-4" aria-hidden />
+      </Link>
+    </Card>
   );
 }

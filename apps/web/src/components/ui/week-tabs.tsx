@@ -42,9 +42,9 @@ export function useWeekOptions(today = new Date()): WeekOption[] {
   }, [todayIso]);
 }
 
-export function WeekTabs({ onChange }: { onChange?: (week: WeekOption) => void }) {
+export function WeekTabs({ onChange, initialIndex = 0 }: { onChange?: (week: WeekOption) => void; initialIndex?: number }) {
   const weeks = useWeekOptions();
-  const [selected, setSelected] = useState(0);
+  const [selected, setSelected] = useState(initialIndex);
   return (
     <div
       role="tablist"

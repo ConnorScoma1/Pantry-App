@@ -42,10 +42,13 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   if (!parsed.success) {
     return { status: "error", fieldErrors: issuesToFieldErrors(parsed.error), email: String(formData.get("email") ?? "") };
   }
+  // New people arriving from a household invite go back to it after confirming.
+  const requested = safeNext(formData.get("next"));
+  const after = requested.startsWith("/invite/") ? requested : "/onboarding";
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signUp({
     ...parsed.data,
-    options: { emailRedirectTo: `${siteUrl}/auth/callback?next=/onboarding` },
+    options: { emailRedirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(after)}` },
   });
   if (error) {
     console.error("[auth] sign-up failed", { code: error.code });
@@ -54,7 +57,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   if (!data.session) {
     return { status: "sent", message: "Check your email to confirm your account.", email: parsed.data.email };
   }
-  redirect("/onboarding");
+  redirect(after);
 }
 
 export async function magicLinkAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {

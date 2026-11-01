@@ -103,7 +103,8 @@ export function RecipeDetailView({ slug }: { slug: string }) {
               <dd>
                 {formatMinutes(recipe.totalMinutes)}{" "}
                 <span className="text-muted">
-                  ({recipe.prepMinutes} prep · {formatMinutes(recipe.cookMinutes)} cook)
+                  ({recipe.prepMinutes} prep{recipe.cookMinutes > 0 ? ` · ${formatMinutes(recipe.cookMinutes)} cook` : ""}
+                  {recipe.chillMinutes > 0 ? ` · ${formatMinutes(recipe.chillMinutes)} ${recipe.dessertCategory === "frozen" ? "freezing" : "chilling"}` : ""})
                 </span>
               </dd>
             </div>
