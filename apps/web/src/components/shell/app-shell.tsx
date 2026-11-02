@@ -7,6 +7,7 @@ import { CircleUser } from "lucide-react";
 import { useProfile } from "@/components/profile/profile-provider";
 import { cn } from "@/lib/cn";
 import { BrandLockup, BrandMark } from "./brand";
+import { NotificationBell } from "./notification-bell";
 import { isActive, navItems } from "./nav-items";
 
 /**
@@ -27,10 +28,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
 
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-border px-4 py-6 lg:flex">
-        <Link href="/" className="mb-8 px-3" aria-label="Kitchen Pantry home">
-          <BrandLockup />
-        </Link>
+      <aside className="sticky top-0 z-30 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-border px-4 py-6 lg:flex">
+        <div className="mb-8 flex items-center justify-between gap-2 pl-3">
+          <Link href="/" aria-label="Kitchen Pantry home">
+            <BrandLockup />
+          </Link>
+          <NotificationBell align="left" />
+        </div>
         <nav aria-label="Main" className="flex flex-col gap-1">
           {navItems.map((item) => {
             const active = isActive(pathname, item, "desktop");
@@ -61,10 +65,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             <BrandMark className="size-7" />
             <span className="text-[17px] font-bold tracking-tight">Kitchen Pantry</span>
           </Link>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             {mode === "preview" ? (
               <span className="rounded-full bg-warning/12 px-3 py-1 text-[13px] font-semibold text-warning">Preview</span>
             ) : null}
+            <NotificationBell />
             <Link
               href="/profile"
               aria-label="Profile"

@@ -18,8 +18,12 @@ import {
 import { planningModes, type MealPlan, type PlanningMode } from "@kitchen-pantry/shared-types";
 import { CalendarCheck, ChevronDown, History, ShoppingBasket, Sparkles, TriangleAlert } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { DessertsSection } from "@/components/plan/desserts";
+import { WeeklyDraftBanner, WeeklyDraftsCard } from "@/components/plan/weekly-drafts";
+import { EatingControls, EatingLine } from "@/components/household/who-is-eating";
+import { useAttendance } from "@/lib/household/use-household-life";
 import { dayLabel, EmptyNight, MealCard } from "@/components/plan/meal-card";
 import { useProfile } from "@/components/profile/profile-provider";
 import { Button } from "@/components/ui/button";
@@ -40,8 +44,11 @@ function localToday(): string {
 
 export function PlanView() {
   const weeks = useWeekOptions();
-  // Late in the week (e.g. Sunday), start on next week — that's the one to plan.
-  const startIndex = nightsLeft(weeks[0]!.weekStart, localToday()) < 2 ? 1 : 0;
+  const params = useSearchParams();
+  const [settingsOpen, setSettingsOpen] = useState(params.get("settings") === "weekly");
+  // A notice links to ?week=…; otherwise, late in the week (e.g. Sunday), start on next week — that's the one to plan.
+  const linked = weeks.findIndex((w) => w.weekStart === params.get("week"));
+  const startIndex = linked >= 0 ? linked : nightsLeft(weeks[0]!.weekStart, localToday()) < 2 ? 1 : 0;
   const [weekStart, setWeekStart] = useState(weeks[startIndex]!.weekStart);
   return (
     <div className="animate-enter">
@@ -58,14 +65,17 @@ export function PlanView() {
         }
       />
       <WeekTabs initialIndex={startIndex} onChange={(w) => setWeekStart(w.weekStart)} />
-      <WeekPlanner key={weekStart} weekStart={weekStart} />
-      <details className="group mt-10">
+      <WeekPlanner key={weekStart} weekStart={weekStart} onWeeklySettings={() => setSettingsOpen(true)} />
+      <details className="group mt-10" open={settingsOpen} onToggle={(e) => setSettingsOpen(e.currentTarget.open)}>
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-1 text-[17px] font-semibold">
           Planning settings
           <ChevronDown className="size-5 text-muted transition-transform group-open:rotate-180" aria-hidden />
         </summary>
         <p className="mb-4 px-1 text-[15px] text-muted">Every week is planned around these. Change them any time.</p>
         <PlanSettings />
+        <div className="mt-4">
+          <WeeklyDraftsCard />
+        </div>
       </details>
     </div>
   );
@@ -76,11 +86,13 @@ type SheetState =
   | { kind: "more"; date: string }
   | { kind: "custom"; date: string }
   | { kind: "rebuild"; regenerate: boolean }
-  | { kind: "repeat"; weeks: MealPlan[] };
+  | { kind: "repeat"; weeks: MealPlan[] }
+  | { kind: "eating"; date: string };
 
-function WeekPlanner({ weekStart }: { weekStart: string }) {
+function WeekPlanner({ weekStart, onWeeklySettings }: { weekStart: string; onWeeklySettings: () => void }) {
   const { profile } = useProfile();
   const p = useMealPlan(weekStart);
+  const eating = useAttendance(weekStart);
   const [mode, setMode] = useState<PlanningMode>("balanced");
   const [sheet, setSheet] = useState<SheetState>({ kind: "none" });
   const [skipped, setSkipped] = useState<Record<string, string[]>>({});
@@ -138,6 +150,7 @@ function WeekPlanner({ weekStart }: { weekStart: string }) {
 
   return (
     <div className="space-y-5">
+      <WeeklyDraftBanner weekStart={weekStart} plan={p.plan} />
       {/* Planner controls */}
       <Card>
         <Eyebrow>How should we plan this week?</Eyebrow>
@@ -177,7 +190,14 @@ function WeekPlanner({ weekStart }: { weekStart: string }) {
         <p className="mt-3 text-[14px] text-muted">
           {p.ai.enabled
             ? `Plans with Claude${p.ai.remaining !== null ? ` · ${p.ai.remaining} AI plan${p.ai.remaining === 1 ? "" : "s"} left today` : ""}. Locked meals and your own meals always stay.`
-            : "Uses Kitchen Pantry's built-in planner. Add an Anthropic API key on the server to plan with Claude."}
+            : "Uses Kitchen Pantry's built-in planner. Add an Anthropic API key on the server to plan with Claude."}{" "}
+          <a
+            href="#weekly-drafts"
+            onClick={onWeeklySettings}
+            className="font-semibold text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+          >
+            Weekly drafts
+          </a>
         </p>
       </Card>
 
@@ -272,6 +292,19 @@ function WeekPlanner({ weekStart }: { weekStart: string }) {
               onToggleLock={() => void edit(toggleLock(p.draft, date))}
               onServings={(n) => void edit(setServings(p.draft, date, n))}
               onMore={() => setSheet({ kind: "more", date })}
+              extra={(() => {
+                const att = date >= p.today ? eating.forDay(date) : null;
+                return att ? (
+                  <EatingLine
+                    att={att}
+                    servings={meal.servings}
+                    dayName={dayLabel(date, "long").weekday}
+                    busy={busy}
+                    onOpen={() => setSheet({ kind: "eating", date })}
+                    onUseServings={(n) => void edit(setServings(p.draft, date, n))}
+                  />
+                ) : null;
+              })()}
             />
           );
         })}
@@ -402,6 +435,44 @@ function WeekPlanner({ weekStart }: { weekStart: string }) {
         }
       >
         <p className="text-[15px] text-muted">Tip: lock the dinners you want to keep before rebuilding.</p>
+      </Sheet>
+
+      <Sheet
+        open={sheet.kind === "eating"}
+        onClose={() => setSheet({ kind: "none" })}
+        title={sheet.kind === "eating" ? `Who's eating ${dayLabel(sheet.date, "long").weekday}?` : "Who's eating?"}
+        description="Everyone counts as eating unless they say they're out. Each person answers for themselves; anyone can add guests."
+      >
+        {sheet.kind === "eating"
+          ? (() => {
+              const att = eating.forDay(sheet.date);
+              const meal = mealsByDate.get(sheet.date);
+              const name = dayLabel(sheet.date, "long").weekday;
+              return att ? (
+                <div className="space-y-5">
+                  <EatingControls att={att} dayName={name} onEating={(e) => void eating.setEating(sheet.date, e)} onGuests={(n) => void eating.setGuests(sheet.date, n)} />
+                  <p className="rounded-2xl bg-surface px-4 py-3 text-[15px]">
+                    {att.servings === 0 ? "Nobody's eating — you could remove this dinner or move it to another night." : `${att.servings} serving${att.servings === 1 ? "" : "s"} needed`}
+                    {meal && att.servings > 0 && att.servings !== meal.servings ? ` (planned: ${meal.servings}).` : "."}
+                  </p>
+                  {meal && att.servings > 0 && att.servings !== meal.servings ? (
+                    <Button
+                      disabled={busy}
+                      onClick={async () => {
+                        await edit(setServings(p.draft, sheet.date, att.servings));
+                        setSheet({ kind: "none" });
+                      }}
+                    >
+                      Make it {att.servings} servings
+                    </Button>
+                  ) : null}
+                  {eating.error ? <p role="alert" className="text-[15px] text-danger">{eating.error}</p> : null}
+                </div>
+              ) : (
+                <p className="text-[15px] text-muted">Loading…</p>
+              );
+            })()
+          : null}
       </Sheet>
 
       <Sheet open={sheet.kind === "repeat"} onClose={() => setSheet({ kind: "none" })} title="Repeat a previous week" description="Copies those dinners onto the same days of this week.">

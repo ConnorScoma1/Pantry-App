@@ -4,6 +4,7 @@ import { inviteEmailHref, inviteLink, type HouseholdMember } from "@kitchen-pant
 import { Check, Copy, Crown, Link2, LogOut, Mail, Pencil, Share2, UserMinus, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { Avatar } from "@/components/household/avatar";
+import { ActivityCard, PortionCard } from "@/components/household/activity";
 import { useProfile } from "@/components/profile/profile-provider";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, Hint, PageHeader } from "@/components/ui/card";
@@ -221,6 +222,11 @@ export function HouseholdView() {
       >
         <span />
       </Sheet>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-[1.3fr_1fr] lg:items-start">
+        <ActivityCard />
+        <PortionCard />
+      </div>
     </div>
   );
 }

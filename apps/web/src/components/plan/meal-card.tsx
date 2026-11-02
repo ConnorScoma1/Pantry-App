@@ -60,6 +60,7 @@ export function MealCard({
   onToggleLock,
   onServings,
   onMore,
+  extra,
 }: {
   date: string;
   meal: Meal;
@@ -69,6 +70,8 @@ export function MealCard({
   onToggleLock: () => void;
   onServings: (n: number) => void;
   onMore: () => void;
+  /** Extra line under the dinner (who's eating). */
+  extra?: ReactNode;
 }) {
   const { weekday, day } = dayLabel(date, "long");
   const recipe = ranked?.recipe;
@@ -122,6 +125,8 @@ export function MealCard({
           ) : null}
         </div>
       </div>
+
+      {extra}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
         <div className="flex items-center gap-1.5" role="group" aria-label={`Servings for ${weekday}`}>

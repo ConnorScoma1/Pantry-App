@@ -1,7 +1,9 @@
 "use server";
 
 import {
+  createSupabaseHouseholdLifeRepository,
   createSupabaseHouseholdRepository,
+  type HouseholdLifeRepository,
   type CreatedInvite,
   type HouseholdInvite,
   type HouseholdMember,
@@ -10,6 +12,7 @@ import {
   type InviteDetails,
   type Result,
 } from "@kitchen-pantry/database";
+import type { ActivityEvent, AttendanceData } from "@kitchen-pantry/shared-types";
 import { revalidatePath } from "next/cache";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -75,4 +78,33 @@ export async function setDisplayNameAction(name: unknown): Promise<Result<null>>
 }
 export async function renameHouseholdAction(id: unknown, name: unknown): Promise<Result<null>> {
   return run((r) => r.rename(id, name));
+}
+
+// ---------------------------------------------------------------------------
+// Who's eating, portions and the activity feed (milestone 15)
+// ---------------------------------------------------------------------------
+async function life<T>(fn: (repo: HouseholdLifeRepository) => Promise<Result<T>>): Promise<Result<T>> {
+  if (!isSupabaseConfigured) return { ok: false, message: "Sharing needs accounts. Connect Supabase (see the README)." };
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Please sign in first." };
+  return fn(createSupabaseHouseholdLifeRepository(asSupabaseLike(supabase)));
+}
+
+export async function attendanceAction(from: string, to: string): Promise<Result<AttendanceData>> {
+  return life((r) => r.attendance(String(from), String(to)));
+}
+export async function setEatingAction(day: string, eating: boolean | null): Promise<Result<null>> {
+  return life((r) => r.setEating(String(day), typeof eating === "boolean" ? eating : null));
+}
+export async function setGuestsAction(day: string, guests: number): Promise<Result<null>> {
+  return life((r) => r.setGuests(String(day), Number(guests)));
+}
+export async function setPortionAction(portion: number): Promise<Result<number>> {
+  return life((r) => r.setPortion(Number(portion)));
+}
+export async function activityAction(max = 40): Promise<Result<ActivityEvent[]>> {
+  return life((r) => r.activity(Number(max)));
 }

@@ -580,6 +580,15 @@ export function SentView({ c, d }: { c: Cart; d: CartDraft }) {
             </Button>
           ) : null}
         </div>
+        {d.purchase === "ordered" && d.retailer !== "mock" ? (
+          <p className="mt-3 text-[14px] text-muted">
+            Sale savings on this order now count on{" "}
+            <Link href="/savings" className="font-semibold text-foreground underline decoration-border underline-offset-4">
+              Savings
+            </Link>
+            , where you can also log what you paid.
+          </p>
+        ) : null}
       </div>
     </Card>
   );

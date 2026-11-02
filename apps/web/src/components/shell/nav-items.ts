@@ -1,4 +1,4 @@
-import { CalendarDays, ChefHat, CircleUser, House, Refrigerator, ShoppingCart, Tag, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChefHat, CircleUser, House, PiggyBank, Refrigerator, ShoppingCart, Tag, type LucideIcon } from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -18,7 +18,8 @@ export const navItems: NavItem[] = [
   { href: "/plan", label: "Meal Plan", shortLabel: "Plan", icon: CalendarDays, also: ["/recipes"] },
   { href: "/recipes", label: "Recipes", shortLabel: "Recipes", icon: ChefHat, desktopOnly: true },
   { href: "/specials", label: "Specials", shortLabel: "Specials", icon: Tag },
-  { href: "/grocery", label: "Grocery List", shortLabel: "Grocery", icon: ShoppingCart },
+  { href: "/grocery", label: "Grocery List", shortLabel: "Grocery", icon: ShoppingCart, also: ["/savings", "/cart"] },
+  { href: "/savings", label: "Savings", shortLabel: "Savings", icon: PiggyBank, desktopOnly: true },
   { href: "/profile", label: "Profile", shortLabel: "Profile", icon: CircleUser, desktopOnly: true },
 ];
 

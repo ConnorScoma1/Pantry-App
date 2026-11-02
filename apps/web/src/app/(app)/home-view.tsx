@@ -18,6 +18,9 @@ import { useRecipes } from "@/lib/recipes/use-recipes";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { InSeasonCard } from "@/components/seasonal/in-season";
 import { SurpriseMe } from "@/components/recipes/surprise-me";
+import { PlanReadyCard } from "@/components/plan/plan-ready-card";
+import { SavingsSnapshot } from "@/components/savings-snapshot";
+import { TonightCard } from "@/components/household/tonight-card";
 import { seasonalContext } from "@kitchen-pantry/recipe-engine";
 
 export function HomeView() {
@@ -41,6 +44,8 @@ export function HomeView() {
         <p className="text-[17px] text-muted">{hello}</p>
         <h1 className="text-[34px] font-bold leading-tight tracking-tight lg:text-[40px]">Your week</h1>
       </header>
+
+      <PlanReadyCard />
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
         <ThisWeekCard dinners={dinners} cookingFor={household.cookingFor} />
@@ -66,6 +71,9 @@ export function HomeView() {
           </Link>
         </Card>
       </div>
+
+      <TonightCard today={kitchen.today} titleFor={(id) => everything.find((r) => r.recipe.id === id)?.recipe.title ?? null} />
+      <SavingsSnapshot />
 
       <section className="mt-8" aria-labelledby="for-you">
         <div className="mb-3 flex items-end justify-between gap-4">
