@@ -49,7 +49,7 @@ NEXT_PUBLIC_SUPABASE_URL=...      # API URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=... # anon / publishable key
 ```
 
-Restart `npm run dev`. You'll now get a sign-in page; create an account and go through onboarding. Local Supabase shows confirmation/magic-link emails at <http://127.0.0.1:54324>.
+Restart `npm run dev`. You'll now get a sign-in page; create an account and go through onboarding. Local Supabase shows confirmation/magic-link emails in its local inbox (the address `npx supabase start` prints).
 
 ## Mobile app (iOS & Android)
 
