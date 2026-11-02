@@ -4,6 +4,7 @@
  *   npm run ai:eval                         # the provider and model in apps/web/.env.local
  *   npm run ai:eval -- --only budget        # one category (budget, international, advanced, dietary, everyday)
  *   npm run ai:eval -- --baseline           # built-in planner only (no AI, no cost)
+ *   npm run ai:eval -- --pause 0            # seconds between weeks (default 5: free tiers limit requests per minute)
  *
  * Each case plans one week with the model and, on the same input, with the
  * built-in planner. Every week is scored by plain code: validated JSON,
@@ -70,7 +71,11 @@ async function main() {
   ];
   let aiPass = 0, basePass = 0, total = 0, tokensIn = 0, tokensOut = 0, cost = 0, ms = 0, fallbacks = 0;
 
+  const pause = Math.max(0, Number(arg("pause") ?? 5)) * 1000;
+  let first = true;
   for (const c of cases) {
+    if (config && !first && pause) await new Promise((r) => setTimeout(r, pause));
+    first = false;
     const profile = sampleProfile(c.profile);
     const pantry: PantryItem[] = (c.pantry ?? []).map((p, i) => ({
       id: `p${i}`, ingredientId: null, name: p.name, category: "other", quantity: null, unit: null, storageLocation: "fridge", purchasedOn: null,

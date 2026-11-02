@@ -21,13 +21,31 @@
  * it never prints it.
  */
 import { buildMealPlanPrompt, estimateCostMicros, planWeekWithAi, readAiSetup, type AiConfig } from "../src/index";
-import { loadRecipes, loadWebEnv, nextWeek, rank, sampleProfile, flag, usd } from "./lib";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { loadRecipes, loadWebEnv, nextWeek, rank, sampleProfile, flag, usd, ROOT } from "./lib";
+
+// Everything printed is also saved to packages/ai/eval/results/poc-<date>.md (never the key).
+const out: string[] = [];
+const say = (...parts: unknown[]) => {
+  const line = parts.map(String).join(" ");
+  out.push(line);
+  console.log(line);
+};
+function saveReport() {
+  const dir = resolve(ROOT, "packages/ai/eval/results");
+  mkdirSync(dir, { recursive: true });
+  const file = resolve(dir, `poc-${new Date().toISOString().slice(0, 10)}.md`);
+  writeFileSync(file, ["# AI proof of concept", "", "```", ...out, "```", ""].join("\n"));
+  console.log(`\nSaved to ${file}`);
+}
 
 async function main() {
   const envFile = loadWebEnv();
   const setup = readAiSetup();
   const dry = flag("dry-run");
   if ("problem" in setup && !dry) {
+    out.push(`AI isn't set up: ${setup.problem}`);
     console.error(`AI isn't set up: ${setup.problem}\n${envFile ? `(read ${envFile})` : "No apps/web/.env.local found."}\nRun with --dry-run to see the request without calling the model.`);
     process.exit(1);
   }
@@ -46,39 +64,40 @@ async function main() {
   const input = { days, candidates, mode: "balanced" as const, goals: profile.goals.ranked, servings: profile.household.cookingFor };
   const prompt = buildMealPlanPrompt({ ...input, skillLevel: profile.skillLevel, householdSize: profile.household.cookingFor });
 
-  console.log(`Recipes: ${source}`);
-  console.log(`Filtered by code for the sample household: ${candidates.length} suitable, ${prompt.candidates.length} sent to the model.`);
+  say(`Recipes: ${source}`);
+  say(`Filtered by code for the sample household: ${candidates.length} suitable, ${prompt.candidates.length} sent to the model.`);
   const approxIn = Math.round((prompt.user.length + 1800) / 4);
-  console.log(`Request size: ${prompt.user.length.toLocaleString()} characters (≈${approxIn.toLocaleString()} input tokens, estimated at 4 characters per token).`);
-  if (config?.price) console.log(`Estimated cost before calling: ≈${usd(estimateCostMicros(config.price, { inputTokens: approxIn, outputTokens: 450 })!)} (≈450 output tokens).`);
+  say(`Request size: ${prompt.user.length.toLocaleString()} characters (≈${approxIn.toLocaleString()} input tokens, estimated at 4 characters per token).`);
+  if (config?.price) say(`Estimated cost before calling: ≈${usd(estimateCostMicros(config.price, { inputTokens: approxIn, outputTokens: 450 })!)} (≈450 output tokens).`);
 
   if (dry || !config) {
-    console.log("\n--dry-run: no AI call made. First 1,500 characters of what would be sent:\n");
-    console.log(prompt.user.slice(0, 1500));
+    say("\n--dry-run: no AI call made. First 1,500 characters of what would be sent:\n");
+    say(prompt.user.slice(0, 1500));
     return;
   }
 
-  console.log(`\nAsking ${config.provider} (${config.model})…`);
+  say(`\nAsking ${config.provider} (${config.model})…`);
   const started = Date.now();
   const r = await planWeekWithAi({ config, input, skillLevel: profile.skillLevel, householdSize: profile.household.cookingFor, cacheScope: "poc" });
   const ms = Date.now() - started;
   const byId = new Map(recipes.map((x) => [x.id, x]));
-  console.log(`\nPlan for the week of ${days[0]} — ${r.source === "ai" ? "chosen by the AI and validated" : "built-in planner (AI fallback)"} in ${(ms / 1000).toFixed(1)} s`);
-  if (r.notice) console.log(`Note: ${r.notice}`);
+  say(`\nPlan for the week of ${days[0]} — ${r.source === "ai" ? "chosen by the AI and validated" : "built-in planner (AI fallback)"} in ${(ms / 1000).toFixed(1)} s`);
+  if (r.notice) say(`Note: ${r.notice}`);
   for (const p of r.picks) {
     const rec = byId.get(p.recipeId);
     const day = new Date(`${p.date}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" });
-    console.log(`  ${day} ${p.date}  ${rec?.title ?? p.recipeId}  (${rec?.cuisine ?? "?"}, ${rec?.totalMinutes ?? "?"} min, skill ${rec?.skillLevel ?? "?"})\n                 ${p.note}`);
+    say(`  ${day} ${p.date}  ${rec?.title ?? p.recipeId}  (${rec?.cuisine ?? "?"}, ${rec?.totalMinutes ?? "?"} min, skill ${rec?.skillLevel ?? "?"})\n                 ${p.note}`);
   }
-  if (r.unfilled.length) console.log(`  Not filled: ${r.unfilled.join(", ")}`);
-  console.log(`\nSummary: ${r.summary}`);
+  if (r.unfilled.length) say(`  Not filled: ${r.unfilled.join(", ")}`);
+  say(`\nSummary: ${r.summary}`);
   if (r.usage) {
     const cost = estimateCostMicros(config.price, r.usage);
-    console.log(`Tokens: ${r.usage.inputTokens} in, ${r.usage.outputTokens} out. Estimated cost: ${cost === null ? "unknown (no published price set)" : usd(cost)}${config.price ? ` at $${config.price.inputPerMillion}/$${config.price.outputPerMillion} per million tokens` : ""}.`);
+    say(`Tokens: ${r.usage.inputTokens} in, ${r.usage.outputTokens} out. Estimated cost: ${cost === null ? "unknown (no published price set)" : usd(cost)}${config.price ? ` at $${config.price.inputPerMillion}/$${config.price.outputPerMillion} per million tokens` : ""}.`);
   }
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
+main().then(saveReport, (e) => {
+  say(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+  saveReport();
   process.exit(1);
 });

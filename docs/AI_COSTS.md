@@ -14,7 +14,7 @@ billing and applying the migrations are your decisions.
 | Quantities, pantry maths, grocery lists, prices and budgets are plain code. | `inventory-engine`, `meal-planner`, `grocery-pricing` |
 | AI is used only for: picking a week from the filtered candidates, recipe adaptations, new dinners from kitchen leftovers, cooking questions and substitutions, and explaining a shopping comparison. | `packages/ai/src/*` |
 | The model sees only short candidate summaries: id, title, cuisine, minutes, skill, main proteins, what to buy, and up to 30 candidates. No steps, amounts, prices, names or addresses. | `buildMealPlanPrompt` |
-| Caching: identical meal-plan requests are reused for an hour. Each household keeps one adaptation per recipe and version, which is returned without calling the AI. | `meal-plan.ts`, `find_household_draft()` |
+| Caching: the AI's answer to a meal-plan request is saved for the household for 48 hours under a SHA-256 of the request (model, candidates, open dates, mode, skill). The same request from the web, the phone or the weekly draft job is answered from it, without calling the AI or using up a daily request, and is re-checked against today's safe recipes first. Only the answer is saved (recipe ids, dates, one-line reasons, summary), never the prompt or kitchen contents. Each household keeps one adaptation per recipe and version, which is returned without calling the AI. | `meal-plan.ts`, migration `…2400_ai_plan_cache`, `find_household_draft()` |
 | Limits: per-feature daily limits per household and per person. Optional monthly limits: requests per person (`AI_MONTHLY_REQUESTS_PER_PERSON`) and an app-wide spending cap (`AI_MONTHLY_BUDGET_USD`). | `reserve_ai_request()`, migration `…2300_ai_costs` |
 | Every request logs feature, model, tokens and estimated cost, and nothing else. No prompts or answers are stored. | `ai_usage`, `ai_spend_months` |
 | Every answer is checked against a schema, then re-checked: only offered recipe ids, safe cooking temperatures, allergens, diet and restrictions, no invented prices. | each feature + `answerToRecipe`, `validateAiPicks` |
@@ -31,10 +31,12 @@ From Google's [Gemini API pricing page](https://ai.google.dev/gemini-api/docs/pr
 | Free tier | free, with rate limits | free, with rate limits |
 
 Google may use free-tier prompts to improve its products. For real users'
-data, use a paid key. Vertex AI pricing for the same model can differ, so
+data, use a paid key. The app calls Google AI Studio (the Gemini API); Vertex AI needs Cloud billing and its pricing can differ, so
 check your Cloud billing page.
 
 ## Estimated monthly cost
+
+**Proof of concept, 2026-11-02:** one real Gemini 3.1 Flash-Lite call planned a full validated week from the recipe catalogue in 6.6 s using 4,447 input and 682 output tokens, for $0.00214. That's about 16% above the first estimate, because Gemini's hidden "thinking" is billed as output. The figures below include it.
 
 The numbers come from `npm run ai:costs`. Input sizes are **measured from
 the app's real prompts** (system text, data and response schema), built
@@ -44,20 +46,20 @@ Output sizes are typical answer lengths. Usage per user is an
 
 | Request | Input tokens | Output tokens | Cost each | Assumed per active user per month |
 |---|---:|---:|---:|---|
-| Weekly meal plan (incl. regenerate) | ≈4,700 | ≈450 | $0.00185 | 6, of which 15% are cached |
+| Weekly meal plan (incl. regenerate) | ≈4,700 (**measured with Gemini: 4,447**) | ≈700 (**measured: 682**, incl. thinking) | $0.00224 (**measured: $0.00214**) | 6, of which 15% are cached |
 | Cooking question or substitution | ≈660 | ≈200 | $0.00047 | 4 |
 | Recipe adaptation (simpler, budget, …) | ≈1,300 | ≈1,800 | $0.00302 | 2, of which 30% are cached |
 | New dinner from kitchen leftovers | ≈1,200 | ≈1,800 | $0.00300 | 1 |
 | Shopping trip explanation | ≈1,060 | ≈120 | $0.00044 | 1 |
 
-**About $0.019 per active user per month, or about $0.23 a year. That's
-under 1% of the $24.99 subscription.**
+**About $0.021 per active user per month, or about $0.25 a year. That's
+about 1% of the $24.99 subscription.**
 
 | Active users | Per month | Per year |
 |---:|---:|---:|
-| 1,000 | ≈ $19 | ≈ $228 |
-| 10,000 | ≈ $190 | ≈ $2,280 |
-| 100,000 | ≈ $1,900 | ≈ $22,800 |
+| 1,000 | ≈ $21 | ≈ $252 |
+| 10,000 | ≈ $210 | ≈ $2,520 |
+| 100,000 | ≈ $2,100 | ≈ $25,200 |
 
 **Heavy use.** At 2.5× the usage above, with about 500 thinking tokens per
 request, the cost is about $0.06 per user per month. `AI_MONTHLY_REQUESTS_PER_PERSON`
@@ -81,8 +83,21 @@ month at these prices.
 2. In `apps/web/.env.local`, set `AI_PROVIDER=gemini`, `GEMINI_API_KEY=…` and `AI_MONTHLY_BUDGET_USD=5`.
 3. Run `npm run ai:poc`. It prints a real 7-day plan, the tokens used and the cost. Compare the cost with the table above.
 4. Run `npm run ai:eval`. It runs 12 households (budget, international and authentic, advanced and beginner, vegetarian, vegan with nut allergies, gluten- and dairy-free, halal with a shellfish allergy, weeknights, using up the fridge). It scores each one with plain code against the built-in planner and writes a report to `packages/ai/eval/results/`. Repeat with another `AI_PROVIDER` or `AI_MODEL` to compare models.
-5. Review and apply migration `…2300_ai_costs`, which adds monthly caps and cost logging.
+5. Review and apply migrations `…2300_ai_costs` (monthly caps and cost logging) and `…2400_ai_plan_cache` (saved AI meal plans). Without `…2400` the app still works; it just can't share answers between requests.
 6. Decide on paid billing.
+
+## Quality test results (Gemini 3.1 Flash-Lite, free tier, 2026-11-02)
+
+Two runs of `npm run ai:eval` (12 households each):
+
+- **Safety:** every AI week passed the allergy, diet, restriction, equipment and skill checks again, and none invented a price.
+- **Better than the built-in planner:** authentic/traditional weeks (≥ 4 traditional dishes; the built-in planner doesn't manage it) and vegetarian variety.
+- **Weaker, now handled in code:**
+  - The same protein on back-to-back nights. The app now re-orders the AI's week itself; the second run had no repeats.
+  - Easy dishes for expert cooks. Chef's Choice for skill 4–5 now offers the AI only skill-3+ dishes when there are enough.
+  - Claims about using up food that wasn't in the kitchen. These are now dropped.
+- **Reliability:** 3 of 12 weeks fell back to the built-in plan each run because the free tier was busy or slow (rate limits, and replies taking 20–45 s). Busy replies are retried once, and a week now gives up after 30 s and uses the standard plan. A paid key should mostly remove this; in the runs, successful replies took 2–8 s.
+- **Cost:** $0.016–0.017 for 12 weeks (about $0.0014 per week), in line with the estimate.
 
 ## Changed alongside this work: diet safety
 

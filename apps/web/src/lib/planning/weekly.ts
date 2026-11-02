@@ -5,6 +5,7 @@ import { createPlanningJobServer, type ClaimedPlanningJob, type PlanningJobServe
 import { sendExpoPushes } from "@kitchen-pantry/integrations";
 import { draftWeek } from "@kitchen-pantry/meal-planner";
 import { findSpecials, pricingStatus } from "@/lib/pricing/server";
+import { servicePlanStore } from "@/lib/meal-plan/plan-store";
 import { serviceRoleConfigured, serviceSupabase } from "@/lib/supabase/service";
 
 /**
@@ -136,6 +137,7 @@ async function draftOne(server: PlanningJobServer, svc: SupabaseLike, job: Claim
           skillLevel: c.profile.skillLevel,
           householdSize: c.profile.household.cookingFor,
           cacheScope: c.householdId,
+          store: ai ? servicePlanStore(svc, c.householdId) : null,
         });
         const asked = r.cached || r.source === "ai" || r.notice !== null;
         const cost = ai && !r.cached && monthlyCapsOn(ai) ? estimateCostMicros(ai.price, r.usage ?? { inputTokens: 0, outputTokens: ai.maxOutputTokens }) : null;

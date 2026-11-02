@@ -1,5 +1,6 @@
 import "server-only";
-import { planWeekWithClaude, readAiConfig, type AiConfig, type AiPlanResult } from "@kitchen-pantry/ai";
+import { findCachedAiPlan, planWeekWithClaude, readAiConfig, type AiConfig, type AiPlanResult } from "@kitchen-pantry/ai";
+import { supabasePlanStore } from "./plan-store";
 import { createPreviewAllowance, finishAiRequest, previewAiAllowed, reserveAiRequest } from "@/lib/ai-usage";
 import {
   createSupabaseKitchenRepository,
@@ -176,9 +177,9 @@ async function remainingFor(db: SupabaseLike | null, config: AiConfig): Promise<
   return Math.max(0, config.dailyPlanLimit - Number(data ?? 0));
 }
 
-async function logLimited(db: SupabaseLike | null, model: string) {
+async function logOutcome(db: SupabaseLike | null, model: string, outcome: "limited" | "cached") {
   if (!db) return;
-  const { error } = await db.from("ai_usage").insert({ feature: FEATURE, model, input_tokens: 0, output_tokens: 0, outcome: "limited" });
+  const { error } = await db.from("ai_usage").insert({ feature: FEATURE, model, input_tokens: 0, output_tokens: 0, outcome });
   if (error) console.error("[ai] usage log failed", { code: error.code });
 }
 
@@ -234,6 +235,19 @@ export async function generateMealPlan(
 
   const config = readAiConfig();
   let usable = config && config.dailyPlanLimit > 0 && (db || previewAiAllowed()) ? config : null;
+  const store = db ? supabasePlanStore(db) : null;
+  const planOptions = { input, skillLevel: ctx.profile.skillLevel, householdSize: ctx.profile.household.cookingFor, cacheScope: scope, store };
+
+  // The household already has the AI's answer to exactly this request (from the web,
+  // the phone or the weekly draft): reuse it without using up a request.
+  if (usable) {
+    const saved = await findCachedAiPlan({ config: usable, ...planOptions });
+    if (saved) {
+      await logOutcome(db, usable.model, "cached");
+      return { ok: true, data: { picks: saved.picks, unfilled: saved.unfilled, summary: saved.summary, source: saved.source, notice: null } };
+    }
+  }
+
   let limitNotice: string | null = null;
   // Take a slot before calling Claude, so parallel requests can't overshoot the daily limit.
   let slot: string | null = null;
@@ -242,19 +256,13 @@ export async function generateMealPlan(
     if (db) slot = await reserveAiRequest(db, FEATURE, usable.dailyPlanLimit);
     else giveBack = preview.reserve(usable.dailyPlanLimit);
     if (!slot && !giveBack) {
-      await logLimited(db, usable.model);
+      await logOutcome(db, usable.model, "limited");
       usable = null;
       limitNotice = "You've used today's AI plans, so here's our standard plan. AI planning resets within 24 hours.";
     }
   }
 
-  const result = await planWeekWithClaude({
-    config: usable,
-    input,
-    skillLevel: ctx.profile.skillLevel,
-    householdSize: ctx.profile.household.cookingFor,
-    cacheScope: scope,
-  });
+  const result = await planWeekWithClaude({ config: usable, ...planOptions });
   // A cached answer, or no call at all, gives the slot back.
   if (usable) {
     const asked = result.source === "ai" || result.notice !== null;

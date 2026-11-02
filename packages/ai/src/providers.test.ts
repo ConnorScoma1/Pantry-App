@@ -35,13 +35,14 @@ test("AI settings: provider from AI_PROVIDER or the key that's set; models and p
   assert.equal(estimateCostMicros(null, { inputTokens: 1, outputTokens: 1 }), null);
 });
 
-test("Gemini: Vertex express or AI Studio by key, key in a header, schema trimmed, thinking billed as output", async () => {
-  assert.equal(geminiEndpoint({ apiKey: "AQ.x" }), "vertex");
+test("Gemini: AI Studio by default (any key), Vertex on request, key in a header, schema trimmed, thinking billed as output", async () => {
+  assert.equal(geminiEndpoint({ apiKey: "AQ.x" }), "studio");
   assert.equal(geminiEndpoint({ apiKey: "AIzaSy" }), "studio");
+  assert.equal(geminiEndpoint({ apiKey: "AQ.x", geminiEndpoint: "vertex" }), "vertex");
   assert.deepEqual(toGeminiSchema(schema), { type: "object", required: ["ok"], properties: { ok: { type: "boolean" }, note: { type: ["string", "null"] } } });
 
   const r = recorder({ candidates: [{ content: { parts: [{ text: "thinking…", thought: true }, { text: '{"ok":true}' }] }, finishReason: "STOP" }], usageMetadata: { promptTokenCount: 900, candidatesTokenCount: 40, thoughtsTokenCount: 60 }, modelVersion: "gemini-3.1-flash-lite" });
-  const config: AiConfig = { provider: "gemini", apiKey: "AQ.secret", model: "gemini-3.1-flash-lite", maxOutputTokens: 1000, dailyPlanLimit: 5, thinkingLevel: "low" };
+  const config: AiConfig = { provider: "gemini", apiKey: "AQ.secret", model: "gemini-3.1-flash-lite", maxOutputTokens: 1000, dailyPlanLimit: 5, thinkingLevel: "low", geminiEndpoint: "vertex" };
   const res = await callModelJson({ config, system: "sys", user: "hi", schema, fetchImpl: r.fetchImpl });
   assert.deepEqual(res.json, { ok: true });
   assert.deepEqual(res.usage, { inputTokens: 900, outputTokens: 100 });
@@ -55,7 +56,7 @@ test("Gemini: Vertex express or AI Studio by key, key in a header, schema trimme
   assert.deepEqual(call.body.systemInstruction, { parts: [{ text: "sys" }] });
 
   const studio = recorder({ candidates: [{ content: { parts: [{ text: '```json\n{"ok":false}\n```' }] }, finishReason: "STOP" }] });
-  const s = await callModelJson({ config: { ...config, apiKey: "AIzaK", thinkingLevel: undefined }, system: "s", user: "u", schema, fetchImpl: studio.fetchImpl });
+  const s = await callModelJson({ config: { ...config, apiKey: "AQ.K", thinkingLevel: undefined, geminiEndpoint: undefined }, system: "s", user: "u", schema, fetchImpl: studio.fetchImpl });
   assert.deepEqual(s.json, { ok: false }, "a code fence around JSON is tolerated");
   assert.ok(studio.calls[0]!.url.startsWith("https://generativelanguage.googleapis.com/v1beta/models/"));
   assert.ok(!("thinkingConfig" in (studio.calls[0]!.body.generationConfig as object)));
@@ -65,7 +66,12 @@ test("Gemini: Vertex express or AI Studio by key, key in a header, schema trimme
   const blocked = recorder({ promptFeedback: { blockReason: "SAFETY" } });
   await assert.rejects(callModelJson({ config, system: "s", user: "u", schema, fetchImpl: blocked.fetchImpl }), (e: AiRequestError) => e.kind === "refusal");
   const busy = recorder({ error: { message: "quota for key AQ.secret" } }, 429);
-  await assert.rejects(callModelJson({ config, system: "s", user: "u", schema, fetchImpl: busy.fetchImpl }), (e: AiRequestError) => e.kind === "rate_limited" && !e.message.includes("secret"));
+  await assert.rejects(callModelJson({ config, system: "s", user: "u", schema, fetchImpl: busy.fetchImpl, retryDelayMs: 0 }), (e: AiRequestError) => e.kind === "rate_limited" && !e.message.includes("secret"));
+  assert.equal(busy.calls.length, 2, "busy is retried once");
+  // Busy, then fine: the retry answers.
+  let n = 0;
+  const flaky: FetchLike = async () => (n++ === 0 ? { ok: false, status: 503, json: async () => ({}) } : { ok: true, status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"ok":true}' }] }, finishReason: "STOP" }] }) });
+  assert.deepEqual((await callModelJson({ config, system: "s", user: "u", schema, fetchImpl: flaky, retryDelayMs: 0 })).json, { ok: true });
 });
 
 test("OpenAI and Groq: chat completions with a JSON schema", async () => {

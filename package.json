@@ -28,7 +28,8 @@
     "recipes:draft": "tsx packages/ai/scripts/draft-library.ts",
     "ai:poc": "tsx packages/ai/scripts/poc-week.ts",
     "ai:eval": "tsx packages/ai/scripts/eval.ts",
-    "ai:costs": "tsx packages/ai/scripts/costs.ts"
+    "ai:costs": "tsx packages/ai/scripts/costs.ts",
+    "ai:check": "tsx packages/ai/scripts/check.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

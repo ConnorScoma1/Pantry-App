@@ -8,7 +8,10 @@ import {
   ANTHROPIC_VERSION,
   buildMealPlanPrompt,
   clearAiPlanCache,
+  findCachedAiPlan,
   planWeekWithClaude,
+  type AiPlanStore,
+  type SavedAiAnswer,
   validateAiPicks,
   type AiConfig,
   type FetchLike,
@@ -177,6 +180,77 @@ test("identical requests are cached per household; a new seed calls again", asyn
   assert.equal(calls.length, 3, "other households and regenerations are never served from this cache");
 });
 
+function memoryStore() {
+  const rows = new Map<string, SavedAiAnswer>();
+  const store: AiPlanStore = {
+    get: async (key) => rows.get(key) ?? null,
+    set: async (key, answer, ttl) => {
+      assert.match(key, /^[0-9a-f]{64}$/);
+      assert.equal(ttl, 48);
+      rows.set(key, answer);
+    },
+  };
+  return { store, rows };
+}
+
+test("saved answers: another server reuses the household's answer without calling the AI", async () => {
+  const meals = [
+    { date: "2026-11-09", recipeId: id("weeknight-vegetable-fried-rice"), why: "Quick." },
+    { date: "2026-11-11", recipeId: id("salmon-lemon-dill-yogurt-green-beans"), why: "Fish night." },
+    { date: "2026-11-13", recipeId: id("mushroom-thyme-risotto"), why: "Friday treat." },
+  ];
+  const { fetchImpl, calls } = fakeClaude(() => ok(meals, "A varied week."));
+  const { store, rows } = memoryStore();
+  const a = await planWeekWithClaude({ config, input: input({ seed: 1 }), skillLevel: 3, householdSize: 2, fetchImpl, cacheScope: "h1", store });
+  assert.equal(rows.size, 1);
+  const saved = [...rows.values()][0]!;
+  assert.deepEqual(Object.keys(saved).sort(), ["meals", "summary"], "only the answer is saved — no prompt, no kitchen contents");
+
+  clearAiPlanCache(); // a different server process
+  const found = await findCachedAiPlan({ config, input: input({ seed: 1 }), skillLevel: 3, householdSize: 2, cacheScope: "h1", store });
+  assert.ok(found?.cached);
+  assert.equal(found!.usage, null, "nothing to pay for");
+  assert.deepEqual(found!.picks.map((p) => p.recipeId), a.picks.map((p) => p.recipeId));
+  assert.equal(found!.summary, a.summary);
+  const b = await planWeekWithClaude({ config, input: input({ seed: 1 }), skillLevel: 3, householdSize: 2, fetchImpl, cacheScope: "h1", store });
+  assert.equal(b.cached, true);
+  assert.equal(calls.length, 1);
+
+  // A different request (new seed) misses and saves its own answer.
+  assert.equal(await findCachedAiPlan({ config, input: input({ seed: 2 }), skillLevel: 3, householdSize: 2, cacheScope: "h1", store }), null);
+});
+
+test("saved answers are re-checked: a recipe that's no longer allowed means asking again", async () => {
+  const meals = [
+    { date: "2026-11-09", recipeId: id("weeknight-vegetable-fried-rice"), why: "Quick." },
+    { date: "2026-11-11", recipeId: id("salmon-lemon-dill-yogurt-green-beans"), why: "Fish night." },
+    { date: "2026-11-13", recipeId: id("mushroom-thyme-risotto"), why: "Friday treat." },
+  ];
+  const { fetchImpl, calls } = fakeClaude(() => ok(meals));
+  const { store, rows } = memoryStore();
+  await planWeekWithClaude({ config, input: input({ seed: 1 }), skillLevel: 3, householdSize: 2, fetchImpl, cacheScope: "h1", store });
+  clearAiPlanCache();
+  // Someone tampers with the saved answer (or the catalogue changed): an id that isn't a candidate.
+  const [key] = [...rows.keys()];
+  rows.set(key!, { meals: [{ date: "2026-11-09", recipeId: "not-a-candidate", why: "x" }], summary: "x" });
+  assert.equal(await findCachedAiPlan({ config, input: input({ seed: 1 }), skillLevel: 3, householdSize: 2, cacheScope: "h1", store }), null);
+  // Junk in the store is a miss, not a crash.
+  rows.set(key!, "garbage" as unknown as SavedAiAnswer);
+  const again = await planWeekWithClaude({ config, input: input({ seed: 1 }), skillLevel: 3, householdSize: 2, fetchImpl, cacheScope: "h1", store });
+  assert.equal(again.cached, false);
+  assert.equal(calls.length, 2);
+  assert.notEqual(rows.get(key!), "garbage", "the fresh answer replaces it");
+});
+
+test("a failing store never breaks planning", async () => {
+  const meals = [{ date: "2026-11-09", recipeId: id("weeknight-vegetable-fried-rice"), why: "Quick." }];
+  const { fetchImpl, calls } = fakeClaude(() => ok(meals));
+  const store: AiPlanStore = { get: async () => { throw new Error("db down"); }, set: async () => { throw new Error("db down"); } };
+  const r = await planWeekWithClaude({ config, input: input({ seed: 1 }), skillLevel: 3, householdSize: 2, fetchImpl, cacheScope: "h1", store });
+  assert.equal(r.source, "ai");
+  assert.equal(calls.length, 1);
+});
+
 test("validateAiPicks keeps locked meals out of the week", () => {
   const locked = id("mushroom-thyme-risotto");
   const { picks, rejected } = validateAiPicks(
@@ -205,4 +279,46 @@ test("cook the specials: Claude sees which candidates use sale items (no prices)
   assert.ok(!user.includes("599") && !user.includes("899"), "no prices in the prompt");
   const balanced = buildMealPlanPrompt({ ...input({ mode: "balanced", specials }), skillLevel: 3, householdSize: 2 });
   assert.ok(!balanced.user.includes("onSale"));
+});
+
+test("AI plans: claims about using up the kitchen are dropped when the dinner uses nothing from it", async () => {
+  const { validateAiPicks } = await import("./index");
+  const raw = {
+    meals: [
+      { date: "2026-11-09", recipeId: "a", why: "Uses up your remaining lemons and garlic." },
+      { date: "2026-11-10", recipeId: "b", why: "Uses up the spinach in your fridge." },
+    ],
+    summary: "A week that uses up your leftovers.",
+  };
+  const r = validateAiPicks(raw, new Set(["a", "b"]), ["2026-11-09", "2026-11-10"], new Set(), 2, new Set(["b"]));
+  assert.equal(r.picks[0]!.note, "Chosen to fit your week");
+  assert.equal(r.picks[1]!.note, "Uses up the spinach in your fridge.");
+  assert.equal(r.summary, "A week that uses up your leftovers.", "one dinner really does use the kitchen");
+  const none = validateAiPicks(raw, new Set(["a", "b"]), ["2026-11-09", "2026-11-10"], new Set(), 2, new Set());
+  assert.equal(none.summary, null, "nothing uses the kitchen, so the summary's claim is dropped");
+});
+
+test("AI plans: the same main protein isn't left on back-to-back nights; long dishes stay off weeknights", async () => {
+  const { spreadProteins } = await import("./index");
+  const { catalogRecipes, rankRecipes } = await import("@kitchen-pantry/recipe-engine");
+  const { defaultOnboardingProfile } = await import("@kitchen-pantry/validation");
+  const p = defaultOnboardingProfile();
+  p.skillLevel = 5;
+  p.equipment = ["stove", "oven", "dutch_oven", "blender", "food_processor", "cast_iron"];
+  const ranked = rankRecipes(catalogRecipes, { profile: p, pantry: [], today: "2026-11-02", favorites: new Set(), ratings: new Map(), myRatings: new Map(), seasonal: null, taste: null }, { includeAboveSkill: true }).recipes;
+  const { recipeProteins } = await import("@kitchen-pantry/recipe-engine");
+  const chicken = ranked.filter((r) => recipeProteins(r.recipe)[0] === "chicken" && r.recipe.totalMinutes <= 45).slice(0, 3);
+  const other = ranked.filter((r) => ["beans", "tofu", "fish"].includes(recipeProteins(r.recipe)[0] ?? "") && r.recipe.totalMinutes <= 45).slice(0, 2);
+  assert.equal(chicken.length, 3);
+  assert.equal(other.length, 2);
+  const days = ["2026-11-09", "2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"];
+  const order = [other[0]!, chicken[0]!, chicken[1]!, chicken[2]!, other[1]!];
+  const picks = order.map((r, i) => ({ date: days[i]!, recipeId: r.recipe.id, servings: 2, note: "why" }));
+  const out = spreadProteins(picks, new Map(ranked.map((r) => [r.recipe.id, r])));
+  const mains = out.sort((a, b) => a.date.localeCompare(b.date)).map((x) => recipeProteins(ranked.find((r) => r.recipe.id === x.recipeId)!.recipe)[0]);
+  for (let i = 1; i < mains.length; i++) assert.ok(mains[i] !== "chicken" || mains[i - 1] !== "chicken", `chicken twice in a row: ${mains.join(",")}`);
+  assert.deepEqual(new Set(out.map((x) => x.recipeId)), new Set(picks.map((x) => x.recipeId)), "same dinners, new order");
+  assert.ok(out.some((x) => x.note === "Chosen to fit your week"), "moved dinners lose a night-specific note");
+  const fine = [other[0]!, chicken[0]!, other[1]!].map((r, i) => ({ date: days[i]!, recipeId: r.recipe.id, servings: 2, note: "why" }));
+  assert.deepEqual(spreadProteins(fine, new Map(ranked.map((r) => [r.recipe.id, r]))), fine, "a varied week is left alone");
 });

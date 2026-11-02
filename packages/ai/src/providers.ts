@@ -34,9 +34,26 @@ export interface ModelJsonOptions {
   schema: Record<string, unknown>;
   fetchImpl?: FetchLike;
   timeoutMs?: number;
+  /** Pause before the single retry on "busy" (default 2 s; tests use 0). */
+  retryDelayMs?: number;
 }
 
+/**
+ * One retry, after a short pause, when the provider says it's busy or rate
+ * limited (429/503/529) — common on free tiers. Timeouts aren't retried (the
+ * person would wait too long); everything else falls back right away.
+ */
 export async function callModelJson(options: ModelJsonOptions): Promise<ModelJsonResult> {
+  try {
+    return await callOnce(options);
+  } catch (err) {
+    if (!(err instanceof AiRequestError) || (err.kind !== "rate_limited" && err.kind !== "overloaded")) throw err;
+    await new Promise((r) => setTimeout(r, options.retryDelayMs ?? 2_000));
+    return callOnce(options);
+  }
+}
+
+async function callOnce(options: ModelJsonOptions): Promise<ModelJsonResult> {
   assertServerOnly();
   switch (options.config.provider ?? "anthropic") {
     case "anthropic":
@@ -107,10 +124,14 @@ function parseJsonText(text: string | undefined, who: string, status: number, re
 // Gemini
 // ---------------------------------------------------------------------------
 
-/** Vertex AI express-mode keys start with "AQ."; Google AI Studio keys with "AIza". */
+/**
+ * Google AI Studio (the Gemini API) by default: it accepts both "AIza…" and
+ * "AQ.…" keys and needs no Cloud billing set-up. Vertex AI only when
+ * GEMINI_ENDPOINT=vertex (it needs the Agent Platform API and billing on the
+ * Cloud project — checked with `npm run ai:check`, 2026-11-02).
+ */
 export function geminiEndpoint(config: Pick<AiConfig, "apiKey" | "geminiEndpoint">): "studio" | "vertex" {
-  if (config.geminiEndpoint) return config.geminiEndpoint;
-  return config.apiKey.startsWith("AQ.") ? "vertex" : "studio";
+  return config.geminiEndpoint ?? "studio";
 }
 
 /** JSON Schema keywords Gemini doesn't accept in response schemas are dropped (we validate them with zod anyway). */
