@@ -1,5 +1,6 @@
 import { brand } from "@kitchen-pantry/ui-tokens";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ButtonLink } from "@/components/ui/button";
 import { BrandLockup } from "@/components/shell/brand";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -11,9 +12,9 @@ export const metadata: Metadata = { title: "Sign in" };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string; mode?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; mode?: string; deleted?: string }>;
 }) {
-  const { next, error, mode } = await searchParams;
+  const { next, error, mode, deleted } = await searchParams;
   const providers = await socialSignInOptions();
 
   return (
@@ -23,6 +24,12 @@ export default async function SignInPage({
         <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-10 animate-enter">
           <h1 className="text-[34px] font-bold leading-tight tracking-tight">Welcome to {brand.name}</h1>
           <p className="mt-2 text-[17px] text-muted">{brand.tagline}</p>
+
+          {deleted ? (
+            <p role="status" className="mt-6 rounded-2xl bg-accent-soft px-4 py-3 text-[15px]">
+              Your account has been deleted. Thanks for cooking with us.
+            </p>
+          ) : null}
 
           {isSupabaseConfigured ? (
             <SignInForm
@@ -44,6 +51,9 @@ export default async function SignInPage({
               </ButtonLink>
             </div>
           )}
+          <p className="mt-8 text-center text-[14px] text-muted">
+            <Link href="/privacy" className="underline underline-offset-4">Privacy policy</Link>
+          </p>
         </div>
       </div>
       <aside className="relative hidden overflow-hidden bg-accent lg:block" aria-hidden>

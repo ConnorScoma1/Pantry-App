@@ -4,7 +4,7 @@ An AI-powered kitchen assistant: weekly meal plans people actually want to cook,
 
 This repository is a **Turborepo monorepo** containing the web app (Next.js), the mobile app (Expo / React Native), shared packages and the Supabase database.
 
-> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional AI planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it**, **cooking history** and **saved grocery lists** work on web and mobile, and AI can run on Gemini, Claude, OpenAI or Groq (see **AI setup**). Accounts can use email, an email link, or Google, Apple or Facebook (see **Sign-in and accounts**). Migrations up to `…2400_ai_plan_cache` have been applied to your Supabase project; `…2500_social_sign_in` is new and waiting for your review. See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
+> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional AI planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it**, **cooking history** and **saved grocery lists** work on web and mobile, and AI can run on Gemini, Claude, OpenAI or Groq (see **AI setup**). Accounts can use email, an email link, or Google, Apple or Facebook (see **Sign-in and accounts**). Migrations up to `…2400_ai_plan_cache` have been applied to your Supabase project; `…2500_social_sign_in` and `…2600_delete_account` are new and waiting for your review. See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
 
 ---
 
@@ -105,6 +105,7 @@ Every result line should end in `t`.
 | `NEXT_PUBLIC_SUPABASE_URL` | `apps/web/.env.local` | No | Supabase API URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `apps/web/.env.local` | No (RLS protects data) | Supabase anon / publishable key |
 | `NEXT_PUBLIC_SITE_URL` | `apps/web/.env.local` | No | Base URL for auth email links |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | `apps/web/.env.local` | No | Contact address shown on `/privacy` and `/delete-account` (required before launch) |
 | `AI_PROVIDER` / `AI_MODEL` | `apps/web/.env.local` | No | Which AI answers: `gemini`, `anthropic`, `openai` or `groq` (default: whichever key is set), and its model |
 | `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GROQ_API_KEY` | `apps/web/.env.local` | **Yes — server only** | The chosen provider's key. All empty = built-in features only |
 | `ANTHROPIC_MODEL` | `apps/web/.env.local` | No | Claude model id (older setting; `AI_MODEL` wins) |
@@ -158,6 +159,20 @@ supabase/
 docs/ARCHITECTURE.md   Decisions, risks, roadmap
 docs/specs/            Product specs (platform, AI & specials, one store vs best deals)
 ```
+
+## Privacy policy and account deletion
+
+The app stores require both before publishing, and so do Google and Facebook sign-in (each asks for a privacy policy URL).
+
+- **`/privacy`:** a plain-language privacy policy. It describes what the app actually stores and which services it uses (Supabase, your web host, Gemini, Kroger, Mapbox, Resend, Expo and the sign-in providers). Anyone can read it without an account.
+- **`/delete-account`:** a public page explaining how to delete an account (Google Play asks for this link).
+- **Profile → Delete account** (web and phone): type DELETE to permanently delete the account. A household that was only that person's is deleted with everything in it. A shared household stays with the other members: if they were the owner, the longest-standing member becomes the owner, and the household's combined allergies are recalculated without them. Things they added stay, with "added by" cleared. This needs migration `…2600_delete_account` (test: `delete_account_smoke_test.sql`, 12 checks).
+
+Before launch:
+1. Set `NEXT_PUBLIC_CONTACT_EMAIL`. Until you do, the pages show a highlighted placeholder.
+2. Have the policy reviewed (it isn't legal advice), and update it whenever you add a service or feature. Change `privacyUpdated` in `apps/web/src/lib/legal.ts` when it changes.
+3. The policy assumes a **paid** Gemini key; Google may use free-tier prompts to improve its products.
+4. Use `https://your-site/privacy` as the privacy policy URL for Google, Facebook, Apple and the app stores.
 
 ## Sign-in and accounts
 

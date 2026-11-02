@@ -104,6 +104,8 @@ interface AppState {
   signIn(email: string, password: string): Promise<Result<null>>;
   signUp(email: string, password: string): Promise<Result<{ needsConfirmation: boolean }>>;
   signOut(): Promise<void>;
+  /** Permanently delete this account (type DELETE to confirm); signs out on success. */
+  deleteAccount(confirm: string): Promise<Result<null>>;
   saveProfile(profile: OnboardingProfile): Promise<Result<OnboardingProfile>>;
   setSkillLevel(level: SkillLevel): Promise<Result<SkillLevel>>;
   setDesserts(settings: DessertSettings): Promise<Result<DessertSettings>>;
@@ -229,6 +231,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await supabase?.auth.signOut();
   }, []);
 
+  const deleteAccount = useCallback(async (confirm: string): Promise<Result<null>> => {
+    if (!supabase) return { ok: false, message: "Supabase isn't configured." };
+    if (confirm !== "DELETE") return { ok: false, message: "Type DELETE in capitals to confirm." };
+    // Stop this phone's notices first, while the account still exists.
+    await unregisterPush(weekly).catch(() => undefined);
+    const { error } = await supabase.rpc("delete_my_account", { confirm });
+    if (error) {
+      return {
+        ok: false,
+        message: error.code === "PGRST202" ? "Account deletion isn't set up on the server yet." : "We couldn't delete your account. Please try again, or contact us.",
+      };
+    }
+    await supabase.auth.signOut().catch(() => undefined);
+    return { ok: true, data: null };
+  }, []);
+
   const saveProfile = useCallback(
     async (next: OnboardingProfile) => {
       const result = await profiles.save(next);
@@ -314,13 +332,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      deleteAccount,
       saveProfile,
       setSkillLevel,
       setDesserts,
       setSeasonal,
       clearPreview,
     }),
-    [mode, loading, email, signedIn, profile, kitchen, recipes, mealPlans, loadProfile, signIn, signUp, signOut, saveProfile, setSkillLevel, setDesserts, setSeasonal, clearPreview],
+    [mode, loading, email, signedIn, profile, kitchen, recipes, mealPlans, loadProfile, signIn, signUp, signOut, deleteAccount, saveProfile, setSkillLevel, setDesserts, setSeasonal, clearPreview],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

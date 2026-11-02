@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { Button, Chip, ChipRow, ChoiceCard, Notice } from "@/components/controls";
 import { RemindersCard } from "@/components/kitchen/reminders-card";
+import { DeleteAccountCard } from "@/components/profile/delete-account-card";
 import { SeasonalSettingsCard } from "@/components/seasonal/seasonal-settings";
 import { Body, Card, CardTitle, Eyebrow, Screen } from "@/components/ui";
 import { todayIso } from "@/lib/use-kitchen";
@@ -142,6 +143,8 @@ export default function ProfileScreen() {
           ) : null}
         </View>
       </Card>
+
+      {mode === "supabase" ? <DeleteAccountCard shared={Boolean(profile.householdDiet && profile.householdDiet.memberCount > 1)} /> : null}
 
       <Card>
         <Eyebrow>About</Eyebrow>

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useProfile } from "@/components/profile/profile-provider";
 import { RemindersCard } from "@/components/kitchen/reminders-card";
+import { DeleteAccountCard } from "@/components/profile/delete-account-card";
 import { SeasonalSettingsCard } from "@/components/seasonal/seasonal-settings";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, Hint, PageHeader } from "@/components/ui/card";
@@ -259,7 +260,15 @@ export function ProfileView() {
             </Button>
           ) : null}
         </Card>
+
+        {mode === "supabase" ? <DeleteAccountCard shared={Boolean(profile.householdDiet && profile.householdDiet.memberCount > 1)} /> : null}
       </div>
+
+      <p className="mt-6 text-center text-[14px] text-muted">
+        <Link href="/privacy" className="underline underline-offset-4">
+          Privacy policy
+        </Link>
+      </p>
 
       {message ? (
         <p role="status" className="mt-4 rounded-2xl bg-surface px-4 py-3 text-[15px]">
