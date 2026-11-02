@@ -1,6 +1,7 @@
 import { numbersAllowed, type AdviceFacts } from "@kitchen-pantry/shopping-optimizer";
 import { z } from "zod";
-import { AiRequestError, callClaudeJson, type FetchLike } from "./claude";
+import { AiRequestError, type FetchLike } from "./claude";
+import { callModelJson } from "./providers";
 import { assertServerOnly, parseStructuredOutput, type AiConfig } from "./core";
 
 /**
@@ -46,7 +47,7 @@ export function buildAdvicePrompt(facts: AdviceFacts): string {
 
 export async function explainComparison(options: { config: AiConfig; facts: AdviceFacts; fetchImpl?: FetchLike }): Promise<ShoppingAdvice> {
   assertServerOnly();
-  const res = await callClaudeJson({
+  const res = await callModelJson({
     config: { ...options.config, maxOutputTokens: Math.min(options.config.maxOutputTokens, 600) },
     system: SYSTEM,
     user: buildAdvicePrompt(options.facts),

@@ -3,7 +3,7 @@
 import type { DraftHousehold } from "@kitchen-pantry/ai";
 import { createSupabaseMenuRepository, createSupabaseRecipeRepository, type LibraryFacetCounts, type Result } from "@kitchen-pantry/database";
 import type { LibraryPage } from "@kitchen-pantry/recipe-engine";
-import { allergens, dietStyles, equipment, type Recipe, type SavedMenu } from "@kitchen-pantry/shared-types";
+import { allergens, dietaryRestrictions, dietStyles, equipment, type Recipe, type SavedMenu } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
 import { draftForHousehold, draftUseUpForHousehold, type DraftResult } from "@/lib/library/drafts";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
@@ -50,6 +50,7 @@ export async function deleteMenuAction(id: unknown): Promise<Result<null>> {
 const previewHousehold = z.object({
   allergies: z.array(z.enum(allergens.map((a) => a.code) as [string, ...string[]])).max(10),
   dietStyle: z.enum(dietStyles.map((d) => d.code) as [string, ...string[]]),
+  restrictions: z.array(z.enum(dietaryRestrictions.map((d) => d.code) as [string, ...string[]])).max(10).default([]),
   avoid: z.array(z.string().max(60)).max(30),
   equipment: z.array(z.enum(equipment.map((e) => e.code) as [string, ...string[]])).max(20),
   skillLevel: z.number().int().min(1).max(5),

@@ -569,7 +569,7 @@ function AskPanel({
               ) : !reply.data.answer ? (
                 <p className="text-[15px] text-muted">No built-in tips for this step.</p>
               ) : null}
-              {reply.data.source === "ai" ? <p className="text-[12px] text-muted">Answered by Claude. Check food-safety temperatures with a thermometer.</p> : null}
+              {reply.data.source === "ai" ? <p className="text-[12px] text-muted">Answered by the AI assistant. Check food-safety temperatures with a thermometer.</p> : null}
             </>
           ) : null}
         </div>

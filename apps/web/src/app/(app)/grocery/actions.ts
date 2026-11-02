@@ -1,8 +1,8 @@
 "use server";
 
-import { createSupabaseGroceryRepository, createSupabaseStoreRepository, type GroceryRepository, type Result } from "@kitchen-pantry/database";
+import { createSupabaseGroceryRepository, createSupabaseSavedListRepository, createSupabaseStoreRepository, type GroceryRepository, type Result, type SavedListRepository } from "@kitchen-pantry/database";
 import type { BasketPrice, KrogerStore, RecipeCost, SpecialsResult } from "@kitchen-pantry/grocery-pricing";
-import type { GroceryItem, PricingStore } from "@kitchen-pantry/shared-types";
+import type { GroceryItem, PricingStore, SavedGroceryList } from "@kitchen-pantry/shared-types";
 import { findSpecials, findStores, priceItems, priceRecipes, pricingStatus, verifyStore, type PricingStatus } from "@/lib/pricing/server";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -119,4 +119,32 @@ export async function setStoreAction(locationId: unknown): Promise<Result<Pricin
   if (!isSupabaseConfigured) return { ok: true, data: store };
   const supabase = await createSupabaseServerClient();
   return createSupabaseStoreRepository(asSupabaseLike(supabase)).set(store);
+}
+
+// ---------------------------------------------------------------------------
+// Saved lists ("Weekly basics"), shared by the household.
+// ---------------------------------------------------------------------------
+async function saved<T>(fn: (repo: SavedListRepository) => Promise<Result<T>>): Promise<Result<T>> {
+  if (!isSupabaseConfigured) return { ok: false, message: "Supabase isn't configured." };
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Your session expired. Please sign in again." };
+  return fn(createSupabaseSavedListRepository(asSupabaseLike(supabase)));
+}
+export async function savedListsAction(): Promise<Result<SavedGroceryList[]>> {
+  return saved((r) => r.list());
+}
+export async function saveListAction(input: unknown): Promise<Result<{ id: string }>> {
+  return saved((r) => r.save(input));
+}
+export async function renameSavedListAction(id: unknown, name: unknown): Promise<Result<null>> {
+  return saved((r) => r.rename(id, name));
+}
+export async function removeSavedListAction(id: unknown): Promise<Result<null>> {
+  return saved((r) => r.remove(id));
+}
+export async function addSavedListAction(id: unknown, target: unknown): Promise<Result<{ added: number }>> {
+  return saved((r) => r.addToList(id, listId(target)));
 }

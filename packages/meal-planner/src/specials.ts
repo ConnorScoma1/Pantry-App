@@ -71,7 +71,7 @@ export function viewSpecials(
   filter: SpecialsFilter = {},
 ): SpecialsView {
   const p = householdProfile(ctx.profile);
-  const constraints = { allergies: p.diet.allergies, dietStyle: p.diet.style, neverRecommend: p.diet.neverRecommend };
+  const constraints = { allergies: p.diet.allergies, dietStyle: p.diet.style, restrictions: p.diet.restrictions, neverRecommend: p.diet.neverRecommend };
   const list = new Set(ctx.listNames.map(termKey));
   const q = filter.query?.trim().toLowerCase() ?? "";
 

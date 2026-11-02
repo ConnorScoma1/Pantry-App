@@ -176,7 +176,7 @@ export function useRecipeDraft(data: RecipesData) {
       setBusy(version);
       setError(null);
       const hh = householdProfile(data.context.profile);
-      const preview: DraftHousehold = { allergies: hh.diet.allergies, dietStyle: hh.diet.style, avoid: hh.diet.neverRecommend.slice(0, 30), equipment: hh.equipment, skillLevel: hh.skillLevel, servings: Math.min(24, hh.household.cookingFor) };
+      const preview: DraftHousehold = { allergies: hh.diet.allergies, dietStyle: hh.diet.style, restrictions: hh.diet.restrictions, avoid: hh.diet.neverRecommend.slice(0, 30), equipment: hh.equipment, skillLevel: hh.skillLevel, servings: Math.min(24, hh.household.cookingFor) };
       const r = await draftRecipeAction({ recipeId: recipe.id, version }, data.mode === "preview" ? preview : undefined);
       setBusy(null);
       if (!r.ok) setError(r.message);

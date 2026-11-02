@@ -20,5 +20,8 @@
     "@kitchen-pantry/shopping-optimizer": "*",
     "@kitchen-pantry/validation": "*",
     "zod": "^4.6.0"
+  },
+  "devDependencies": {
+    "@kitchen-pantry/database": "*"
   }
 }

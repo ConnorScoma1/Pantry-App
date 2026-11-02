@@ -9,6 +9,7 @@ import { Check, ChevronDown, ListPlus, MapPin, Pencil, Plus, RefreshCw, Route, S
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
+import { SavedListsCard } from "@/components/grocery/saved-lists-card";
 import { Avatar } from "@/components/household/avatar";
 import { useProfile } from "@/components/profile/profile-provider";
 import { Button, buttonClasses } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { useWeekOptions } from "@/components/ui/week-tabs";
 import { cn } from "@/lib/cn";
 import { useGrocery, type SyncState } from "@/lib/grocery/use-grocery";
+import { useSavedLists } from "@/lib/grocery/use-saved-lists";
 import { useHousehold } from "@/lib/household/use-household";
 import { useMealPlan } from "@/lib/meal-plan/use-meal-plan";
 import { usePricing } from "@/lib/pricing/use-pricing";
@@ -34,6 +36,7 @@ const selectClass =
 
 export function GroceryView() {
   const grocery = useGrocery();
+  const saved = useSavedLists(grocery.listId, grocery.items, grocery.reload);
   const household = useHousehold();
   const pricing = usePricing(grocery.items);
   const weeks = useWeekOptions();
@@ -213,6 +216,7 @@ export function GroceryView() {
               );
             }}
           />
+          <SavedListsCard saved={saved} onMessage={setMessage} />
           <HouseholdCard household={household} />
         </div>
       </div>

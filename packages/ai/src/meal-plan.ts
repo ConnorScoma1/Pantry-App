@@ -1,8 +1,9 @@
 import { planWeek, saleMatches, type PlannedPick, type PlanWeekInput, type PlanWeekResult } from "@kitchen-pantry/meal-planner";
-import { formatMinutes, recipeProteins, type RankedRecipe } from "@kitchen-pantry/recipe-engine";
+import { recipeProteins, type RankedRecipe } from "@kitchen-pantry/recipe-engine";
 import { planningModes, skillLevels, type PlanSource } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
-import { callClaudeJson, AiRequestError, type FetchLike } from "./claude";
+import { AiRequestError, type FetchLike } from "./claude";
+import { callModelJson } from "./providers";
 import type { AiConfig } from "./core";
 
 /**
@@ -59,7 +60,6 @@ function compactCandidate(r: RankedRecipe, specials: PlanWeekInput["specials"] =
     id: r.recipe.id,
     title: r.recipe.title,
     cuisine: r.recipe.cuisine,
-    time: formatMinutes(r.recipe.totalMinutes),
     minutes: r.recipe.totalMinutes,
     skill: r.recipe.skillLevel,
     proteins: recipeProteins(r.recipe),
@@ -103,8 +103,7 @@ export function buildMealPlanPrompt(input: PlanWeekInput & { skillLevel: number;
       avoidIfPossible: [...(input.avoid ?? [])].filter((id) => candidates.some((c) => c.recipe.id === id)),
       candidates: candidates.map((c) => compactCandidate(c, input.mode === "cook_the_specials" ? input.specials : [])),
     },
-    null,
-    1,
+    // Compact JSON: indentation is pure token cost.
   );
 
   const schema = {
@@ -147,7 +146,7 @@ export function validateAiPicks(
     summary: z.string(),
   });
   const parsed = shape.safeParse(raw);
-  if (!parsed.success) throw new AiRequestError("invalid", "Claude's plan didn't match the expected format.");
+  if (!parsed.success) throw new AiRequestError("invalid", "The AI's plan didn't match the expected format.");
 
   const open = new Set(days);
   const usedDates = new Set<string>();
@@ -226,11 +225,11 @@ export async function planWeekWithClaude(options: {
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return { ...hit.value, cached: true };
 
   try {
-    const res = await callClaudeJson({ config: options.config, system: SYSTEM, user: prompt.user, schema: prompt.schema, fetchImpl: options.fetchImpl });
+    const res = await callModelJson({ config: options.config, system: SYSTEM, user: prompt.user, schema: prompt.schema, fetchImpl: options.fetchImpl });
     const fixedIds = new Set((input.fixed ?? []).map((f) => f.recipeId).filter((id): id is string => Boolean(id)));
     const allowed = new Set(prompt.candidates.map((c) => c.recipe.id));
     const { picks, summary } = validateAiPicks(res.json, allowed, input.days, fixedIds, input.servings);
-    if (picks.length === 0) return fallback("Claude's plan couldn't be used, so here's our standard plan.", res.usage, res.model);
+    if (picks.length === 0) return fallback("The AI's plan couldn't be used, so here's our standard plan.", res.usage, res.model);
 
     // Fill any nights Claude skipped with the deterministic planner, around Claude's picks.
     const remaining = input.days.filter((d) => !picks.some((p) => p.date === d));
@@ -254,10 +253,10 @@ export async function planWeekWithClaude(options: {
     const kind = err instanceof AiRequestError ? err.kind : "invalid";
     const notice =
       kind === "rate_limited" || kind === "overloaded"
-        ? "Claude is busy right now, so here's our standard plan. Try again in a minute."
+        ? "The AI assistant is busy right now, so here's our standard plan. Try again in a minute."
         : kind === "timeout" || kind === "network"
-          ? "Couldn't reach Claude, so here's our standard plan."
-          : "Claude's plan couldn't be used, so here's our standard plan.";
+          ? "Couldn't reach the AI assistant, so here's our standard plan."
+          : "The AI's plan couldn't be used, so here's our standard plan.";
     return fallback(notice);
   }
 }

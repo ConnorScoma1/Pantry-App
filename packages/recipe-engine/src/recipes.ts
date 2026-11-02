@@ -231,8 +231,8 @@ function goalWeight(goals: readonly CookingGoal[], goal: CookingGoal): number {
 
 const PROTEIN_WORDS: Record<string, string[]> = {
   chicken: ["chicken"],
-  beef: ["beef", "steak", "short rib"],
-  pork: ["pork", "bacon", "ham", "sausage"],
+  beef: ["beef", "steak", "short rib", "ribeye", "rib eye", "sirloin", "brisket", "chuck", "flank", "oxtail"],
+  pork: ["pork", "bacon", "ham", "sausage", "chorizo", "pancetta", "prosciutto", "guanciale"],
   turkey: ["turkey"],
   lamb: ["lamb"],
   fish: ["salmon", "cod", "tuna", "fish", "trout", "halibut"],
@@ -278,6 +278,7 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
     {
       allergies: profile.diet.allergies,
       dietStyle: profile.diet.style,
+      restrictions: profile.diet.restrictions,
       neverRecommend: profile.diet.neverRecommend,
       maxSkillLevel: 5, // skill is handled separately so users can opt in to stretch recipes
       equipment: profile.equipment,

@@ -147,7 +147,7 @@ function WeekPlanner({ weekStart, onWeeklySettings }: { weekStart: string; onWee
   }
 
   const sourceLabel =
-    p.draft.generatedBy === "ai" ? "Planned with Claude" : p.draft.generatedBy === "rules" ? "Planned by Kitchen Pantry" : "Planned by you";
+    p.draft.generatedBy === "ai" ? "Planned with AI" : p.draft.generatedBy === "rules" ? "Planned by Kitchen Pantry" : "Planned by you";
 
   return (
     <div className="space-y-5">
@@ -190,8 +190,8 @@ function WeekPlanner({ weekStart, onWeeklySettings }: { weekStart: string; onWee
         </div>
         <p className="mt-3 text-[14px] text-muted">
           {p.ai.enabled
-            ? `Plans with Claude${p.ai.remaining !== null ? ` · ${p.ai.remaining} AI plan${p.ai.remaining === 1 ? "" : "s"} left today` : ""}. Locked meals and your own meals always stay.`
-            : "Uses Kitchen Pantry's built-in planner. Add an Anthropic API key on the server to plan with Claude."}{" "}
+            ? `Plans with AI${p.ai.remaining !== null ? ` · ${p.ai.remaining} AI plan${p.ai.remaining === 1 ? "" : "s"} left today` : ""}. Locked meals and your own meals always stay.`
+            : "Uses Kitchen Pantry's built-in planner. Add an AI key on the server (README → AI setup) to plan with AI."}{" "}
           <a
             href="#weekly-drafts"
             onClick={onWeeklySettings}

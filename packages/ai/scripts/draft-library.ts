@@ -27,6 +27,8 @@ function arg(name: string): string | null {
 async function main() {
   const config = readAiConfig();
   if (!config) throw new Error("Set ANTHROPIC_API_KEY first.");
+  // This tool uses Anthropic's Message Batches API (half price, offline); other providers' batch APIs aren't wired up.
+  if (config.provider !== "anthropic") throw new Error("Library drafting runs on Claude's batch API: set AI_PROVIDER=anthropic and ANTHROPIC_API_KEY for this command.");
   const headers = { "x-api-key": config.apiKey, "anthropic-version": ANTHROPIC_VERSION, "content-type": "application/json" };
   const collect = arg("collect");
 

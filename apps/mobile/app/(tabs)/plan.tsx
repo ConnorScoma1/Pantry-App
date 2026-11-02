@@ -148,7 +148,7 @@ function WeekPlanner({ weekStart }: { weekStart: string }) {
   }
 
   const sourceLabel =
-    p.draft.generatedBy === "ai" ? "Planned with Claude" : p.draft.generatedBy === "rules" ? "Planned by Kitchen Pantry" : "Planned by you";
+    p.draft.generatedBy === "ai" ? "Planned with AI" : p.draft.generatedBy === "rules" ? "Planned by Kitchen Pantry" : "Planned by you";
   const moreDate = sheet.kind === "more" ? sheet.date : null;
 
   return (
@@ -192,8 +192,8 @@ function WeekPlanner({ weekStart }: { weekStart: string }) {
         ) : null}
         <Text className="mt-3 text-[14px] leading-5 text-muted">
           {p.ai.enabled
-            ? `Plans with Claude${p.ai.remaining !== null ? ` · ${p.ai.remaining} AI plan${p.ai.remaining === 1 ? "" : "s"} left today` : ""}. Locked meals and your own meals always stay.`
-            : "Uses Kitchen Pantry's built-in planner. Connect the app to your Kitchen Pantry server to plan with Claude."}
+            ? `Plans with AI${p.ai.remaining !== null ? ` · ${p.ai.remaining} AI plan${p.ai.remaining === 1 ? "" : "s"} left today` : ""}. Locked meals and your own meals always stay.`
+            : "Uses Kitchen Pantry's built-in planner. Connect the app to your Kitchen Pantry server to plan with AI."}
         </Text>
       </Card>
 

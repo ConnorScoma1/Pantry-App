@@ -1,7 +1,8 @@
 import { cookingSteps, cookingTips, formatIngredientLine, formatTemperature, screenAllergens } from "@kitchen-pantry/recipe-engine";
 import type { AllergenCode, Recipe } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
-import { AiRequestError, callClaudeJson, type FetchLike } from "./claude";
+import { AiRequestError, type FetchLike } from "./claude";
+import { callModelJson } from "./providers";
 import { assertServerOnly, parseStructuredOutput, type AiConfig } from "./core";
 
 /**
@@ -103,7 +104,7 @@ export async function askCookingQuestion(options: {
   fetchImpl?: FetchLike;
 }): Promise<CookingAnswer> {
   assertServerOnly();
-  const res = await callClaudeJson({
+  const res = await callModelJson({
     config: { ...options.config, maxOutputTokens: Math.min(options.config.maxOutputTokens, 800) },
     system: SYSTEM,
     user: buildCookingPrompt(options.recipe, options.question, options.allergies),

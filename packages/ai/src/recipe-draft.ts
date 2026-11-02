@@ -1,7 +1,8 @@
-import { checkEquipment, formatIngredientLine, ingredientLines, prepareRecipe, screenAllergens, type LibraryRecipe, type LibraryRecipeInput } from "@kitchen-pantry/recipe-engine";
-import { equipment as equipmentCatalog, worldCuisines, type AllergenCode, type DietStyle, type EquipmentCode, type Recipe, type RecipeVariant } from "@kitchen-pantry/shared-types";
+import { checkEquipment, dietConflicts, formatIngredientLine, ingredientLines, prepareRecipe, screenAllergens, type LibraryRecipe, type LibraryRecipeInput } from "@kitchen-pantry/recipe-engine";
+import { equipment as equipmentCatalog, worldCuisines, type AllergenCode, type DietaryRestriction, type DietStyle, type EquipmentCode, type Recipe, type RecipeVariant } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
-import { AiRequestError, callClaudeJson, type FetchLike } from "./claude";
+import { AiRequestError, type FetchLike } from "./claude";
+import { callModelJson } from "./providers";
 import { assertServerOnly, type AiConfig } from "./core";
 
 /**
@@ -35,6 +36,8 @@ export interface UseUpIngredient {
 export interface DraftHousehold {
   allergies: readonly AllergenCode[];
   dietStyle: DietStyle;
+  /** Gluten-free, dairy-free, halal, kosher… */
+  restrictions?: readonly DietaryRestriction[];
   avoid: readonly string[];
   equipment: readonly EquipmentCode[];
   skillLevel: number;
@@ -166,7 +169,7 @@ function householdLines(h: DraftHousehold): string[] {
   return [
     `Cooking for ${h.servings}. Cook's skill: ${h.skillLevel}/5.`,
     `Allergens to avoid completely: ${h.allergies.length ? h.allergies.join(", ") : "none"}.`,
-    `Diet: ${h.dietStyle}. Never use: ${h.avoid.length ? h.avoid.slice(0, 30).map((a) => strip(a, 60)).join(", ") : "nothing listed"}.`,
+    `Diet: ${h.dietStyle}${h.restrictions?.length ? ` (${h.restrictions.join(", ")})` : ""}. Never use: ${h.avoid.length ? h.avoid.slice(0, 30).map((a) => strip(a, 60)).join(", ") : "nothing listed"}.`,
     `Equipment they have: ${h.equipment.join(", ") || "stove"}.`,
   ];
 }
@@ -293,6 +296,8 @@ export function answerToRecipe(answer: RecipeDraftAnswer, d: DraftKind, h: Draft
   const avoid = h.avoid.filter((t) => t.trim() && ingredientLines(recipe).some((l) => l.toLowerCase().includes(t.toLowerCase())));
   if (avoid.length) reasons.push(`It used ${avoid.join(", ")}.`);
   if (!checkEquipment(recipe.requiredEquipment, h.equipment).ok) reasons.push("It needs equipment you don't have.");
+  const diet = dietConflicts(ingredientLines(recipe), h.dietStyle, h.restrictions ?? []);
+  if (diet.length) reasons.push(`It doesn't fit your diet (${diet.join("; ")}).`);
   if (d.kind === "use_up") {
     const lines = recipe.ingredients.map((i) => ` ${i.item.toLowerCase().replace(/[^a-z0-9 ]+/g, " ")} `);
     const used = d.ingredients.filter((k) => {
@@ -308,7 +313,7 @@ export function answerToRecipe(answer: RecipeDraftAnswer, d: DraftKind, h: Draft
 
 export async function draftRecipe(options: { config: AiConfig; draft: DraftKind; household: DraftHousehold; householdKey: string; fetchImpl?: FetchLike }): Promise<RecipeDraft> {
   assertServerOnly();
-  const res = await callClaudeJson({
+  const res = await callModelJson({
     config: { ...options.config, maxOutputTokens: Math.max(options.config.maxOutputTokens, 4000) },
     system: SYSTEM,
     user: buildDraftPrompt(options.draft, options.household),

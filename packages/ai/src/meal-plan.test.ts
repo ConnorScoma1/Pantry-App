@@ -145,7 +145,7 @@ test("network failures fall back too", async () => {
   };
   const result = await planWeekWithClaude({ config, input: input(), skillLevel: 3, householdSize: 2, fetchImpl, cacheScope: "h1" });
   assert.equal(result.source, "rules");
-  assert.match(result.notice!, /Couldn't reach Claude/);
+  assert.match(result.notice!, /Couldn't reach the AI assistant/);
 });
 
 test("no API key: deterministic plan, no notice, no network", async () => {

@@ -53,7 +53,7 @@ export async function draftForHousehold(raw: unknown, source: { db: SupabaseLike
     const profile = await createSupabaseProfileStore(db).load();
     if (!profile.ok || !profile.data) return { ok: false, message: "Finish setting up your household first." };
     const p = householdProfile(profile.data);
-    household = { allergies: p.diet.allergies, dietStyle: p.diet.style, avoid: p.diet.neverRecommend, equipment: p.equipment, skillLevel: p.skillLevel, servings: p.household.cookingFor };
+    household = { allergies: p.diet.allergies, dietStyle: p.diet.style, restrictions: p.diet.restrictions, avoid: p.diet.neverRecommend, equipment: p.equipment, skillLevel: p.skillLevel, servings: p.household.cookingFor };
     // Already drafted for this household? Return it.
     const variant = variantOf(version);
     const { data: existingId } = await db.rpc("find_household_draft", { base: recipeId, draft_variant: variant });
@@ -150,7 +150,7 @@ export async function draftUseUpForHousehold(raw: unknown, source: { db: Supabas
     const profile = await createSupabaseProfileStore(db).load();
     if (!profile.ok || !profile.data) return { ok: false, message: "Finish setting up your household first." };
     const p = householdProfile(profile.data);
-    household = { allergies: p.diet.allergies, dietStyle: p.diet.style, avoid: p.diet.neverRecommend, equipment: p.equipment, skillLevel: p.skillLevel, servings: p.household.cookingFor };
+    household = { allergies: p.diet.allergies, dietStyle: p.diet.style, restrictions: p.diet.restrictions, avoid: p.diet.neverRecommend, equipment: p.equipment, skillLevel: p.skillLevel, servings: p.household.cookingFor };
   } else {
     if (!previewAiAllowed()) return { ok: false, message: "AI recipe ideas need accounts on this server." };
     const parsed = previewUseUpSchema.safeParse(raw);

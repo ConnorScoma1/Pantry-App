@@ -1,7 +1,9 @@
 import {
   createLocalGroceryRepository,
+  createLocalSavedListRepository,
   createPreviewHouseholdRepository,
   createSupabaseGroceryRepository,
+  createSupabaseSavedListRepository,
   createSupabaseHouseholdRepository,
   createSupabaseStoreRepository,
   createSupabaseCartRepository,
@@ -23,6 +25,7 @@ import {
   LOCAL_GROCERY_KEY,
   rpc,
   type GroceryRepository,
+  type SavedListRepository,
   type HouseholdRepository,
   type RealtimeClientLike,
   createLocalKitchenRepository,
@@ -78,6 +81,8 @@ interface AppState {
   mealPlans: MealPlanRepository;
   households: HouseholdRepository;
   grocery: GroceryRepository;
+  /** Saved lists ("Weekly basics"), shared with the household. */
+  savedLists: SavedListRepository;
   /** The household's store for live prices. */
   stores: StoreRepository;
   /** Smart Cart drafts (shared with the household in Supabase mode). */
@@ -118,6 +123,7 @@ const localMealPlans = createLocalMealPlanRepository(deviceStorage);
 const remoteMealPlans = supabase ? createSupabaseMealPlanRepository(asSupabaseLike(supabase)) : null;
 const households: HouseholdRepository = supabase ? createSupabaseHouseholdRepository(asSupabaseLike(supabase)) : createPreviewHouseholdRepository();
 const grocery: GroceryRepository = supabase ? createSupabaseGroceryRepository(asSupabaseLike(supabase)) : createLocalGroceryRepository(deviceStorage);
+const savedLists: SavedListRepository = supabase ? createSupabaseSavedListRepository(asSupabaseLike(supabase)) : createLocalSavedListRepository(deviceStorage);
 const realtime = supabase ? (supabase as unknown as RealtimeClientLike) : null;
 const stores: StoreRepository = supabase ? createSupabaseStoreRepository(asSupabaseLike(supabase)) : createLocalStoreRepository(deviceStorage);
 const carts: CartRepository = supabase ? createSupabaseCartRepository(asSupabaseLike(supabase)) : createLocalCartRepository(deviceStorage);
@@ -295,6 +301,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mealPlans,
       households,
       grocery,
+      savedLists,
       stores,
       carts,
       weekly,

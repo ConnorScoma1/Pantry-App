@@ -43,3 +43,15 @@ export const pricingStoreSchema = z.object({
   address: z.string().trim().max(240).nullable(),
   setAt: z.string().nullable().default(null),
 });
+
+/** A list saved for later ("Weekly basics"): names, aisles, amounts and notes only. */
+export const savedGroceryItemSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  department: groceryDepartmentSchema,
+  amount: z.string().trim().max(60).nullable(),
+  note: z.string().trim().max(200).nullable(),
+});
+export const savedGroceryListInputSchema = z.object({
+  name: z.string().trim().min(1, "Give the list a name.").max(60, "Use 60 characters or fewer."),
+  items: z.array(savedGroceryItemSchema).min(1, "There's nothing on the list to save.").max(150, "A saved list can hold up to 150 items."),
+});

@@ -1,3 +1,4 @@
+import { readAiConfig } from "@kitchen-pantry/ai";
 import { NextResponse } from "next/server";
 import { pricingStatus } from "@/lib/pricing/server";
 import { weeklyDraftsStatus } from "@/lib/planning/weekly";
@@ -18,7 +19,7 @@ export function GET() {
       features: {
         database: isSupabaseConfigured,
         serverJobs: serviceRoleConfigured(),
-        ai: Boolean(process.env.ANTHROPIC_API_KEY),
+        ai: readAiConfig() !== null,
         storePrices: pricingStatus().enabled,
         weeklyDrafts: weeklyDraftsStatus().running,
         inviteEmail: Boolean(process.env.RESEND_API_KEY && process.env.INVITE_EMAIL_FROM),

@@ -384,6 +384,22 @@ export interface GroceryItem {
   updatedAt: IsoTimestamp;
 }
 
+/** One line of a saved list: what to buy, not whether it's bought. */
+export interface SavedGroceryItem {
+  name: string;
+  department: GroceryDepartment;
+  amount: string | null;
+  note: string | null;
+}
+
+/** A named list the household keeps and adds back when it shops ("Weekly basics"). */
+export interface SavedGroceryList {
+  id: Uuid;
+  name: string;
+  items: SavedGroceryItem[];
+  updatedAt: IsoTimestamp;
+}
+
 /** The store a household's grocery list is priced at (Supabase: households.pricing_*). */
 export interface PricingStore {
   provider: "kroger";

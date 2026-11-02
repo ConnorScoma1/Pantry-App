@@ -408,7 +408,7 @@ function AskSheet({ recipe, step, servings, chef, onClose }: { recipe: Recipe; s
               </Text>
             ))}
             {help && !help.answer && help.tips.length === 0 ? <Text className="text-[15px] text-muted">No built-in tips for this step.</Text> : null}
-            {help?.source === "ai" ? <Text className="text-[12px] text-muted">Answered by Claude. Check food-safety temperatures with a thermometer.</Text> : null}
+            {help?.source === "ai" ? <Text className="text-[12px] text-muted">Answered by the AI assistant. Check food-safety temperatures with a thermometer.</Text> : null}
           </ScrollView>
         </View>
       </View>

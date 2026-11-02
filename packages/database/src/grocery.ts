@@ -1,6 +1,6 @@
-import type { GroceryDepartment, GroceryItem, Quantity } from "@kitchen-pantry/shared-types";
+import type { GroceryDepartment, GroceryItem, Quantity, SavedGroceryItem, SavedGroceryList } from "@kitchen-pantry/shared-types";
 import { groceryDepartments } from "@kitchen-pantry/shared-types";
-import { groceryItemInputSchema, groceryItemPatchSchema, planGroceryLinesSchema } from "@kitchen-pantry/validation";
+import { groceryItemInputSchema, groceryItemPatchSchema, planGroceryLinesSchema, savedGroceryItemSchema, savedGroceryListInputSchema } from "@kitchen-pantry/validation";
 import { z } from "zod";
 import { dbFailure, type KeyValueStorage, type Result, type SupabaseLike } from "./client";
 import { randomUuid } from "./kitchen";
@@ -358,4 +358,152 @@ export function toPlanLines(
     note: l.note ? l.note.slice(0, 200) : null,
     neededFor: l.neededFor.slice(0, 14).map((n) => n.slice(0, 160)),
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Saved lists (spec 01 §9 "Save lists"): named lists the household keeps and
+// adds back in one go. Shared by the household (Supabase: RLS).
+// ---------------------------------------------------------------------------
+export interface SavedListRepository {
+  list(): Promise<Result<SavedGroceryList[]>>;
+  /** Save (or replace, by name) a list. */
+  save(input: unknown): Promise<Result<{ id: string }>>;
+  rename(id: unknown, name: unknown): Promise<Result<null>>;
+  remove(id: unknown): Promise<Result<null>>;
+  /** Add a saved list to the shopping list, skipping what's already on it. */
+  addToList(savedId: unknown, listId: string): Promise<Result<{ added: number }>>;
+}
+
+/** What to save from the current list: every line once (by name), without checked state. */
+export function itemsToSave(items: readonly GroceryItem[]): SavedGroceryItem[] {
+  const seen = new Set<string>();
+  const out: SavedGroceryItem[] = [];
+  for (const i of sortGroceryItems(items)) {
+    const key = i.name.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push({ name: i.name.trim().slice(0, 120), department: i.department, amount: i.amount?.slice(0, 60) ?? null, note: i.note?.slice(0, 200) ?? null });
+  }
+  return out.slice(0, 150);
+}
+
+const savedNameSchema = z.string().trim().min(1, "Give the list a name.").max(60, "Use 60 characters or fewer.");
+const SAVED_SELECT = "id, name, items, updated_at";
+interface SavedRow {
+  id: string;
+  name: string;
+  items: unknown;
+  updated_at: string;
+}
+function savedFromRow(r: SavedRow): SavedGroceryList {
+  const items = (Array.isArray(r.items) ? r.items : []).map((i) => savedGroceryItemSchema.safeParse({ amount: null, note: null, ...(i as object) })).flatMap((p) => (p.success ? [p.data as SavedGroceryItem] : []));
+  return { id: r.id, name: r.name, items, updatedAt: r.updated_at };
+}
+
+export function createSupabaseSavedListRepository(db: SupabaseLike): SavedListRepository {
+  return {
+    async list() {
+      const { data, error } = await db.from("saved_grocery_lists").select(SAVED_SELECT).order("name").limit(30);
+      if (error) return dbFailure("saved lists", error, "Couldn't load your saved lists.");
+      return { ok: true, data: (data as SavedRow[]).map(savedFromRow) };
+    },
+    async save(input) {
+      const parsed = savedGroceryListInputSchema.safeParse(input);
+      if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the list." };
+      const { data, error } = await db.rpc("save_grocery_list", { list_name: parsed.data.name, items: parsed.data.items });
+      if (error) return error.code === "23514" ? { ok: false, message: error.message?.includes("30 saved") ? "Your household has 30 saved lists — delete one first." : "That list couldn't be saved." } : dbFailure("save list", error, "Couldn't save the list. Please try again.");
+      return { ok: true, data: { id: String(data) } };
+    },
+    async rename(listId, name) {
+      const target = id.safeParse(listId);
+      const n = savedNameSchema.safeParse(name);
+      if (!target.success) return { ok: false, message: "That saved list is gone." };
+      if (!n.success) return { ok: false, message: n.error.issues[0]?.message ?? "Check the name." };
+      const { error } = await db.from("saved_grocery_lists").update({ name: n.data }).eq("id", target.data);
+      if (error) return error.code === "23505" ? { ok: false, message: "You already have a list with that name." } : dbFailure("rename list", error, SAVE_FAILED);
+      return { ok: true, data: null };
+    },
+    async remove(listId) {
+      const target = id.safeParse(listId);
+      if (!target.success) return { ok: false, message: "That saved list is gone." };
+      const { error } = await db.from("saved_grocery_lists").delete().eq("id", target.data);
+      if (error) return dbFailure("delete list", error, SAVE_FAILED);
+      return { ok: true, data: null };
+    },
+    async addToList(savedId, listId) {
+      const target = id.safeParse(savedId);
+      if (!target.success) return { ok: false, message: "That saved list is gone." };
+      const { data, error } = await db.rpc("add_saved_list", { saved: target.data, target_list: listId });
+      if (error) return error.code === "23514" ? { ok: false, message: "The list is full. Clear some checked items first." } : dbFailure("add saved list", error, "Couldn't add that list. Please try again.");
+      return { ok: true, data: { added: typeof data === "number" ? data : 0 } };
+    },
+  };
+}
+
+export const LOCAL_SAVED_LISTS_KEY = "kp-preview-saved-lists-v1";
+
+export function createLocalSavedListRepository(storage: KeyValueStorage, options: { now?: () => Date; newId?: () => string } = {}): SavedListRepository {
+  const now = () => (options.now ?? (() => new Date()))().toISOString();
+  const newId = options.newId ?? randomUuid;
+  const grocery = createLocalGroceryRepository(storage, options);
+  async function load(): Promise<SavedGroceryList[]> {
+    try {
+      const raw = await storage.getItem(LOCAL_SAVED_LISTS_KEY);
+      const value: unknown = raw ? JSON.parse(raw) : [];
+      return Array.isArray(value) ? (value as SavedGroceryList[]) : [];
+    } catch {
+      return [];
+    }
+  }
+  async function store(lists: SavedGroceryList[]): Promise<boolean> {
+    try {
+      await storage.setItem(LOCAL_SAVED_LISTS_KEY, JSON.stringify(lists));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+  return {
+    async list() {
+      return { ok: true, data: (await load()).sort((a, b) => a.name.localeCompare(b.name)) };
+    },
+    async save(input) {
+      const parsed = savedGroceryListInputSchema.safeParse(input);
+      if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the list." };
+      const lists = await load();
+      const existing = lists.find((l) => same(l.name, parsed.data.name));
+      if (!existing && lists.length >= 30) return { ok: false, message: "You have 30 saved lists — delete one first." };
+      const saved: SavedGroceryList = { id: existing?.id ?? newId(), name: parsed.data.name, items: parsed.data.items as SavedGroceryItem[], updatedAt: now() };
+      return (await store([...lists.filter((l) => l.id !== saved.id), saved])) ? { ok: true, data: { id: saved.id } } : { ok: false, message: SAVE_FAILED };
+    },
+    async rename(listId, name) {
+      const n = savedNameSchema.safeParse(name);
+      if (!n.success) return { ok: false, message: n.error.issues[0]?.message ?? "Check the name." };
+      const lists = await load();
+      if (lists.some((l) => l.id !== listId && same(l.name, n.data))) return { ok: false, message: "You already have a list with that name." };
+      const next = lists.map((l) => (l.id === listId ? { ...l, name: n.data, updatedAt: now() } : l));
+      return (await store(next)) ? { ok: true, data: null } : { ok: false, message: SAVE_FAILED };
+    },
+    async remove(listId) {
+      return (await store((await load()).filter((l) => l.id !== listId))) ? { ok: true, data: null } : { ok: false, message: SAVE_FAILED };
+    },
+    async addToList(savedId, listId) {
+      const saved = (await load()).find((l) => l.id === savedId);
+      if (!saved) return { ok: false, message: "That saved list is gone." };
+      const current = await grocery.items(listId);
+      if (!current.ok) return current;
+      const onList = new Set(current.data.filter((i) => !i.checked).map((i) => i.name.trim().toLowerCase()));
+      let added = 0;
+      for (const item of saved.items) {
+        const key = item.name.trim().toLowerCase();
+        if (onList.has(key)) continue;
+        onList.add(key);
+        const r = await grocery.add(listId, item);
+        if (!r.ok) return added ? { ok: true, data: { added } } : r;
+        added++;
+      }
+      return { ok: true, data: { added } };
+    },
+  };
 }

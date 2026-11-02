@@ -10,7 +10,9 @@ import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Button, Field, Input, Notice, Segmented } from "@/components/controls";
 import { Sheet } from "@/components/kitchen/sheet";
 import { Body, Card, CardTitle, Eyebrow, Screen } from "@/components/ui";
+import { SavedListsCard } from "@/components/grocery-saved-lists";
 import { useGrocery, type SyncState } from "@/lib/use-grocery";
+import { useSavedLists } from "@/lib/use-saved-lists";
 import { useHousehold } from "@/lib/use-household";
 import { todayIso } from "@/lib/use-kitchen";
 import { useMealPlan } from "@/lib/use-meal-plan";
@@ -28,6 +30,7 @@ const tone: Record<string, string> = {
 
 export default function GroceryScreen() {
   const grocery = useGrocery();
+  const saved = useSavedLists(grocery.listId, grocery.items, grocery.reload);
   const household = useHousehold();
   const pricing = usePricing(grocery.items);
   const [editing, setEditing] = useState<GroceryItem | null>(null);
@@ -205,6 +208,8 @@ export default function GroceryScreen() {
           );
         }}
       />
+
+      <SavedListsCard saved={saved} onMessage={setMessage} />
 
       <Card>
         <Eyebrow>Household</Eyebrow>

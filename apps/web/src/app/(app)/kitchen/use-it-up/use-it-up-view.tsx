@@ -212,7 +212,7 @@ function AskAiCard({ chosen, today, data }: { chosen: ReturnType<typeof useKitch
     setBusy(true);
     setError(null);
     const hh = householdProfile(data.context.profile);
-    const preview: DraftHousehold = { allergies: hh.diet.allergies, dietStyle: hh.diet.style, avoid: hh.diet.neverRecommend.slice(0, 30), equipment: hh.equipment, skillLevel: hh.skillLevel, servings: Math.min(24, hh.household.cookingFor) };
+    const preview: DraftHousehold = { allergies: hh.diet.allergies, dietStyle: hh.diet.style, restrictions: hh.diet.restrictions, avoid: hh.diet.neverRecommend.slice(0, 30), equipment: hh.equipment, skillLevel: hh.skillLevel, servings: Math.min(24, hh.household.cookingFor) };
     const r =
       data.mode === "preview"
         ? await draftUseUpAction({ items: picked.map((p) => ({ name: p.name.slice(0, 60), quantity: p.quantity, unit: p.unit, useBy: p.useBy })), today }, preview)

@@ -1,6 +1,6 @@
 import "server-only";
 import { timingSafeEqual } from "node:crypto";
-import { planWeekWithClaude, readAiConfig } from "@kitchen-pantry/ai";
+import { estimateCostMicros, planWeekWithClaude, readAiConfig, type AiConfig } from "@kitchen-pantry/ai";
 import { createPlanningJobServer, type ClaimedPlanningJob, type PlanningJobServer, type SupabaseLike } from "@kitchen-pantry/database";
 import { sendExpoPushes } from "@kitchen-pantry/integrations";
 import { draftWeek } from "@kitchen-pantry/meal-planner";
@@ -61,6 +61,31 @@ async function aiUsedToday(svc: SupabaseLike, householdId: string): Promise<numb
   return error ? null : Number(count ?? 0);
 }
 
+const monthlyCapsOn = (c: AiConfig) => c.monthlyBudgetUsd != null || c.monthlyPersonLimit != null;
+
+/** The scheduled job runs as the server, so it checks the monthly caps itself (fails closed). */
+async function withinMonthlyCaps(svc: SupabaseLike, ai: AiConfig, userId: string): Promise<boolean> {
+  if (!monthlyCapsOn(ai)) return true;
+  if (ai.monthlyBudgetUsd != null) {
+    const { data, error } = await svc.rpc("ai_month_spend", { add_microusd: 0 });
+    if (error || typeof data !== "number" && typeof data !== "string") return false;
+    if (Number(data) >= ai.monthlyBudgetUsd * 1_000_000) return false;
+  }
+  if (ai.monthlyPersonLimit != null) {
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const { count, error } = await svc
+      .from("ai_usage")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .in("outcome", ["ok", "fallback", "reserved"])
+      .gte("created_at", monthStart.toISOString());
+    if (error || Number(count ?? 0) >= ai.monthlyPersonLimit) return false;
+  }
+  return true;
+}
+
 async function draftOne(server: PlanningJobServer, svc: SupabaseLike, job: ClaimedPlanningJob, summary: WeeklyRunSummary): Promise<void> {
   const ctx = await server.context(job.jobId);
   if (!ctx.ok) throw new Error(ctx.message);
@@ -73,13 +98,15 @@ async function draftOne(server: PlanningJobServer, svc: SupabaseLike, job: Claim
   const recipes = await server.recipes(c.recipeIds);
   if (!recipes.ok) throw new Error(recipes.message);
 
-  // Claude only within the household's own daily allowance (shared with planning in the app).
+  // AI only within the household's own daily allowance (shared with planning in the app),
+  // the person's monthly AI requests and the app's monthly spending cap.
   const config = readAiConfig();
   let ai = config && config.dailyPlanLimit > 0 ? config : null;
   if (ai) {
     const used = await aiUsedToday(svc, c.householdId);
     if (used === null || used >= ai.dailyPlanLimit) ai = null; // fail closed
   }
+  if (ai && !(await withinMonthlyCaps(svc, ai, c.userId))) ai = null;
 
   const result = await draftWeek(
     {
@@ -111,6 +138,7 @@ async function draftOne(server: PlanningJobServer, svc: SupabaseLike, job: Claim
           cacheScope: c.householdId,
         });
         const asked = r.cached || r.source === "ai" || r.notice !== null;
+        const cost = ai && !r.cached && monthlyCapsOn(ai) ? estimateCostMicros(ai.price, r.usage ?? { inputTokens: 0, outputTokens: ai.maxOutputTokens }) : null;
         if (ai && asked) {
           const { error } = await svc.from("ai_usage").insert({
             household_id: c.householdId,
@@ -120,7 +148,9 @@ async function draftOne(server: PlanningJobServer, svc: SupabaseLike, job: Claim
             input_tokens: r.cached ? 0 : (r.usage?.inputTokens ?? 0),
             output_tokens: r.cached ? 0 : (r.usage?.outputTokens ?? 0),
             outcome: r.cached ? "cached" : r.source === "ai" ? "ok" : "fallback",
+            ...(cost !== null ? { cost_microusd: cost } : {}),
           });
+          if (cost) await svc.rpc("ai_month_spend", { add_microusd: cost });
           if (error) console.error("[weekly] usage log failed", { code: (error as { code?: string }).code });
         }
         return r;

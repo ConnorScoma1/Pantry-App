@@ -91,3 +91,20 @@ test("ratings are never invented", () => {
   assert.equal(recommendationLabel({ average: 4.9, count: 3 }, "licensed_api"), "few_ratings");
   assert.equal(recommendationLabel({ average: 4.6, count: 250 }, "licensed_api"), "community_rated");
 });
+
+test("diet and restrictions: cuts of meat, cheese and alcohol are caught; vinegar and goat cheese aren't", async () => {
+  const { dietConflicts } = await import("./index");
+  assert.ok(dietConflicts(["1 lb ribeye, thinly sliced"], "vegetarian").length > 0, "ribeye is meat");
+  assert.ok(dietConflicts(["2 lb flank steak"], "pescatarian").length > 0);
+  assert.ok(dietConflicts(["1 cup shredded cheddar"], "vegan").length > 0, "cheddar is dairy");
+  assert.ok(dietConflicts(["2 tbsp fish sauce"], "vegetarian").length > 0);
+  assert.deepEqual(dietConflicts(["4 oz goat cheese", "1 cup beets"], "vegetarian"), []);
+  assert.ok(dietConflicts(["8 oz spaghetti"], "omnivore", ["gluten_free"]).length > 0);
+  assert.ok(dietConflicts(["1 cup whole milk"], "omnivore", ["dairy_free"]).length > 0);
+  assert.ok(dietConflicts(["4 oz pancetta"], "omnivore", ["halal"]).length > 0);
+  assert.ok(dietConflicts(["1/2 cup dry white wine"], "omnivore", ["halal"]).length > 0);
+  assert.deepEqual(dietConflicts(["2 tbsp red wine vinegar"], "omnivore", ["halal"]), []);
+  assert.ok(dietConflicts(["1 lb shrimp"], "omnivore", ["kosher"]).length > 0);
+  assert.ok(dietConflicts(["1 lb ground beef", "1 cup shredded cheddar"], "omnivore", ["kosher"]).some((r) => /meat with dairy/.test(r)));
+  assert.deepEqual(dietConflicts(["1 lb chicken thighs"], "omnivore", ["low_sodium", "keto"]), [], "nutrition-based restrictions aren't guessed");
+});

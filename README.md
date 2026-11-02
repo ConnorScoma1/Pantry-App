@@ -4,7 +4,7 @@ An AI-powered kitchen assistant: weekly meal plans people actually want to cook,
 
 This repository is a **Turborepo monorepo** containing the web app (Next.js), the mobile app (Expo / React Native), shared packages and the Supabase database.
 
-> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional Claude planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it** and **cooking history** work on web and mobile. Fourteen database migrations are waiting for your review — `…0800_shared_household`, `…0900_store_prices`, `…1000_desserts`, `…1100_seasonal`, `…1200_smart_cart`, `…1300_surprise_me`, `…1400_weekly_planning`, `…1500_smart_savings`, `…1600_household_life`, `…1700_cooking_mode`, `…1800_recipe_library`, `…1900_shopping_optimizer`, `…2000_kitchen_import` and `…2100_use_soon_reminders` (see the sections below). See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
+> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional AI planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it**, **cooking history** and **saved grocery lists** work on web and mobile, and AI can run on Gemini, Claude, OpenAI or Groq (see **AI setup**). Sixteen database migrations are waiting for your review — `…0800_shared_household`, `…0900_store_prices`, `…1000_desserts`, `…1100_seasonal`, `…1200_smart_cart`, `…1300_surprise_me`, `…1400_weekly_planning`, `…1500_smart_savings`, `…1600_household_life`, `…1700_cooking_mode`, `…1800_recipe_library`, `…1900_shopping_optimizer`, `…2000_kitchen_import`, `…2100_use_soon_reminders`, `…2200_saved_grocery_lists` and `…2300_ai_costs` (see the sections below). See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
 
 ---
 
@@ -105,8 +105,11 @@ Every result line should end in `t`.
 | `NEXT_PUBLIC_SUPABASE_URL` | `apps/web/.env.local` | No | Supabase API URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `apps/web/.env.local` | No (RLS protects data) | Supabase anon / publishable key |
 | `NEXT_PUBLIC_SITE_URL` | `apps/web/.env.local` | No | Base URL for auth email links |
-| `ANTHROPIC_API_KEY` | `apps/web/.env.local` | **Yes — server only** | Claude API for meal planning. Empty = built-in planner only |
-| `ANTHROPIC_MODEL` | `apps/web/.env.local` | No | Claude model id |
+| `AI_PROVIDER` / `AI_MODEL` | `apps/web/.env.local` | No | Which AI answers: `gemini`, `anthropic`, `openai` or `groq` (default: whichever key is set), and its model |
+| `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GROQ_API_KEY` | `apps/web/.env.local` | **Yes — server only** | The chosen provider's key. All empty = built-in features only |
+| `ANTHROPIC_MODEL` | `apps/web/.env.local` | No | Claude model id (older setting; `AI_MODEL` wins) |
+| `AI_MONTHLY_BUDGET_USD` / `AI_MONTHLY_REQUESTS_PER_PERSON` | `apps/web/.env.local` | No | App-wide monthly AI spending cap, and AI requests per person per month (needs migration `…2300`) |
+| `AI_PRICE_INPUT_PER_M` / `AI_PRICE_OUTPUT_PER_M` | `apps/web/.env.local` | No | The model's price per million tokens, for cost logging and the budget (built in for `gemini-3.1-flash-lite`) |
 | `AI_MAX_OUTPUT_TOKENS` | `apps/web/.env.local` | No | Per-request AI output cap |
 | `AI_DAILY_PLAN_LIMIT` | `apps/web/.env.local` | No | AI meal plans per household per 24 h (default 10; 0 turns AI planning off) |
 | `KROGER_CLIENT_ID` / `KROGER_CLIENT_SECRET` | `apps/web/.env.local` | **Yes — server only** | Live Kroger-family store prices. Empty = no prices shown |
@@ -156,13 +159,23 @@ docs/ARCHITECTURE.md   Decisions, risks, roadmap
 docs/specs/            Product specs (platform, AI & specials, one store vs best deals)
 ```
 
-## Planning with Claude (optional)
+## AI setup (optional)
 
-The Meal Plan works without any AI: a built-in planner picks dinners from recipes that already passed your allergy, diet, equipment, skill and "Not for us" rules, shares perishable ingredients across the week, and keeps weeknights quick. To let Claude arrange the week instead:
+The app works without any AI. A built-in planner picks dinners from recipes that already passed your allergy, diet, restriction, equipment, skill and "Not for us" rules, shares perishable ingredients across the week, and keeps weeknights quick. To add AI (week planning, recipe adaptations, new dinners from leftovers, cooking help), pick a provider. Costs and the full design are in [docs/AI_COSTS.md](docs/AI_COSTS.md).
 
-1. Create an API key at <https://platform.claude.com> (Console → API keys).
-2. Put it in `apps/web/.env.local` as `ANTHROPIC_API_KEY=...` (never with a `NEXT_PUBLIC_` prefix).
-3. Restart `npm run dev`. The Plan page now says "Plans with Claude".
+1. Create a key with one provider:
+   - **Gemini** (the low-cost default, `gemini-3.1-flash-lite`): Google AI Studio (key starts `AIza`) or Vertex AI express mode (key starts `AQ.`).
+   - **Claude**: <https://platform.claude.com>.
+   - **OpenAI** or **Groq**: these also need `AI_MODEL`.
+2. Put it in `apps/web/.env.local`, never with a `NEXT_PUBLIC_` prefix. For Gemini:
+   ```
+   AI_PROVIDER=gemini
+   GEMINI_API_KEY=...
+   AI_MONTHLY_BUDGET_USD=5
+   AI_MONTHLY_REQUESTS_PER_PERSON=60
+   ```
+3. Restart `npm run dev`. The Plan page now says "Plans with AI".
+4. Try it: run `npm run ai:poc` for a 7-day plan with tokens and cost, `npm run ai:eval` for the quality test against the built-in planner, and `npm run ai:costs` for estimates at 1k, 10k and 100k users.
 
 How it stays safe and cheap:
 
@@ -413,6 +426,10 @@ Plan → **Planning settings** → **Weekly drafts**. Off by default. One switch
 ## Cooking history
 
 Recipes → **History** (the clock button on the phone). Every meal the household finished in cooking mode or rated, newest first and grouped by month, with the rating, "would cook again", how long it actually took, the family's verdict and any notes. Above it: meals cooked in the last 30 days, how many different recipes, the average rating, the cuisines you cook most (twice or more), and **Worth making again** — recipes you rated 4★+ or would cook again that you haven't made for three weeks. Counted only from what was actually logged (finishing and then rating the same meal counts once); nothing is estimated. No migration needed.
+
+## Saved grocery lists
+
+Grocery List → **Saved lists**. Save what's on the list under a name ("Weekly basics", "Costco run"), then tap **Add** to put it back later; anything already on the list (and not yet bought) is skipped. Saved lists are shared with the household; anyone can rename or delete them. Up to 30 lists of 150 items. Saving again under the same name updates the list. Needs migration `…2200_saved_grocery_lists` (test: `saved_grocery_lists_smoke_test.sql`, 15 checks).
 
 ## Use it before you lose it
 

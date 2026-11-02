@@ -1,5 +1,6 @@
 import type {
   AllergenCode,
+  DietaryRestriction,
   DietStyle,
   EquipmentCode,
   RecipeSourceKind,
@@ -51,9 +52,19 @@ export function checkEquipment(
   return { ok: missing.length === 0, adaptations, missing };
 }
 
+/** Meat words (cuts and products too, so "ribeye" or "brisket" isn't mistaken for a vegetable). */
+export const MEAT_TERMS = [
+  "chicken", "beef", "pork", "bacon", "ham", "sausage", "turkey", "lamb", "veal", "duck", "goose", "quail", "rabbit", "venison", "bison", "goat meat", "mutton",
+  "prosciutto", "pancetta", "guanciale", "chorizo", "salami", "pepperoni", "pastrami", "hot dog", "bratwurst", "kielbasa", "andouille",
+  "steak", "ribeye", "rib eye", "sirloin", "tenderloin", "brisket", "short rib", "short ribs", "flank", "skirt steak", "chuck", "oxtail", "spare ribs", "pork belly",
+  "ground meat", "meatball", "meatballs", "liver", "bone marrow", "bone broth", "gelatin", "lard", "suet", "tallow", "schmaltz",
+];
+const PORK_TERMS = ["pork", "bacon", "ham", "prosciutto", "pancetta", "guanciale", "chorizo", "salami", "pepperoni", "lard", "pork belly", "spare ribs", "gelatin", "hot dog", "bratwurst", "kielbasa", "andouille"];
+const ALCOHOL_TERMS = ["wine", "beer", "rum", "vodka", "whiskey", "whisky", "bourbon", "brandy", "cognac", "sherry", "sake", "mirin", "liqueur", "vermouth", "tequila", "gin", "stout", "ale", "marsala", "shaoxing"];
+
 export const DIET_EXCLUDED_TERMS: Record<DietStyle, string[]> = {
   omnivore: [],
-  pescatarian: ["chicken", "beef", "pork", "bacon", "ham", "sausage", "turkey", "lamb", "veal", "duck", "prosciutto", "pancetta", "chorizo", "salami", "pepperoni", "gelatin", "lard"],
+  pescatarian: [...MEAT_TERMS],
   vegetarian: [],
   vegan: [],
 };
@@ -87,6 +98,43 @@ DIET_EXCLUDED_TERMS.vegan = [
   "whey",
 ];
 
+/**
+ * Diet style and dietary restrictions, as hard filters. The term lists are
+ * backed by the allergen rules (which know "cheddar" is dairy and "fish
+ * sauce" is fish). Restrictions we can't check from ingredients — low
+ * sodium, lower carb, keto, paleo — aren't claimed: no nutrition is invented.
+ * Halal and kosher only exclude what the ingredients show (pork, alcohol,
+ * shellfish, meat with dairy); sourcing and certification can't be checked.
+ */
+export function dietConflicts(lines: string[], dietStyle: DietStyle, restrictions: readonly DietaryRestriction[] = []): string[] {
+  const reasons: string[] = [];
+  const conflictsOf = (codes: AllergenCode[]) => [...new Set(screenAllergens(lines, codes).conflicts.map((c) => c.matchedTerm))];
+  const style = [...matchesAnyTerm(lines, DIET_EXCLUDED_TERMS[dietStyle])];
+  if (dietStyle === "vegetarian" || dietStyle === "vegan") style.push(...conflictsOf(["fish", "shellfish"]));
+  if (dietStyle === "vegan") style.push(...conflictsOf(["milk", "egg"]));
+  if (style.length > 0) reasons.push(`Not ${labelFor(dietStyles, dietStyle).toLowerCase()}: ${[...new Set(style)].slice(0, 4).join(", ")}`);
+  const r = new Set(restrictions);
+  if (r.has("gluten_free")) {
+    const hits = conflictsOf(["gluten", "wheat"]);
+    if (hits.length) reasons.push(`Not gluten-free: ${hits.slice(0, 3).join(", ")}`);
+  }
+  if (r.has("dairy_free")) {
+    const hits = conflictsOf(["milk"]);
+    if (hits.length) reasons.push(`Not dairy-free: ${hits.slice(0, 3).join(", ")}`);
+  }
+  if (r.has("halal") || r.has("kosher")) {
+    const hits = [...matchesAnyTerm(lines, PORK_TERMS)];
+    // Vinegars made from wine aren't alcoholic drinks.
+    if (r.has("halal")) hits.push(...matchesAnyTerm(lines.map((l) => l.replace(/\b(rice |red |white )?(wine|sherry|champagne|malt) vinegar\b/gi, "vinegar")), ALCOHOL_TERMS));
+    if (r.has("kosher")) {
+      hits.push(...conflictsOf(["shellfish"]));
+      if (matchesAnyTerm(lines, MEAT_TERMS.filter((t) => !["gelatin", "bone broth"].includes(t))).length && conflictsOf(["milk"]).length) hits.push("meat with dairy");
+    }
+    if (hits.length) reasons.push(`Not ${r.has("halal") ? "halal" : "kosher"}: ${[...new Set(hits)].slice(0, 3).join(", ")}`);
+  }
+  return reasons;
+}
+
 export interface EligibilityInput {
   ingredientLines: string[];
   skillLevel: SkillLevel;
@@ -96,6 +144,8 @@ export interface EligibilityInput {
 export interface HouseholdConstraints {
   allergies: readonly AllergenCode[];
   dietStyle: DietStyle;
+  /** Gluten-free, dairy-free, halal, kosher… (the ones ingredients can show). */
+  restrictions?: readonly DietaryRestriction[];
   /** Free-text "never recommend" terms. */
   neverRecommend: readonly string[];
   maxSkillLevel: SkillLevel;
@@ -124,8 +174,7 @@ export function checkEligibility(
     reasons.push(`Contains allergens: ${names}`);
   }
 
-  const dietHits = matchesAnyTerm(recipe.ingredientLines, DIET_EXCLUDED_TERMS[household.dietStyle]);
-  if (dietHits.length > 0) reasons.push(`Not ${labelFor(dietStyles, household.dietStyle).toLowerCase()}: ${dietHits.join(", ")}`);
+  reasons.push(...dietConflicts(recipe.ingredientLines, household.dietStyle, household.restrictions));
 
   const neverHits = matchesAnyTerm(recipe.ingredientLines, household.neverRecommend);
   if (neverHits.length > 0) reasons.push(`Excluded ingredients: ${neverHits.join(", ")}`);
@@ -174,15 +223,15 @@ export function recommendationLabel(
  */
 export function screenProduct(
   name: string,
-  household: Pick<HouseholdConstraints, "allergies" | "dietStyle" | "neverRecommend">,
+  household: Pick<HouseholdConstraints, "allergies" | "dietStyle" | "neverRecommend" | "restrictions">,
 ): string[] {
   const reasons: string[] = [];
   const allergen = screenAllergens([name], household.allergies);
   if (allergen.conflicts.length > 0) {
     reasons.push(`May contain ${[...new Set(allergen.conflicts.map((c) => labelFor(allergens, c.allergen).toLowerCase()))].join(", ")}`);
   }
-  if (matchesAnyTerm([name], DIET_EXCLUDED_TERMS[household.dietStyle]).length > 0) {
-    reasons.push(`Not ${labelFor(dietStyles, household.dietStyle).toLowerCase()}`);
+  if (dietConflicts([name], household.dietStyle, household.restrictions).length > 0) {
+    reasons.push(`Not ${labelFor(dietStyles, household.dietStyle).toLowerCase()}${household.restrictions?.length ? " or doesn't fit your restrictions" : ""}`);
   }
   const never = matchesAnyTerm([name], household.neverRecommend);
   if (never.length > 0) reasons.push(`You asked us to skip ${never.join(", ")}`);

@@ -1,7 +1,8 @@
 import { canonicalUnit, guessCategory } from "@kitchen-pantry/inventory-engine";
 import type { PantryCategory, StorageLocation } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
-import { AiRequestError, callClaudeJson, type ClaudeImage, type FetchLike } from "./claude";
+import { AiRequestError, type ClaudeImage, type FetchLike } from "./claude";
+import { callModelJson } from "./providers";
 import { assertServerOnly, parseStructuredOutput, type AiConfig } from "./core";
 
 /**
@@ -175,7 +176,7 @@ export function cleanReceipt(raw: z.infer<typeof answerSchema>, today: string): 
 
 export async function readReceipt(options: { config: AiConfig; image: ClaudeImage; today: string; fetchImpl?: FetchLike }): Promise<ReceiptDraft & { usage: { inputTokens: number; outputTokens: number }; model: string }> {
   assertServerOnly();
-  const res = await callClaudeJson({
+  const res = await callModelJson({
     config: { ...options.config, maxOutputTokens: Math.min(Math.max(options.config.maxOutputTokens, 4000), 8000) },
     system: SYSTEM,
     user: "Read this grocery receipt.",
