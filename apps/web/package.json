@@ -17,6 +17,7 @@
     "@kitchen-pantry/meal-planner": "*",
     "@kitchen-pantry/recipe-engine": "*",
     "@kitchen-pantry/shared-types": "*",
+    "@kitchen-pantry/shopping-optimizer": "*",
     "@kitchen-pantry/ui-tokens": "*",
     "@kitchen-pantry/validation": "*",
     "@supabase/ssr": "^0.12.7",

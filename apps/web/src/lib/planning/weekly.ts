@@ -56,7 +56,7 @@ async function aiUsedToday(svc: SupabaseLike, householdId: string): Promise<numb
     .select("id", { count: "exact", head: true })
     .eq("household_id", householdId)
     .eq("feature", FEATURE)
-    .in("outcome", ["ok", "fallback"])
+    .in("outcome", ["ok", "fallback", "reserved"])
     .gte("created_at", since);
   return error ? null : Number(count ?? 0);
 }

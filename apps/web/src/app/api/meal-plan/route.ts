@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { aiPlanningStatus, generateMealPlan } from "@/lib/meal-plan/generate";
 import { supabaseFromBearer } from "@/lib/supabase/bearer";
+import { readJson } from "@/lib/read-json";
 
 /**
  * Meal planning for the phone app (Claude runs here so the API key stays on
@@ -21,14 +22,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const s = await supabaseFromBearer(request);
   if (!s) return unauthorized();
-  const length = Number(request.headers.get("content-length") ?? 0);
-  if (length > 20_000) return NextResponse.json({ ok: false, message: "Request too large." }, { status: 413 });
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, message: "Invalid JSON." }, { status: 400 });
-  }
+  const read = await readJson(request, 20_000);
+  if (!read.ok) return read.response;
+  const body = read.body;
   const result = await generateMealPlan(body, { db: s.db, householdKey: s.userId });
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

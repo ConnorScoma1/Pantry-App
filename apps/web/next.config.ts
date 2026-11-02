@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     "@kitchen-pantry/meal-planner",
     "@kitchen-pantry/recipe-engine",
     "@kitchen-pantry/shared-types",
+    "@kitchen-pantry/shopping-optimizer",
     "@kitchen-pantry/ui-tokens",
     "@kitchen-pantry/validation",
   ],
@@ -23,7 +24,9 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Frame-Options", value: "DENY" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
+          // Browsers only honour this over HTTPS; harmless on localhost.
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
         ],
       },
     ];

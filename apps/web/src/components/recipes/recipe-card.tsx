@@ -5,6 +5,7 @@ import { Clock, EyeOff, Heart, Leaf, Sparkles, Star, TriangleAlert } from "lucid
 import Link from "next/link";
 import { cn } from "@/lib/cn";
 import { RecipeArt } from "./recipe-art";
+import { AuthenticityBadge, StatusBadge, statusLabel } from "./library-badges";
 
 /** How we're allowed to describe a recipe's popularity — never invented. */
 export function RatingLabel({ ranked, className }: { ranked: RankedRecipe; className?: string }) {
@@ -43,8 +44,11 @@ export function RecipeCard({
   onToggleFavorite,
   onDismiss,
   compact = false,
+  otherVersions = 0,
 }: {
   ranked: RankedRecipe;
+  /** Other versions of the same dish in the results (shown as "+2 versions"). */
+  otherVersions?: number;
   onToggleFavorite?: () => void;
   /** "Not for us": hides the recipe from suggestions (undoable). */
   onDismiss?: () => void;
@@ -53,6 +57,7 @@ export function RecipeCard({
   const { recipe, coverage, reasons, cautions, favorite } = ranked;
   const have = coverage.owned.length;
   const total = coverage.requiredCount;
+  const status = statusLabel(recipe);
 
   return (
     <article className="group relative flex overflow-hidden rounded-card bg-surface transition-shadow hover:shadow-[0_6px_24px_rgb(0_0_0/0.06)] sm:flex-col">
@@ -64,13 +69,17 @@ export function RecipeCard({
           </Link>
         </h3>
         <p className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[14px] text-muted">
-          <span className="inline-flex items-center gap-1">
-            <Clock className="size-3.5" aria-hidden />
-            {formatMinutes(recipe.totalMinutes)}
-          </span>
-          <span aria-hidden>·</span>
+          {status.tone !== "idea" ? (
+            <>
+              <span className="inline-flex items-center gap-1">
+                <Clock className="size-3.5" aria-hidden />
+                {formatMinutes(recipe.totalMinutes)}
+              </span>
+              <span aria-hidden>·</span>
+            </>
+          ) : null}
           <SkillDots level={recipe.skillLevel} />
-          <RatingLabel ranked={ranked} />
+          {status.tone !== "idea" ? <RatingLabel ranked={ranked} /> : null}
           {ranked.inSeason && ranked.inSeason.length > 0 ? (
             <span className="inline-flex items-center gap-1 font-medium text-accent" title={`In season: ${ranked.inSeason.join(", ")}`}>
               <Leaf className="size-3.5" aria-hidden />
@@ -78,6 +87,14 @@ export function RecipeCard({
             </span>
           ) : null}
         </p>
+
+        {status.tone !== "neutral" || otherVersions > 0 || recipe.library?.authenticity ? (
+          <p className="mt-2 flex flex-wrap items-center gap-1.5">
+            {status.tone !== "neutral" ? <StatusBadge recipe={recipe} /> : null}
+            <AuthenticityBadge recipe={recipe} />
+            {otherVersions > 0 ? <span className="text-[13px] font-medium text-muted">+{otherVersions} {otherVersions === 1 ? "version" : "versions"}</span> : null}
+          </p>
+        ) : null}
 
         {total > 0 && have > 0 ? (
           <div className="mt-3">

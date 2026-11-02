@@ -5,14 +5,17 @@ import {
   formatMinutes,
   formatTemperature,
   groupByComponent,
+  isChefRecipe,
+  isCookable,
   rankRecipe,
 } from "@kitchen-pantry/recipe-engine";
-import { allergens, cuisines, equipment, labelFor, skillLevels } from "@kitchen-pantry/shared-types";
+import { allergens, equipment, labelFor, skillLevels, worldCuisines, type Recipe } from "@kitchen-pantry/shared-types";
 import {
   ArrowLeft,
   Check,
   ChefHat,
   Clock,
+  CookingPot,
   EyeOff,
   Heart,
   Minus,
@@ -29,6 +32,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { RatingLabel, SkillDots } from "@/components/recipes/recipe-card";
 import { PhotoCredit, RecipeArt } from "@/components/recipes/recipe-art";
 import { RateSheet } from "@/components/recipes/rate-sheet";
+import { CookingMode } from "@/components/recipes/cooking-mode";
+import { AuthenticityBadge, SafetyNote, SourceLine, StatusBadge, StorageNote } from "@/components/recipes/library-badges";
+import { IdeaPanel, VersionsPanel } from "@/components/recipes/versions-panel";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
@@ -36,10 +42,26 @@ import { useRecipes } from "@/lib/recipes/use-recipes";
 
 export function RecipeDetailView({ slug }: { slug: string }) {
   const data = useRecipes();
-  const recipe = data.recipes.find((r) => r.slug === slug) ?? null;
+  const known = data.recipes.find((r) => r.slug === slug) ?? null;
+  // Recipes outside this week's working set (search results, ideas, drafts) are fetched by slug.
+  const [fetched, setFetched] = useState<{ slug: string; recipe: Recipe | null } | null>(null);
+  const { findBySlug } = data;
+  useEffect(() => {
+    if (data.loading || known || fetched?.slug === slug) return;
+    let cancelled = false;
+    void findBySlug(slug).then((r) => {
+      if (!cancelled) setFetched({ slug, recipe: r });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data.loading, known, fetched, slug, findBySlug]);
+  const recipe = known ?? (fetched?.slug === slug ? fetched.recipe : null);
+  const looking = !known && fetched?.slug !== slug;
   const ranked = useMemo(() => (recipe ? rankRecipe(recipe, data.context) : null), [recipe, data.context]);
   const [servings, setServings] = useState<number | null>(null);
   const [rating, setRating] = useState(false);
+  const [cooking, setCooking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Record that the recipe was opened (once per visit) for repeat-avoidance later.
@@ -51,7 +73,7 @@ export function RecipeDetailView({ slug }: { slug: string }) {
     void logEvent(recipe.id, "opened", "detail");
   }, [recipe, logEvent]);
 
-  if (data.loading) {
+  if (data.loading || (looking && !recipe)) {
     return (
       <div className="space-y-4" aria-busy="true" aria-label="Loading recipe">
         <div className="h-56 animate-pulse rounded-card bg-surface" />
@@ -75,6 +97,7 @@ export function RecipeDetailView({ slug }: { slug: string }) {
   const owned = new Set(ranked.coverage.owned.map((i) => i.position));
   const mine = data.myRatings.get(recipe.id);
   const { conflicts, warnings } = ranked.eligibility.allergens;
+  const cookable = isCookable(recipe);
 
   return (
     <article className="animate-enter pb-8">
@@ -91,10 +114,14 @@ export function RecipeDetailView({ slug }: { slug: string }) {
         </figure>
         <div>
           <p className="text-[14px] font-semibold uppercase tracking-[0.12em] text-muted">
-            {recipe.cuisine ? labelFor(cuisines, recipe.cuisine) : "Recipe"}
+            {recipe.cuisine ? labelFor(worldCuisines, recipe.cuisine) : "Recipe"}
           </p>
           <h1 className="mt-1 text-[30px] font-bold leading-tight tracking-tight sm:text-[36px]">{recipe.title}</h1>
-          <p className="mt-2 text-[17px] text-muted">{recipe.description}</p>
+          <p className="mt-2 flex flex-wrap items-center gap-1.5">
+            <StatusBadge recipe={recipe} />
+            <AuthenticityBadge recipe={recipe} />
+          </p>
+          {recipe.description ? <p className="mt-2 text-[17px] text-muted">{recipe.description}</p> : null}
 
           <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[15px]">
             <div className="flex items-center gap-1.5">
@@ -125,6 +152,11 @@ export function RecipeDetailView({ slug }: { slug: string }) {
           </dl>
 
           <div className="mt-5 flex flex-wrap gap-2">
+            {cookable ? (
+            <Button size="lg" onClick={() => setCooking(true)} icon={isChefRecipe(recipe) ? <ChefHat className="size-5" aria-hidden /> : <CookingPot className="size-5" aria-hidden />}>
+              {isChefRecipe(recipe) ? "Cook in Chef mode" : "Start cooking"}
+            </Button>
+            ) : null}
             <Button
               variant={ranked.favorite ? "secondary" : "primary"}
               onClick={() => void data.toggleFavorite(recipe.id)}
@@ -133,9 +165,11 @@ export function RecipeDetailView({ slug }: { slug: string }) {
             >
               {ranked.favorite ? "Saved" : "Save"}
             </Button>
-            <Button variant="secondary" onClick={() => setRating(true)} icon={<Star className="size-5" aria-hidden />}>
-              {mine ? "Rate again" : "I cooked this"}
-            </Button>
+            {cookable ? (
+              <Button variant="secondary" onClick={() => setRating(true)} icon={<Star className="size-5" aria-hidden />}>
+                {mine ? "Rate again" : "I cooked this"}
+              </Button>
+            ) : null}
             {ranked.allowed ? (
               <Button
                 variant="ghost"
@@ -202,6 +236,11 @@ export function RecipeDetailView({ slug }: { slug: string }) {
         </Card>
       ) : null}
 
+      <SafetyNote recipe={recipe} />
+
+      {!cookable ? <IdeaPanel recipe={recipe} data={data} /> : null}
+
+      {cookable ? (
       <div className="mt-8 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
         <section aria-labelledby="ingredients">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -268,7 +307,7 @@ export function RecipeDetailView({ slug }: { slug: string }) {
             ))}
           </div>
           <p className="mt-4 text-[14px] text-muted">
-            Equipment: {recipe.requiredEquipment.map((e) => labelFor(equipment, e)).join(", ")}
+            {recipe.requiredEquipment.length ? `Equipment: ${recipe.requiredEquipment.map((e) => labelFor(equipment, e)).join(", ")}` : "No special equipment needed."}
           </p>
         </section>
 
@@ -325,20 +364,27 @@ export function RecipeDetailView({ slug }: { slug: string }) {
               </ul>
             </Card>
           ) : null}
+          <StorageNote recipe={recipe} />
         </section>
       </div>
+      ) : null}
 
-      <p className="mt-10 border-t border-border pt-4 text-[14px] text-muted">
-        {recipe.source.kind === "original" ? "Original recipe by " : "Source: "}
-        {recipe.source.url ? (
-          <a href={recipe.source.url} className="underline" rel="noopener noreferrer" target="_blank">
-            {recipe.source.name}
-          </a>
-        ) : (
-          recipe.source.name
-        )}
-        . Food-safety temperatures follow USDA guidance. Always check product labels for allergens.
-      </p>
+      {cookable ? <VersionsPanel recipe={recipe} data={data} /> : null}
+
+      <SourceLine recipe={recipe} />
+
+      {cooking ? (
+        <CookingMode
+          recipe={recipe}
+          initialServings={serves}
+          onClose={() => setCooking(false)}
+          onDone={() => {
+            void logEvent(recipe.id, "cooked", "detail");
+            setCooking(false);
+            setRating(true);
+          }}
+        />
+      ) : null}
 
       <RateSheet
         open={rating}

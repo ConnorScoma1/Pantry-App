@@ -2,6 +2,7 @@
 
 import { createSupabaseRecipeRepository, type RecipeRepository, type Result } from "@kitchen-pantry/database";
 import type { RatingSummary, Recipe, RecipeRating, RecommendationEvent } from "@kitchen-pantry/shared-types";
+import { answerCookingQuestion, type CookingHelp } from "@/lib/cooking/help";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -40,4 +41,19 @@ export async function recommendationEventsAction(): Promise<Result<Recommendatio
 }
 export async function logRecommendationEventAction(input: unknown): Promise<Result<RecommendationEvent>> {
   return run((r) => r.logEvent(input));
+}
+
+/**
+ * The cooking assistant. With Supabase the recipe and allergens are loaded on
+ * the server as the signed-in user; in preview mode only built-in recipes,
+ * with the allergens this browser has.
+ */
+export async function cookingHelpAction(input: unknown, previewAllergies?: unknown): Promise<Result<CookingHelp>> {
+  if (!isSupabaseConfigured) return answerCookingQuestion(input, { previewAllergies });
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Your session expired. Please sign in again." };
+  return answerCookingQuestion(input, { db: asSupabaseLike(supabase) });
 }

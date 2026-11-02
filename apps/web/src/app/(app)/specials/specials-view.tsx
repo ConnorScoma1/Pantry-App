@@ -67,6 +67,21 @@ export function SpecialsView() {
         }
       />
 
+      {s.choices.length > 1 ? (
+        <div className="mb-4">
+          <p className="mb-1.5 text-[15px] font-medium">Stores on your trip</p>
+          <Segmented label="Specials at" options={s.choices.map((c) => ({ value: c.storeId, label: c.name }))} value={s.store?.storeId ?? ""} onChange={(v) => s.pick(v)} />
+        </div>
+      ) : null}
+      {s.enabled && s.store && !s.hasTrip ? (
+        <Link href="/grocery/compare" className="mb-4 flex min-h-12 items-center justify-between gap-3 rounded-2xl bg-surface px-4 py-3 text-[15px] hover:bg-surface-strong">
+          <span>
+            <span className="font-semibold">Worth a second stop?</span> <span className="text-muted">Compare your whole list across nearby stores, after fuel and time.</span>
+          </span>
+          <span aria-hidden>→</span>
+        </Link>
+      ) : null}
+
       {s.loading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading specials">
           {[0, 1, 2, 3, 4, 5].map((i) => (

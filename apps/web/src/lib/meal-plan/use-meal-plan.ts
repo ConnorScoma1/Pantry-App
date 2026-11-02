@@ -22,6 +22,7 @@ import type { RankedRecipe } from "@kitchen-pantry/recipe-engine";
 import { specialsResultSchema, type Special } from "@kitchen-pantry/grocery-pricing";
 import { pricingStatusAction, specialsAction } from "@/app/(app)/grocery/actions";
 import { loadSavedStore } from "@/lib/pricing/use-pricing";
+import { useActiveTrip } from "@/lib/shopping/use-shopping";
 import type { MealPlan, PlanningMode, PlanSource, Recipe } from "@kitchen-pantry/shared-types";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -140,22 +141,50 @@ export function useMealPlan(weekStart: string) {
     [repo],
   );
 
+  // The household's planned shopping trip (its stores' specials count too).
+  const trip = useActiveTrip();
+  const tripRef = useRef(trip.trip);
+  tripRef.current = trip.trip;
+
   // Cook the Specials: the last sale prices used (kept for swaps).
   const specialsRef = useRef<{ specials: Special[]; source: { storeName: string; checkedAt: string } | null }>({ specials: [], source: null });
 
-  /** Sale prices for what the candidate recipes need, from the household's store. Never invented. */
+  /**
+   * Sale prices for what the candidate recipes need — at the household's
+   * store and, when they've planned a multi-store trip, at those stores too
+   * ("plan around the best local deals", spec 03 §6). Never invented.
+   */
   const loadSpecials = useCallback(async (): Promise<{ specials: Special[]; source: { storeName: string; checkedAt: string } | null; notice: string | null }> => {
     const none = (notice: string) => ({ specials: [], source: null, notice });
     const [status, store] = await Promise.all([pricingStatusAction(), loadSavedStore(dataMode)]);
     if (!status.enabled) return none("Store prices aren't connected, so Cook the Specials planned like Balanced.");
-    if (!store.ok || !store.data) return none("Choose your store on the Grocery List to cook the specials — this week was planned like Balanced.");
+    const stores: Array<{ storeId: string; name: string }> = store.ok && store.data ? [{ storeId: store.data.storeId, name: store.data.name }] : [];
+    for (const st of tripRef.current?.stops ?? []) {
+      const id = st.storeKey.startsWith("kroger:") ? st.storeKey.slice(7) : null;
+      if (id && !stores.some((x) => x.storeId === id)) stores.push({ storeId: id, name: st.name });
+    }
+    if (stores.length === 0) return none("Choose your store on the Grocery List to cook the specials — this week was planned like Balanced.");
     const terms = cookTheSpecialsTerms(candidates);
     if (terms.length === 0) return none("Nothing to check at the store this week.");
-    const r = await specialsAction({ storeId: store.data.storeId, terms });
-    if (!r.ok) return none(`${r.message} This week was planned like Balanced.`);
-    const parsed = specialsResultSchema.safeParse(r.data);
-    if (!parsed.success) return none("Sale prices came back in an unexpected shape, so this week was planned like Balanced.");
-    return { specials: parsed.data.specials as Special[], source: { storeName: store.data.name, checkedAt: parsed.data.fetchedAt }, notice: null };
+    const found: Special[] = [];
+    const used: string[] = [];
+    let checkedAt: string | null = null;
+    let failure: string | null = null;
+    for (const st of stores.slice(0, 3)) {
+      const r = await specialsAction({ storeId: st.storeId, terms });
+      if (!r.ok) {
+        failure ??= r.message;
+        continue;
+      }
+      const parsed = specialsResultSchema.safeParse(r.data);
+      if (!parsed.success) continue;
+      found.push(...(parsed.data.specials as Special[]));
+      used.push(st.name);
+      checkedAt ??= parsed.data.fetchedAt;
+    }
+    if (used.length === 0) return none(`${failure ?? "Sale prices couldn't be loaded."} This week was planned like Balanced.`);
+    const storeName = used.length === 1 ? used[0]! : `${used.slice(0, -1).join(", ")} and ${used[used.length - 1]}`;
+    return { specials: found.slice(0, 300), source: { storeName: storeName.slice(0, 160), checkedAt: checkedAt! }, notice: null };
   }, [candidates, dataMode]);
 
   /** Build (or rebuild) the open nights. Locked and custom meals stay. */

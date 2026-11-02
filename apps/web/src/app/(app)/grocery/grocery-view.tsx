@@ -4,12 +4,14 @@ import { groupGroceryItems, personName, toPlanLines } from "@kitchen-pantry/data
 import { formatCents, type PricedLine } from "@kitchen-pantry/grocery-pricing";
 import { buildGroceryList, departmentFor, nightsLeft, type GroceryListDraft } from "@kitchen-pantry/meal-planner";
 import { groceryDepartments, priceStatuses, type GroceryDepartment, type GroceryItem } from "@kitchen-pantry/shared-types";
-import { Check, ChevronDown, ListPlus, MapPin, Pencil, Plus, RefreshCw, ShoppingBasket, Store, Tag, UserPlus, Users } from "lucide-react";
+import { organizeByStore } from "@kitchen-pantry/shopping-optimizer";
+import { Check, ChevronDown, ListPlus, MapPin, Pencil, Plus, RefreshCw, Route, ShoppingBasket, Store, Tag, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import { Avatar } from "@/components/household/avatar";
 import { useProfile } from "@/components/profile/profile-provider";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Card, Eyebrow, Hint, PageHeader } from "@/components/ui/card";
 import { Segmented, TextInput } from "@/components/ui/controls";
 import { PriceStatusBadge } from "@/components/ui/price-status";
@@ -20,6 +22,7 @@ import { useGrocery, type SyncState } from "@/lib/grocery/use-grocery";
 import { useHousehold } from "@/lib/household/use-household";
 import { useMealPlan } from "@/lib/meal-plan/use-meal-plan";
 import { usePricing } from "@/lib/pricing/use-pricing";
+import { useActiveTrip } from "@/lib/shopping/use-shopping";
 
 function localToday(): string {
   const d = new Date();
@@ -47,6 +50,29 @@ export function GroceryView() {
 
   const groups = useMemo(() => groupGroceryItems(grocery.items), [grocery.items]);
   const you = household.you?.userId ?? null;
+  const trip = useActiveTrip();
+  const params = useSearchParams();
+  const [view, setView] = useState<"aisle" | "stores">(params.get("view") === "stores" ? "stores" : "aisle");
+  const byStore = useMemo(
+    () => (trip.trip ? organizeByStore(grocery.items, trip.trip.stops.map((s) => s.storeKey), new Map(Object.entries(trip.trip.assignment))) : []),
+    [grocery.items, trip.trip],
+  );
+  const showStores = view === "stores" && trip.trip !== null;
+  const row = (item: GroceryItem) => (
+    <GroceryRow
+      key={item.id}
+      item={item}
+      addedBy={personName(item.addedBy, household.names, you)}
+      checkedBy={personName(item.checkedBy, household.names, you)}
+      shared={others.length > 0}
+      price={showStores ? null : (pricing.lines.get(item.id) ?? null)}
+      onToggle={async () => {
+        const r = await grocery.toggle(item);
+        if (!r.ok) setMessage(r.message);
+      }}
+      onEdit={() => setEditing(item)}
+    />
+  );
 
   return (
     <div className="animate-enter">
@@ -107,7 +133,45 @@ export function GroceryView() {
                   </Button>
                 ) : null}
               </div>
-              {groups.map((group) => (
+              {trip.trip ? (
+                <div className="border-b border-border px-5 py-3 sm:px-6">
+                  <Segmented
+                    label="Group the list"
+                    options={[
+                      { value: "aisle", label: "By aisle" },
+                      { value: "stores", label: trip.trip.stops.length === 1 ? "My store" : `By store (${trip.trip.stops.length})` },
+                    ]}
+                    value={view}
+                    onChange={setView}
+                  />
+                </div>
+              ) : null}
+              {showStores
+                ? byStore.map((section, si) => {
+                    const stop = trip.trip!.stops.find((x) => x.storeKey === section.storeKey);
+                    return (
+                      <section key={section.storeKey ?? "unassigned"} aria-labelledby={`store-${si}`}>
+                        <div id={`store-${si}`} className="border-t border-border px-5 pt-4 pb-2 first:border-t-0 sm:px-6">
+                          <p className="text-[18px] font-bold">
+                            {stop ? `${trip.trip!.stops.length > 1 ? `${si + 1}. ` : ""}${stop.name}` : "Not assigned to a store"}
+                          </p>
+                          <p className="text-[14px] text-muted">
+                            {stop?.address ?? (stop ? "" : "Added after the trip was planned, or no store priced it")}
+                            {section.count ? ` · ${section.count} item${section.count === 1 ? "" : "s"}` : ""}
+                          </p>
+                        </div>
+                        {section.departments.map((d) => (
+                          <div key={d.department}>
+                            <h3 className="bg-surface-strong/50 px-5 py-1.5 text-[12px] font-semibold uppercase tracking-[0.12em] text-muted sm:px-6">
+                              {groceryDepartments.find((x) => x.code === d.department)?.label ?? d.department}
+                            </h3>
+                            <ul>{d.items.map(row)}</ul>
+                          </div>
+                        ))}
+                      </section>
+                    );
+                  })
+                : groups.map((group) => (
                 <section key={group.department} aria-labelledby={`dept-${group.department}`}>
                   <h2
                     id={`dept-${group.department}`}
@@ -116,23 +180,7 @@ export function GroceryView() {
                     {group.label}
                     <span className="font-medium normal-case tracking-normal">{group.remaining > 0 ? `${group.remaining} left` : "Done"}</span>
                   </h2>
-                  <ul>
-                    {group.items.map((item) => (
-                      <GroceryRow
-                        key={item.id}
-                        item={item}
-                        addedBy={personName(item.addedBy, household.names, you)}
-                        checkedBy={personName(item.checkedBy, household.names, you)}
-                        shared={others.length > 0}
-                        price={pricing.lines.get(item.id) ?? null}
-                        onToggle={async () => {
-                          const r = await grocery.toggle(item);
-                          if (!r.ok) setMessage(r.message);
-                        }}
-                        onEdit={() => setEditing(item)}
-                      />
-                    ))}
-                  </ul>
+                  <ul>{group.items.map(row)}</ul>
                 </section>
               ))}
             </Card>
@@ -141,6 +189,7 @@ export function GroceryView() {
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
+          <CompareCard trip={trip} hasItems={grocery.stats.left > 0} onMessage={setMessage} />
           <PricesCard pricing={pricing} hasItems={grocery.stats.left > 0} />
           {grocery.stats.left > 0 ? (
             <Link href="/cart" className="flex min-h-14 items-center justify-between gap-3 rounded-card bg-foreground px-5 font-semibold text-background">
@@ -186,6 +235,46 @@ export function GroceryView() {
         }}
       />
     </div>
+  );
+}
+
+/** One Store vs. Best Deals: the way in, and the household's chosen trip. */
+function CompareCard({ trip, hasItems, onMessage }: { trip: ReturnType<typeof useActiveTrip>; hasItems: boolean; onMessage: (m: string) => void }) {
+  const t = trip.trip;
+  return (
+    <Card>
+      <div className="flex items-center gap-2">
+        <Route className="size-5 text-muted" aria-hidden />
+        <Eyebrow>One store or best deals</Eyebrow>
+      </div>
+      {t ? (
+        <>
+          <p className="mt-2 text-xl font-bold">{t.stops.length === 1 ? `Shopping at ${t.stops[0]!.name}` : `Shopping at ${t.stops.length} stores`}</p>
+          {t.stops.length > 1 ? <p className="text-[14px] text-muted">{t.stops.map((s) => s.name).join(" → ")}</p> : null}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/grocery/compare" className={buttonClasses("secondary")}>
+              Compare again
+            </Link>
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                const r = await trip.end("done");
+                onMessage(r.ok ? "Trip finished. The list is grouped by aisle again." : r.message);
+              }}
+            >
+              Finish trip
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-2 text-[16px]">See whether splitting your list across nearby stores is worth the extra drive — after fuel and your time.</p>
+          <Link href="/grocery/compare" aria-disabled={!hasItems} className={cn(buttonClasses("primary", "md", "mt-3 w-full"), !hasItems && "pointer-events-none opacity-45")}>
+            Compare stores
+          </Link>
+        </>
+      )}
+    </Card>
   );
 }
 

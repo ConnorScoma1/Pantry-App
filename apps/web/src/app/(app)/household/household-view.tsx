@@ -318,7 +318,7 @@ function DisplayName({ current, onSave }: { current: string; onSave: (n: string)
 function InviteCard({ household: h, onMessage }: { household: ReturnType<typeof useHousehold>; onMessage: (m: string | null) => void }) {
   const id = useId();
   const [email, setEmail] = useState("");
-  const [created, setCreated] = useState<{ link: string; email: string | null; expiresAt: string } | null>(null);
+  const [created, setCreated] = useState<{ link: string; email: string | null; expiresAt: string; emailed: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const pending = h.invites.filter((i) => i.status === "pending");
@@ -334,7 +334,12 @@ function InviteCard({ household: h, onMessage }: { household: ReturnType<typeof 
     }
     onMessage(null);
     setCopied(false);
-    setCreated({ link: inviteLink(window.location.origin, r.data.token), email: email.trim().toLowerCase() || null, expiresAt: r.data.expiresAt });
+    setCreated({
+      link: inviteLink(window.location.origin, r.data.token),
+      email: email.trim().toLowerCase() || null,
+      expiresAt: r.data.expiresAt,
+      emailed: (r.data as { emailed?: boolean }).emailed === true,
+    });
     setEmail("");
   }
 
@@ -358,7 +363,12 @@ function InviteCard({ household: h, onMessage }: { household: ReturnType<typeof 
       ) : created ? (
         <div className="mt-3">
           <p className="text-[16px]">
-            {created.email ? `Send this link to ${created.email}.` : "Send this link to the person you're inviting."} It works once, only after they
+            {created.emailed && created.email
+              ? `We emailed this link to ${created.email}. You can also send it yourself.`
+              : created.email
+                ? `Send this link to ${created.email}.`
+                : "Send this link to the person you're inviting."}{" "}
+            It works once, only after they
             sign in, and expires {shortDate(created.expiresAt)}.
           </p>
           <div className="mt-3 flex items-center gap-2 rounded-2xl bg-background p-2 pl-4">

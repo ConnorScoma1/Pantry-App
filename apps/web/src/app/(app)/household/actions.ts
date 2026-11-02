@@ -9,13 +9,15 @@ import {
   type HouseholdMember,
   type HouseholdRepository,
   type HouseholdSummary,
+  inviteLink,
   type InviteDetails,
   type Result,
 } from "@kitchen-pantry/database";
 import type { ActivityEvent, AttendanceData } from "@kitchen-pantry/shared-types";
+import { inviteEmail, sendEmail } from "@kitchen-pantry/integrations";
 import { revalidatePath } from "next/cache";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { isSupabaseConfigured, siteUrl } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 /**
@@ -49,8 +51,52 @@ export async function householdsAction(): Promise<Result<HouseholdSummary[]>> {
 export async function invitesAction(): Promise<Result<HouseholdInvite[]>> {
   return run((r) => r.invites());
 }
-export async function createInviteAction(input: unknown): Promise<Result<CreatedInvite>> {
-  return run((r) => r.createInvite(input));
+/**
+ * Create an invite. When an email address is given and the server has an
+ * email provider (RESEND_API_KEY + INVITE_EMAIL_FROM), the link is emailed
+ * from the server too. The link is built from NEXT_PUBLIC_SITE_URL, never
+ * from the request, and each person can send at most 5 invite emails an hour
+ * and 10 a day (counted in the database, so it holds across servers).
+ */
+export async function createInviteAction(input: unknown): Promise<Result<CreatedInvite & { emailed: boolean }>> {
+  return run(async (r) => {
+    const created = await r.createInvite(input);
+    if (!created.ok) return created;
+    const to = typeof (input as { email?: unknown } | null)?.email === "string" ? String((input as { email: string }).email).trim().toLowerCase() : "";
+    const emailed = to ? await emailInvite(r, to, created.data, await emailsToday()) : false;
+    return { ok: true, data: { ...created.data, emailed } };
+  });
+}
+
+/** Invites with an email address this person created in the last day (including this one); null if unknown. */
+async function emailsToday(): Promise<number | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.rpc("invite_emails_today");
+  return error ? null : Number(data ?? 0);
+}
+
+const DAILY_INVITE_EMAILS = 10;
+const sentBy = new Map<string, number[]>();
+async function emailInvite(repo: HouseholdRepository, to: string, invite: CreatedInvite, today: number | null): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY ?? "";
+  const from = process.env.INVITE_EMAIL_FROM ?? "";
+  if (!apiKey || !from || !siteUrl.startsWith("https://")) return false;
+  if (today === null || today > DAILY_INVITE_EMAILS) return false; // fail closed: the link still works when shared by hand
+  const [members, households] = await Promise.all([repo.members(), repo.households()]);
+  const me = members.ok ? members.data.find((m) => m.isYou) : undefined;
+  const key = me?.userId ?? "unknown";
+  const now = Date.now();
+  const recent = (sentBy.get(key) ?? []).filter((t) => now - t < 3_600_000);
+  if (recent.length >= 5) return false;
+  sentBy.set(key, [...recent, now]);
+  const household = households.ok ? households.data.find((h) => h.isActive)?.name : undefined;
+  const days = Math.max(1, Math.round((Date.parse(invite.expiresAt) - now) / 86_400_000));
+  const result = await sendEmail(
+    inviteEmail({ to, link: inviteLink(siteUrl, invite.token), householdName: household ?? "a household", inviterName: me?.displayName ?? "Someone", days }),
+    { apiKey, from },
+  );
+  if (!result.ok) console.error("[invite] email not sent", { reason: result.reason });
+  return result.ok;
 }
 export async function revokeInviteAction(id: unknown): Promise<Result<null>> {
   return run((r) => r.revokeInvite(id));

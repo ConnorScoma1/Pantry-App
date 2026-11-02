@@ -20,6 +20,7 @@ import {
   setFavoriteAction,
   summariesAction,
 } from "@/app/(app)/recipes/actions";
+import { libraryFacetsAction, recipeBySlugAction, searchLibraryAction } from "@/app/(app)/recipes/library-actions";
 import { useProfile } from "@/components/profile/profile-provider";
 import { browserStorage } from "@/lib/browser-storage";
 import { useKitchen } from "@/lib/kitchen/use-kitchen";
@@ -33,10 +34,14 @@ const supabaseRecipes: RecipeRepository = {
   rate: (input) => rateRecipeAction(input),
   events: () => recommendationEventsAction(),
   logEvent: (input) => logRecommendationEventAction(input),
+  search: (query) => searchLibraryAction(query),
+  bySlug: (slug) => recipeBySlugAction(slug),
+  facets: () => libraryFacetsAction(),
 };
 
 let previewRecipes: RecipeRepository | null = null;
-function previewRepository(): RecipeRepository {
+/** The on-device recipe library used in preview mode (shared by every hook). */
+export function previewRepository(): RecipeRepository {
   previewRecipes ??= createLocalRecipeRepository(browserStorage);
   return previewRecipes;
 }
@@ -97,6 +102,24 @@ export function useRecipes() {
   );
 
   const rank = useCallback((filters: RecipeFilters = {}) => rankRecipes(recipes, context, filters), [recipes, context]);
+
+  /** A recipe by slug: from the working set, else fetched (library recipes outside it, ideas, drafts). */
+  const findBySlug = useCallback(
+    async (slug: string): Promise<Recipe | null> => {
+      const known = recipes.find((r) => r.slug === slug);
+      if (known) return known;
+      const r = await repo.bySlug(slug);
+      if (!r.ok || !r.data) return null;
+      const found = r.data;
+      setRecipes((prev) => (prev.some((x) => x.id === found.id) ? prev : [...prev, found]));
+      return found;
+    },
+    [recipes, repo],
+  );
+  /** Add recipes (e.g. a new AI draft) to the working set. */
+  const remember = useCallback((list: Recipe[]) => {
+    setRecipes((prev) => [...prev, ...list.filter((r) => !prev.some((x) => x.id === r.id))]);
+  }, []);
 
   const toggleFavorite = useCallback(
     async (recipeId: string): Promise<Result<null>> => {
@@ -160,9 +183,12 @@ export function useRecipes() {
 
   return {
     mode,
+    repo,
     loading: loading || kitchen.loading,
     error,
     recipes,
+    findBySlug,
+    remember,
     context,
     rank,
     favorites,

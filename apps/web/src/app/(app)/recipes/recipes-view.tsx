@@ -1,7 +1,9 @@
 "use client";
 
-import { cuisines, skillLevels } from "@kitchen-pantry/shared-types";
-import { ChevronDown, EyeOff, Search, ShieldAlert } from "lucide-react";
+import { labelFor, skillLevels, varietyModes, worldCuisines, type VarietyMode } from "@kitchen-pantry/shared-types";
+import { ChevronDown, Compass, EyeOff, Search, ShieldAlert, UtensilsCrossed } from "lucide-react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useProfile } from "@/components/profile/profile-provider";
@@ -9,11 +11,37 @@ import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Card, PageHeader } from "@/components/ui/card";
 import { SurpriseMe } from "@/components/recipes/surprise-me";
 import { Chip, Segmented, Switch } from "@/components/ui/controls";
+import { LibraryExplorer } from "@/components/recipes/library-explorer";
+import { useForYou, useLibrary } from "@/lib/library/use-library";
 import { useRecipes } from "@/lib/recipes/use-recipes";
+
+const VARIETY_KEY = "kp-variety-mode";
 
 export function RecipesView() {
   const { profile } = useProfile();
   const data = useRecipes();
+  const router = useRouter();
+  const params = useSearchParams();
+  const tab = params.get("tab") === "explore" ? "explore" : "for-you";
+  const setTab = (t: "explore" | "for-you") => router.replace(t === "explore" ? "/recipes?tab=explore" : "/recipes", { scroll: false });
+  const library = useLibrary(data);
+  const [variety, setVariety] = useState<VarietyMode>("balanced");
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(VARIETY_KEY);
+      if (saved === "familiar" || saved === "balanced" || saved === "adventurous") setVariety(saved);
+    } catch {
+      // Storage unavailable: keep the default.
+    }
+  }, []);
+  const chooseVariety = (v: VarietyMode) => {
+    setVariety(v);
+    try {
+      window.localStorage.setItem(VARIETY_KEY, v);
+    } catch {
+      // Not remembered this time.
+    }
+  };
   const [query, setQuery] = useState("");
   const [quick, setQuick] = useState(false);
   const [haveMost, setHaveMost] = useState(false);
@@ -39,9 +67,10 @@ export function RecipesView() {
     [data, query, quick, haveMost, favoritesOnly, cuisine, stretch, course],
   );
   const availableCuisines = useMemo(
-    () => cuisines.filter((c) => data.recipes.some((r) => r.cuisine === c.code)),
+    () => worldCuisines.filter((c) => data.recipes.some((r) => r.cuisine === c.code)),
     [data.recipes],
   );
+  const forYou = useForYou(data, recipes, variety);
   const mySkill = course === "dessert" ? (profile.desserts.skillLevel ?? profile.skillLevel) : profile.skillLevel;
   const levelLabel = skillLevels.find((s) => s.level === mySkill)?.label;
 
@@ -50,8 +79,29 @@ export function RecipesView() {
       <PageHeader
         title="Recipes"
         subtitle="Picked for your household — your skills, your kitchen and what needs using up first."
+        action={
+          <Link href="/menus" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-[15px] font-semibold hover:bg-surface">
+            <UtensilsCrossed className="size-4" aria-hidden /> Menus
+          </Link>
+        }
       />
 
+      <div className="mb-5 max-w-sm">
+        <Segmented
+          label="Recipes view"
+          value={tab}
+          onChange={setTab}
+          options={[
+            { value: "for-you", label: "For you" },
+            { value: "explore", label: "Explore the library" },
+          ]}
+        />
+      </div>
+
+      {tab === "explore" ? (
+        <LibraryExplorer data={data} library={library} />
+      ) : (
+      <>
       {course === "main" ? (
         <div className="mb-5">
           <SurpriseMe data={data} />
@@ -107,6 +157,14 @@ export function RecipesView() {
             <ChevronDown className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted" aria-hidden />
           </label>
         </div>
+        <div className="max-w-md">
+          <Segmented
+            label="Variety"
+            value={variety}
+            onChange={chooseVariety}
+            options={varietyModes.map((v) => ({ value: v.code, label: v.code === "balanced" ? "A mix" : v.code === "familiar" ? "Familiar" : "Something new" }))}
+          />
+        </div>
         {mySkill < 5 ? (
           <div className="max-w-md">
             <Switch
@@ -139,13 +197,14 @@ export function RecipesView() {
       ) : (
         <>
           <p className="mb-3 text-[14px] text-muted" aria-live="polite">
-            {recipes.length} {recipes.length === 1 ? "recipe" : "recipes"} · best match first
+            {forYou.results.length} {forYou.results.length === 1 ? "recipe" : "recipes"} · {variety === "familiar" ? "your favourites first" : variety === "adventurous" ? "new to you first" : "best match first, mixed up"}
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {recipes.map((r) => (
+            {forYou.results.map(({ ranked: r, otherVersions }) => (
               <RecipeCard
                 key={r.recipe.id}
                 ranked={r}
+                otherVersions={otherVersions.length}
                 onToggleFavorite={() => void data.toggleFavorite(r.recipe.id)}
                 onDismiss={() => {
                   setLastDismissed({ id: r.recipe.id, title: r.recipe.title });
@@ -232,10 +291,36 @@ export function RecipesView() {
         </Card>
       ) : null}
 
+      {!data.loading && forYou.newCuisines.length > 0 ? (
+        <Card className="mt-6">
+          <p className="flex items-center gap-2 text-[16px] font-semibold">
+            <Compass className="size-5 text-accent" aria-hidden /> Try a new cuisine
+          </p>
+          <p className="mt-1 text-[15px] text-muted">Cuisines you haven&apos;t cooked or opened here yet.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {forYou.newCuisines.map((c) => (
+              <button
+                key={c.cuisine}
+                type="button"
+                onClick={() => {
+                  library.setFilters({ ...library.filters, cuisine: c.cuisine });
+                  setTab("explore");
+                }}
+                className="min-h-10 rounded-full bg-background px-4 text-[15px] font-medium hover:bg-surface-strong"
+              >
+                {labelFor(worldCuisines, c.cuisine)} <span className="text-muted">({c.count})</span>
+              </button>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
       <p className="mt-8 text-center text-[13px] text-muted">
-        Recipes are original Kitchen Pantry Test Kitchen recipes{availableCuisines.length ? ` across ${availableCuisines.length} cuisines` : ""}. Ratings
-        appear once households rate them — we never invent ratings.
+        Original Kitchen Pantry Test Kitchen recipes{availableCuisines.length ? ` across ${availableCuisines.length} cuisines` : ""}, a fresh selection each week. Ratings
+        appear once households rate them — we never invent ratings or call a recipe tested until a person has.
       </p>
+      </>
+      )}
     </div>
   );
 }

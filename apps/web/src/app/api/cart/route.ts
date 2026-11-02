@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { disconnectKroger, finishKrogerConnect, krogerConnected, retailerOptions, sendCart, startKrogerConnect } from "@/lib/cart/server";
 import { matchCartItems } from "@/lib/pricing/server";
 import { supabaseFromBearer } from "@/lib/supabase/bearer";
+import { readJson } from "@/lib/read-json";
 
 /**
  * Smart Cart for the phone app. `Authorization: Bearer <supabase access token>`.
@@ -20,13 +21,9 @@ export const dynamic = "force-dynamic";
 export async function POST(request: Request) {
   const s = await supabaseFromBearer(request);
   if (!s) return NextResponse.json({ ok: false, message: "Please sign in again." }, { status: 401 });
-  if (Number(request.headers.get("content-length") ?? 0) > 200_000) return NextResponse.json({ ok: false, message: "Request too large." }, { status: 413 });
-  let body: Record<string, unknown>;
-  try {
-    body = (await request.json()) as Record<string, unknown>;
-  } catch {
-    return NextResponse.json({ ok: false, message: "Invalid JSON." }, { status: 400 });
-  }
+  const read = await readJson(request, 200_000);
+  if (!read.ok) return read.response;
+  const body = (read.body && typeof read.body === "object" ? read.body : {}) as Record<string, unknown>;
   switch (body.action) {
     case "options":
       return NextResponse.json({ retailers: retailerOptions(), krogerConnected: await krogerConnected(s.db) });

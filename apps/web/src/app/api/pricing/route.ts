@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { findStores, priceItems, pricingStatus, verifyStore } from "@/lib/pricing/server";
 import { supabaseFromBearer } from "@/lib/supabase/bearer";
+import { readJson } from "@/lib/read-json";
 
 /**
  * Store prices for the phone app (the Kroger secret stays on the server).
@@ -28,15 +29,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const s = await supabaseFromBearer(request);
   if (!s) return unauthorized();
-  if (Number(request.headers.get("content-length") ?? 0) > 40_000) {
-    return NextResponse.json({ ok: false, message: "Request too large." }, { status: 413 });
-  }
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ ok: false, message: "Invalid JSON." }, { status: 400 });
-  }
+  const read = await readJson(request, 40_000);
+  if (!read.ok) return read.response;
+  const body = read.body;
   const result = await priceItems(body, s.userId);
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }

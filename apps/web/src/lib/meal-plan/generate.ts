@@ -1,5 +1,6 @@
 import "server-only";
 import { planWeekWithClaude, readAiConfig, type AiConfig, type AiPlanResult } from "@kitchen-pantry/ai";
+import { createPreviewAllowance, finishAiRequest, previewAiAllowed, reserveAiRequest } from "@/lib/ai-usage";
 import {
   createSupabaseKitchenRepository,
   createSupabaseProfileStore,
@@ -8,7 +9,7 @@ import {
   type Result,
   type SupabaseLike,
 } from "@kitchen-pantry/database";
-import { dismissedRecipeIds, rankRecipes, testKitchenRecipes, type RankingContext } from "@kitchen-pantry/recipe-engine";
+import { catalogRecipes, dismissedRecipeIds, isCookable, rankRecipes, type RankingContext } from "@kitchen-pantry/recipe-engine";
 import { specialSchema, type Special } from "@kitchen-pantry/grocery-pricing";
 import type { OnboardingProfile, PantryItem, PlanningMode, Recipe, RecipeRating, RecommendationEvent } from "@kitchen-pantry/shared-types";
 import { generatePlanRequestSchema, onboardingProfileSchema, type GeneratePlanRequest } from "@kitchen-pantry/validation";
@@ -166,32 +167,18 @@ function previewRankingContext(raw: unknown): Result<RankingContext> {
 }
 
 // Preview mode has no database to count usage in, so count in memory.
-const previewUsage: number[] = [];
-function previewRemaining(limit: number): number {
-  const dayAgo = Date.now() - 86_400_000;
-  while (previewUsage.length && previewUsage[0]! < dayAgo) previewUsage.shift();
-  return Math.max(0, limit - previewUsage.length);
-}
+const preview = createPreviewAllowance();
 
 async function remainingFor(db: SupabaseLike | null, config: AiConfig): Promise<number> {
-  if (!db) return previewRemaining(config.dailyPlanLimit);
+  if (!db) return previewAiAllowed() ? preview.remaining(config.dailyPlanLimit) : 0;
   const { data, error } = await db.rpc("ai_requests_last_day", { feature_name: FEATURE });
   if (error) return 0; // fail closed: no AI if we can't count
   return Math.max(0, config.dailyPlanLimit - Number(data ?? 0));
 }
 
-async function logUsage(db: SupabaseLike | null, result: AiPlanResult | null, outcome: "ok" | "fallback" | "cached" | "limited", model: string) {
-  if (!db) {
-    if (outcome === "ok" || outcome === "fallback") previewUsage.push(Date.now());
-    return;
-  }
-  const { error } = await db.from("ai_usage").insert({
-    feature: FEATURE,
-    model: result?.model ?? model,
-    input_tokens: result?.usage?.inputTokens ?? 0,
-    output_tokens: result?.usage?.outputTokens ?? 0,
-    outcome,
-  });
+async function logLimited(db: SupabaseLike | null, model: string) {
+  if (!db) return;
+  const { error } = await db.from("ai_usage").insert({ feature: FEATURE, model, input_tokens: 0, output_tokens: 0, outcome: "limited" });
   if (error) console.error("[ai] usage log failed", { code: error.code });
 }
 
@@ -214,7 +201,7 @@ export async function generateMealPlan(
   const request: GeneratePlanRequest = req.data;
 
   let ctx: RankingContext;
-  let recipes: Recipe[] = testKitchenRecipes;
+  let recipes: Recipe[] = catalogRecipes.filter(isCookable);
   let db: SupabaseLike | null = null;
   let scope = "preview";
   if ("db" in source) {
@@ -246,12 +233,19 @@ export async function generateMealPlan(
   };
 
   const config = readAiConfig();
-  let usable = config && config.dailyPlanLimit > 0 ? config : null;
+  let usable = config && config.dailyPlanLimit > 0 && (db || previewAiAllowed()) ? config : null;
   let limitNotice: string | null = null;
-  if (usable && (await remainingFor(db, usable)) <= 0) {
-    await logUsage(db, null, "limited", usable.model);
-    usable = null;
-    limitNotice = "You've used today's AI plans, so here's our standard plan. AI planning resets within 24 hours.";
+  // Take a slot before calling Claude, so parallel requests can't overshoot the daily limit.
+  let slot: string | null = null;
+  let giveBack: (() => void) | null = null;
+  if (usable) {
+    if (db) slot = await reserveAiRequest(db, FEATURE, usable.dailyPlanLimit);
+    else giveBack = preview.reserve(usable.dailyPlanLimit);
+    if (!slot && !giveBack) {
+      await logLimited(db, usable.model);
+      usable = null;
+      limitNotice = "You've used today's AI plans, so here's our standard plan. AI planning resets within 24 hours.";
+    }
   }
 
   const result = await planWeekWithClaude({
@@ -261,10 +255,12 @@ export async function generateMealPlan(
     householdSize: ctx.profile.household.cookingFor,
     cacheScope: scope,
   });
-  // Log only when the model was actually asked (or a cached answer was reused).
-  const askedModel = result.cached || result.source === "ai" || result.notice !== null;
-  if (usable && askedModel) {
-    await logUsage(db, result.cached ? { ...result, usage: null } : result, result.cached ? "cached" : result.source === "ai" ? "ok" : "fallback", usable.model);
+  // A cached answer, or no call at all, gives the slot back.
+  if (usable) {
+    const asked = result.source === "ai" || result.notice !== null;
+    const outcome = result.cached ? "cached" : !asked ? "unused" : result.source === "ai" ? "ok" : "fallback";
+    if (slot && db) await finishAiRequest(db, slot, outcome, result.model ?? usable.model, result.cached ? null : (result.usage ?? null));
+    if (giveBack && (outcome === "cached" || outcome === "unused")) giveBack();
   }
   return {
     ok: true,

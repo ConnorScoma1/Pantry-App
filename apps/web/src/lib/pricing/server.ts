@@ -77,6 +77,17 @@ function allow(key: string, now = Date.now()): boolean {
   return true;
 }
 
+/** The live Kroger pricing provider and the shared search cache, for the store comparison. */
+export function livePricing(): { provider: KrogerPricingProvider; cache: typeof searchCache } | null {
+  const k = kroger();
+  return k ? { provider: new KrogerPricingProvider(k), cache: searchCache } : null;
+}
+
+/** The same hourly guard, for other server features that use the Kroger quota. */
+export function allowPricingCall(key: string): boolean {
+  return allow(key);
+}
+
 export async function findStores(postalCode: unknown, who: string): Promise<Result<KrogerStore[]>> {
   const k = kroger();
   if (!k) return { ok: false, message: NOT_CONFIGURED };
