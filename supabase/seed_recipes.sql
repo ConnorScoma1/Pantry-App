@@ -51,7 +51,7 @@ insert into public.recipes (id, source_id, external_id, slug, title, description
   status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
   attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
 values ('7e570000-0000-4000-8000-000000000002', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'black-bean-cheddar-quesadillas', 'black-bean-cheddar-quesadillas', 'Black Bean & Cheddar Quesadillas', 'Melty, crisp quesadillas with cumin-spiced black beans and sweet corn — dinner in 20 minutes.', 'mexican', 1, 10, 10, 20, 2, 'main', null, 0, array['stove']::text[], array['vegetarian', 'quick', 'kid-friendly']::text[], array['Medium heat is the secret: hot enough to crisp, gentle enough to melt the cheese through.']::text[], 'https://images.unsplash.com/photo-1673990349292-ed2dfa7988c9', 'A quesadilla cut in half on a plate', 'Benjamin Guardia', 'https://unsplash.com/@benjaminguardia', 'https://unsplash.com/photos/a-plate-topped-with-a-quesadilla-cut-in-half-_BW-YmENFcM', 'unsplash', true, 'public', false,
-  'pending_review', array['main', 'dinner', 'quick', 'comfort']::text[], '{}'::text[], array['aromatic']::text[], '{}'::text[], null, null, 'black-bean-and-cheddar-quesadillas', 'classic', null, null, 'owned', array['gluten', 'milk', 'wheat']::text[], array['beans']::text[], array['pescatarian', 'vegetarian', 'vegan']::text[], array['black bean', 'ground cumin', 'flour tortilla', 'cheddar', 'corn kernel']::text[], 'black bean|cheddar|corn kernel|flour tortilla|ground cumin',
+  'pending_review', array['main', 'dinner', 'quick', 'comfort']::text[], '{}'::text[], array['aromatic']::text[], '{}'::text[], null, null, 'black-bean-and-cheddar-quesadillas', 'classic', null, null, 'owned', array['gluten', 'milk', 'wheat']::text[], array['beans']::text[], array['pescatarian', 'vegetarian']::text[], array['black bean', 'ground cumin', 'flour tortilla', 'cheddar', 'corn kernel']::text[], 'black bean|cheddar|corn kernel|flour tortilla|ground cumin',
   null, null, null, null, null, null, null, null)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
@@ -1949,7 +1949,7 @@ insert into public.recipes (id, source_id, external_id, slug, title, description
   status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
   attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
 values ('97472ca7-bd80-4873-97fd-23488d15a6a4', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'pan-seared-halibut-brown-butter', 'pan-seared-halibut-with-brown-butter-and-capers-97472c', 'Pan-Seared Halibut with Brown Butter & Capers', 'A golden-crusted fillet with nutty brown butter, capers and lemon — a fine-dining fish course in 15 minutes.', 'french', 3, 10, 10, 20, 4, 'main', null, 0, array['stove']::text[], array['date-night', 'entertaining']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
-  'pending_review', array['main', 'dinner', 'quick', 'date_night', 'entertaining']::text[], array['pan_fry']::text[], array['tangy', 'fresh']::text[], '{}'::text[], null, null, 'halibut-brown-butter', 'classic', null, null, 'owned', array['fish', 'milk']::text[], array['fish']::text[], array['pescatarian', 'vegetarian', 'gluten_free']::text[], array['halibut fillet', 'caper', 'lemon', 'parsley']::text[], 'caper|halibut fillet|lemon|parsley',
+  'pending_review', array['main', 'dinner', 'quick', 'date_night', 'entertaining']::text[], array['pan_fry']::text[], array['tangy', 'fresh']::text[], '{}'::text[], null, null, 'halibut-brown-butter', 'classic', null, null, 'owned', array['fish', 'milk']::text[], array['fish']::text[], array['pescatarian', 'gluten_free']::text[], array['halibut fillet', 'caper', 'lemon', 'parsley']::text[], 'caper|halibut fillet|lemon|parsley',
   null, null, null, null, null, null, null, null)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
@@ -2223,6 +2223,968 @@ insert into public.recipe_instructions (recipe_id, position, component, body, ti
   ('ae53b034-09c9-49f2-a8e1-5eb8e91a5969', 2, 'Tadka', 'Heat the ghee in a small pan. Add the cumin seeds; when they crackle add the garlic and chiles and cook until golden. Off the heat, add the chili powder.', null, null, null),
   ('ae53b034-09c9-49f2-a8e1-5eb8e91a5969', 3, null, 'Pour the sizzling tadka over the dal, scatter with cilantro and serve with rice or roti.', null, null, null);
 
+-- Sheet-Pan Chicken Fajitas
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('74371213-3f7a-457d-a53a-9ee66230429e', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'sheet-pan-chicken-fajitas', 'sheet-pan-chicken-fajitas-743712', 'Sheet-Pan Chicken Fajitas', 'Strips of chicken, peppers and onion roasted on one pan with a simple spice mix, then wrapped in warm tortillas.', 'mexican', 1, 15, 22, 37, 4, 'main', null, 0, array['oven']::text[], array['one-pan', 'weeknight', 'kid-friendly']::text[], array['Wash the cutting board and knife you used for raw chicken in hot soapy water before cutting the vegetables, or cut the vegetables first.']::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'comfort']::text[], array['roast']::text[], array['spicy', 'tangy', 'aromatic']::text[], '{}'::text[], null, 'adapted', 'chicken-fajitas', 'classic', 'Refrigerate the filling up to 3 days. Reheat in a skillet until steaming hot.', null, 'owned', array['gluten', 'milk', 'wheat']::text[], array['chicken']::text[], array['dairy_free']::text[], array['chicken breast', 'bell pepper', 'yellow onion', 'chili powder', 'ground cumin', 'garlic powder', 'flour tortilla', 'lime']::text[], 'bell pepper|chicken breast|chili powder|flour tortilla|garlic powder|ground cumin|lime|yellow onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '74371213-3f7a-457d-a53a-9ee66230429e';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 1, null, '1½ lb boneless skinless chicken breasts, cut into thin strips', 'boneless skinless chicken breasts', 1.5, 'lb', 'cut into thin strips', false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 2, null, '2 bell peppers, sliced into strips', 'bell peppers', 2, null, 'sliced into strips', false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 3, null, '1 yellow onion, sliced', 'yellow onion', 1, null, 'sliced', false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 4, null, '2 tbsp olive oil', 'olive oil', 2, 'tbsp', null, false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 5, null, '2 tsp chili powder', 'chili powder', 2, 'tsp', null, false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 6, null, '1 tsp ground cumin', 'ground cumin', 1, 'tsp', null, false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 7, null, '1 tsp garlic powder', 'garlic powder', 1, 'tsp', null, false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 8, null, '1 tsp kosher salt', 'kosher salt', 1, 'tsp', null, false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 9, null, '8 flour tortillas, small', 'flour tortillas', 8, null, 'small', false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 10, null, '1 lime, cut into wedges', 'lime', 1, null, 'cut into wedges', false),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 11, null, '½ cup sour cream', 'sour cream', 0.5, 'cup', null, true);
+delete from public.recipe_instructions where recipe_id = '74371213-3f7a-457d-a53a-9ee66230429e';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 1, null, 'Heat the oven to 425°F.', null, 218.3, null),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 2, null, 'On a large sheet pan, toss the chicken, peppers and onion with the oil, chili powder, cumin, garlic powder and salt. Spread everything out in one layer so it roasts instead of steaming.', null, null, null),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 3, null, 'Roast, stirring once halfway, until the vegetables are soft and browned at the edges and the thickest strip of chicken reads 165°F, 18–22 minutes.', 1200, 218.3, 73.9),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 4, null, 'Wrap the tortillas in foil and warm them in the oven for the last 5 minutes.', 300, null, null),
+  ('74371213-3f7a-457d-a53a-9ee66230429e', 5, null, 'Squeeze lime over the pan and fill the tortillas at the table, with sour cream if you like.', null, null, null);
+
+-- Honey-Soy Baked Salmon with Rice
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('4674485c-2e93-4e9f-b72a-1b4625850902', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'honey-soy-baked-salmon', 'honey-soy-baked-salmon-with-rice-467448', 'Honey-Soy Baked Salmon with Rice', 'Salmon fillets brushed with a three-ingredient honey, soy and garlic glaze and baked while the rice cooks.', 'american', 1, 10, 20, 30, 4, 'main', null, 0, array['oven', 'stove']::text[], array['weeknight', 'high-protein']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick']::text[], array['bake']::text[], array['savory']::text[], '{}'::text[], null, null, 'honey-soy-salmon', 'classic', 'Refrigerate up to 2 days. Good cold, flaked over rice.', null, 'owned', array['fish', 'gluten', 'sesame', 'soy', 'wheat']::text[], array['fish']::text[], array['pescatarian', 'dairy_free']::text[], array['white rice', 'salmon fillet', 'soy sauce', 'honey', 'garlic', 'scallion']::text[], 'garlic|honey|salmon fillet|scallion|soy sauce|white rice',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '4674485c-2e93-4e9f-b72a-1b4625850902';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 1, null, '1½ cups long-grain white rice', 'long-grain white rice', 1.5, 'cup', null, false),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 2, null, '4 salmon fillets, about 6 oz each', 'salmon fillets', 4, null, 'about 6 oz each', false),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 3, null, '3 tbsp soy sauce', 'soy sauce', 3, 'tbsp', null, false),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 4, null, '2 tbsp honey', 'honey', 2, 'tbsp', null, false),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 5, null, '2 cloves garlic, finely grated', 'garlic', 2, 'clove', 'finely grated', false),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 6, null, '2 scallions, thinly sliced', 'scallions', 2, null, 'thinly sliced', false),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 7, null, '1 tsp sesame seeds', 'sesame seeds', 1, 'tsp', null, true);
+delete from public.recipe_instructions where recipe_id = '4674485c-2e93-4e9f-b72a-1b4625850902';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 1, null, 'Rinse the rice, then cook it with 2¼ cups water: bring to a boil, cover, turn the heat to low and cook 15 minutes. Leave covered off the heat until serving.', 1080, null, null),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 2, null, 'Meanwhile, heat the oven to 400°F and line a sheet pan with foil or parchment.', null, 204.4, null),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 3, null, 'Stir the soy sauce, honey and garlic together. Put the salmon skin-side down on the pan and spoon most of the glaze over it.', null, null, null),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 4, null, 'Bake until the salmon flakes easily with a fork and reads 145°F in the thickest part, 12–15 minutes.', 780, 204.4, 62.8),
+  ('4674485c-2e93-4e9f-b72a-1b4625850902', 5, null, 'Spoon the rest of the glaze over the fish, scatter scallions (and sesame seeds) on top and serve with the rice.', null, null, null);
+
+-- Spaghetti with Simple Tomato Sauce
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'spaghetti-simple-tomato-sauce', 'spaghetti-with-simple-tomato-sauce-c7dda7', 'Spaghetti with Simple Tomato Sauce', 'A pantry tomato sauce of olive oil, garlic and crushed tomatoes, simmered while the pasta boils, finished with Parmesan and basil.', 'italian', 1, 5, 25, 30, 4, 'main', null, 0, array['stove']::text[], array['vegetarian', 'budget', 'pantry', 'kid-friendly']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick', 'budget', 'comfort']::text[], array['boil']::text[], array['spicy', 'fresh', 'savory']::text[], '{}'::text[], null, 'adapted', 'spaghetti-al-pomodoro', 'classic', 'Refrigerate up to 4 days. The sauce freezes for 3 months.', null, 'owned', array['gluten', 'milk', 'wheat']::text[], '{}'::text[], array['pescatarian', 'vegetarian']::text[], array['spaghetti', 'garlic', 'canned tomato', 'parmesan cheese']::text[], 'canned tomato|garlic|parmesan cheese|spaghetti',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = 'c7dda7f0-9083-4310-a63c-e8ac34d394ff';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 1, null, '1 lb spaghetti', 'spaghetti', 1, 'lb', null, false),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 2, null, '3 tbsp olive oil', 'olive oil', 3, 'tbsp', null, false),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 3, null, '4 cloves garlic, thinly sliced', 'garlic', 4, 'clove', 'thinly sliced', false),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 4, null, '28 oz canned crushed tomatoes', 'canned crushed tomatoes', 28, 'oz', null, false),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 5, null, '1 tsp kosher salt, plus more for the pasta water', 'kosher salt', 1, 'tsp', 'plus more for the pasta water', false),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 6, null, '½ tsp dried chili flakes', 'dried chili flakes', 0.5, 'tsp', null, true),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 7, null, '½ cup Parmesan cheese, finely grated', 'Parmesan cheese', 0.5, 'cup', 'finely grated', false),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 8, null, '¼ cup fresh basil leaves, torn', 'fresh basil leaves', 0.25, 'cup', 'torn', true);
+delete from public.recipe_instructions where recipe_id = 'c7dda7f0-9083-4310-a63c-e8ac34d394ff';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 1, null, 'Bring a large pot of water to a boil and add a big pinch of salt.', null, null, null),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 2, null, 'In a wide pan over medium-low heat, warm the oil with the garlic (and chili flakes) until the garlic just turns pale gold, 2–3 minutes. Don''t let it brown or it turns bitter.', 180, null, null),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 3, null, 'Add the tomatoes and the teaspoon of salt. Simmer gently, stirring now and then, while the pasta cooks, about 15 minutes.', 900, null, null),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 4, null, 'Cook the spaghetti until tender but still a little firm (check the packet time). Scoop out a mug of the cooking water, then drain.', 600, null, null),
+  ('c7dda7f0-9083-4310-a63c-e8ac34d394ff', 5, null, 'Toss the spaghetti into the sauce with a splash of the pasta water until glossy. Serve with Parmesan and torn basil.', null, null, null);
+
+-- Easy Ground Turkey Tacos
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'ground-turkey-tacos', 'easy-ground-turkey-tacos-2bee63', 'Easy Ground Turkey Tacos', 'Ground turkey cooked with onion and a homemade taco seasoning, served in crunchy or soft shells with your favourite toppings.', 'mexican', 1, 10, 15, 25, 4, 'main', null, 0, array['stove']::text[], array['weeknight', 'kid-friendly', 'budget']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick', 'budget', 'comfort']::text[], array['pan_fry']::text[], array['spicy', 'aromatic']::text[], '{}'::text[], null, 'adapted', 'ground-meat-tacos', 'classic', 'Refrigerate the filling up to 3 days; reheat until steaming hot.', null, 'owned', array['gluten', 'milk', 'wheat']::text[], array['turkey']::text[], '{}'::text[], array['yellow onion', 'ground turkey', 'chili powder', 'ground cumin', 'garlic powder', 'tomato sauce', 'taco shell', 'lettuce', 'cheddar cheese', 'tomato']::text[], 'cheddar cheese|chili powder|garlic powder|ground cumin|ground turkey|lettuce|taco shell|tomato|tomato sauce|yellow onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 1, null, '1 tbsp vegetable oil', 'vegetable oil', 1, 'tbsp', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 2, null, '1 yellow onion, finely chopped', 'yellow onion', 1, null, 'finely chopped', false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 3, null, '1 lb ground turkey', 'ground turkey', 1, 'lb', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 4, null, '1 tbsp chili powder', 'chili powder', 1, 'tbsp', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 5, null, '1 tsp ground cumin', 'ground cumin', 1, 'tsp', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 6, null, '1 tsp garlic powder', 'garlic powder', 1, 'tsp', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 7, null, '¾ tsp kosher salt', 'kosher salt', 0.75, 'tsp', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 8, null, '½ cup tomato sauce', 'tomato sauce', 0.5, 'cup', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 9, null, '8 taco shells, or small tortillas', 'taco shells', 8, null, 'or small tortillas', false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 10, null, '2 cups shredded lettuce', 'shredded lettuce', 2, 'cup', null, false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 11, null, '1 cup cheddar cheese, shredded', 'cheddar cheese', 1, 'cup', 'shredded', false),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 12, null, '1 tomato, diced', 'tomato', 1, null, 'diced', false);
+delete from public.recipe_instructions where recipe_id = '2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 1, null, 'Heat the oil in a large skillet over medium heat. Cook the onion until soft, about 5 minutes.', 300, null, null),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 2, null, 'Add the turkey and break it up with a spoon. Cook until no pink remains and it reads 165°F, 7–8 minutes.', 480, null, 73.9),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 3, null, 'Stir in the chili powder, cumin, garlic powder, salt and tomato sauce. Simmer 2–3 minutes until thick.', 180, null, null),
+  ('2bee63b9-22cd-4e0c-ba85-d9d5e3006fd7', 4, null, 'Warm the shells as the packet says, then fill with the turkey, lettuce, cheese and tomato.', null, null, null);
+
+-- Spinach, Pepper & Cheese Frittata
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'vegetable-frittata', 'spinach-pepper-and-cheese-frittata-bb5746', 'Spinach, Pepper & Cheese Frittata', 'Eggs, spinach, peppers and cheese started on the stove and finished in the oven — a fast dinner from what''s in the fridge.', 'italian', 1, 10, 20, 30, 4, 'main', null, 0, array['stove', 'oven']::text[], array['vegetarian', 'budget', 'use-it-up']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'breakfast', 'quick', 'budget']::text[], array['bake']::text[], '{}'::text[], '{}'::text[], null, 'adapted', 'frittata', 'classic', 'Refrigerate up to 3 days. Good warm or cold.', null, 'owned', array['egg', 'milk']::text[], '{}'::text[], array['pescatarian', 'vegetarian', 'gluten_free']::text[], array['egg', 'milk', 'bell pepper', 'scallion', 'spinach', 'cheddar cheese']::text[], 'bell pepper|cheddar cheese|egg|milk|scallion|spinach',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = 'bb57466b-69e8-4b9a-9189-af8ac7adb9af';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 1, null, '10 eggs', 'eggs', 10, null, null, false),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 2, null, '¼ cup milk', 'milk', 0.25, 'cup', null, false),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 3, null, '¾ tsp kosher salt', 'kosher salt', 0.75, 'tsp', null, false),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 4, null, '2 tbsp olive oil', 'olive oil', 2, 'tbsp', null, false),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 5, null, '1 red bell pepper, diced', 'red bell pepper', 1, null, 'diced', false),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 6, null, '4 scallions, sliced', 'scallions', 4, null, 'sliced', false),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 7, null, '3 cups baby spinach', 'baby spinach', 3, 'cup', null, false),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 8, null, '1 cup cheddar cheese, shredded', 'cheddar cheese', 1, 'cup', 'shredded', false);
+delete from public.recipe_instructions where recipe_id = 'bb57466b-69e8-4b9a-9189-af8ac7adb9af';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 1, null, 'Heat the oven to 375°F. Whisk the eggs, milk and salt in a bowl.', null, 190.6, null),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 2, null, 'Heat the oil in a 10-inch oven-safe skillet over medium heat. Cook the pepper and scallions until soft, about 5 minutes, then stir in the spinach until it wilts.', 360, null, null),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 3, null, 'Pour in the eggs and scatter the cheese over. Cook without stirring until the edges start to set, about 3 minutes.', 180, null, null),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 4, null, 'Move the skillet to the oven and bake until the middle is set and no longer wobbly and reads 160°F, 12–15 minutes. The handle will be very hot — use an oven mitt.', 780, 190.6, 71.1),
+  ('bb57466b-69e8-4b9a-9189-af8ac7adb9af', 5, null, 'Rest 5 minutes, then cut into wedges.', 300, null, null);
+
+-- Easy Baked Ziti
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('8d3692c3-17ba-4cde-832d-ea30b3f34361', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'easy-baked-ziti', 'easy-baked-ziti-8d3692', 'Easy Baked Ziti', 'Pasta tossed with marinara and ricotta, topped with mozzarella and baked until bubbling. No meat, no fuss.', 'italian', 1, 15, 30, 45, 6, 'main', null, 0, array['stove', 'oven']::text[], array['vegetarian', 'make-ahead', 'kid-friendly', 'comfort']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'comfort']::text[], array['bake', 'boil']::text[], array['savory']::text[], '{}'::text[], null, 'adapted', 'baked-ziti', 'classic', 'Refrigerate up to 4 days, or freeze unbaked for 3 months (thaw overnight before baking).', null, 'owned', array['gluten', 'milk', 'wheat']::text[], '{}'::text[], array['pescatarian', 'vegetarian']::text[], array['ziti', 'marinara sauce', 'ricotta cheese', 'parmesan cheese', 'dried oregano', 'mozzarella cheese']::text[], 'dried oregano|marinara sauce|mozzarella cheese|parmesan cheese|ricotta cheese|ziti',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '8d3692c3-17ba-4cde-832d-ea30b3f34361';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 1, null, '1 lb ziti, or penne', 'ziti', 1, 'lb', 'or penne', false),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 2, null, '24 oz jarred marinara sauce', 'jarred marinara sauce', 24, 'oz', null, false),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 3, null, '15 oz ricotta cheese', 'ricotta cheese', 15, 'oz', null, false),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 4, null, '½ cup Parmesan cheese, grated', 'Parmesan cheese', 0.5, 'cup', 'grated', false),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 5, null, '1 tsp dried oregano', 'dried oregano', 1, 'tsp', null, false),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 6, null, '8 oz mozzarella cheese, shredded', 'mozzarella cheese', 8, 'oz', 'shredded', false);
+delete from public.recipe_instructions where recipe_id = '8d3692c3-17ba-4cde-832d-ea30b3f34361';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 1, null, 'Heat the oven to 375°F. Boil the pasta in salted water for 2 minutes less than the packet says (it finishes in the oven), then drain.', 540, 190.6, null),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 2, null, 'In the pasta pot, stir together the pasta, marinara, ricotta, half the Parmesan and the oregano.', null, null, null),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 3, null, 'Spread in a 9×13-inch baking dish and top with the mozzarella and the rest of the Parmesan.', null, null, null),
+  ('8d3692c3-17ba-4cde-832d-ea30b3f34361', 4, null, 'Bake until bubbling at the edges and the cheese is melted and spotted brown, 20–25 minutes.', 1320, 190.6, null);
+
+-- Sheet-Pan Sausage, Peppers & Potatoes
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('a8c888cb-70df-45e0-bf05-4310f886ede9', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'sheet-pan-sausage-peppers-potatoes', 'sheet-pan-sausage-peppers-and-potatoes-a8c888', 'Sheet-Pan Sausage, Peppers & Potatoes', 'Italian sausages roasted on one pan with potatoes, peppers and onions until everything is browned and sticky.', 'italian', 1, 15, 35, 50, 4, 'main', null, 0, array['oven']::text[], array['one-pan', 'weeknight', 'budget']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'budget']::text[], array['roast']::text[], '{}'::text[], '{}'::text[], null, 'adapted', 'sausage-and-peppers', 'classic', 'Refrigerate up to 3 days. Reheat in the oven at 400°F for 10 minutes.', null, 'owned', '{}'::text[], array['pork']::text[], array['gluten_free', 'dairy_free']::text[], array['gold potato', 'bell pepper', 'red onion', 'italian seasoning', 'italian sausage']::text[], 'bell pepper|gold potato|italian sausage|italian seasoning|red onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = 'a8c888cb-70df-45e0-bf05-4310f886ede9';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 1, null, '1½ lb Yukon Gold potatoes, cut into 1-inch pieces', 'Yukon Gold potatoes', 1.5, 'lb', 'cut into 1-inch pieces', false),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 2, null, '2 bell peppers, cut into strips', 'bell peppers', 2, null, 'cut into strips', false),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 3, null, '1 red onion, cut into wedges', 'red onion', 1, null, 'cut into wedges', false),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 4, null, '2 tbsp olive oil', 'olive oil', 2, 'tbsp', null, false),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 5, null, '1 tsp dried Italian seasoning', 'dried Italian seasoning', 1, 'tsp', null, false),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 6, null, '¾ tsp kosher salt', 'kosher salt', 0.75, 'tsp', null, false),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 7, null, '1¼ lb raw Italian sausages, about 5 links', 'raw Italian sausages', 1.25, 'lb', 'about 5 links', false);
+delete from public.recipe_instructions where recipe_id = 'a8c888cb-70df-45e0-bf05-4310f886ede9';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 1, null, 'Heat the oven to 425°F.', null, 218.3, null),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 2, null, 'Toss the potatoes, peppers and onion with the oil, Italian seasoning and salt on a large sheet pan. Roast 15 minutes.', 900, 218.3, null),
+  ('a8c888cb-70df-45e0-bf05-4310f886ede9', 3, null, 'Stir the vegetables, nestle the sausages between them and roast until the potatoes are tender and the sausages are browned and read 160°F inside, 20–25 minutes, turning the sausages once.', 1320, 218.3, 71.1);
+
+-- Ginger Pork & Green Bean Stir-Fry
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('45e6e425-9b91-4276-8c8f-7328330826d5', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'ginger-pork-green-beans', 'ginger-pork-and-green-bean-stir-fry-45e6e4', 'Ginger Pork & Green Bean Stir-Fry', 'Ground pork and green beans stir-fried with ginger, garlic and a quick soy sauce, spooned over rice.', 'chinese', 1, 10, 15, 25, 4, 'main', null, 0, array['stove']::text[], array['weeknight', 'budget']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick', 'budget']::text[], array['stir_fry']::text[], array['tangy', 'savory']::text[], '{}'::text[], null, 'adapted', 'pork-green-bean-stir-fry', 'classic', 'Refrigerate up to 3 days; reheat until steaming hot.', null, 'owned', array['gluten', 'soy', 'wheat']::text[], array['pork', 'beans']::text[], array['dairy_free']::text[], array['jasmine rice', 'ground pork', 'ginger', 'garlic', 'green bean', 'soy sauce', 'brown sugar', 'rice vinegar']::text[], 'brown sugar|garlic|ginger|green bean|ground pork|jasmine rice|rice vinegar|soy sauce',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '45e6e425-9b91-4276-8c8f-7328330826d5';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 1, null, '1½ cups jasmine rice', 'jasmine rice', 1.5, 'cup', null, false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 2, null, '1 tbsp vegetable oil', 'vegetable oil', 1, 'tbsp', null, false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 3, null, '1 lb ground pork', 'ground pork', 1, 'lb', null, false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 4, null, '1 tbsp fresh ginger, finely grated', 'fresh ginger', 1, 'tbsp', 'finely grated', false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 5, null, '3 cloves garlic, minced', 'garlic', 3, 'clove', 'minced', false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 6, null, '12 oz green beans, trimmed and cut into 2-inch pieces', 'green beans', 12, 'oz', 'trimmed and cut into 2-inch pieces', false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 7, null, '3 tbsp soy sauce', 'soy sauce', 3, 'tbsp', null, false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 8, null, '1 tbsp brown sugar', 'brown sugar', 1, 'tbsp', null, false),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 9, null, '1 tsp rice vinegar', 'rice vinegar', 1, 'tsp', null, false);
+delete from public.recipe_instructions where recipe_id = '45e6e425-9b91-4276-8c8f-7328330826d5';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 1, null, 'Rinse the rice and cook it with 2¼ cups water: boil, cover, then cook on low 15 minutes.', 1080, null, null),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 2, null, 'Heat the oil in a large skillet over medium-high heat. Add the pork and break it up; cook until browned with no pink left and it reads 160°F, about 6 minutes.', 360, null, 71.1),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 3, null, 'Add the ginger and garlic and stir for 30 seconds, then add the green beans and 2 tablespoons of water. Cover and cook until the beans are crisp-tender, 4–5 minutes.', 300, null, null),
+  ('45e6e425-9b91-4276-8c8f-7328330826d5', 4, null, 'Stir in the soy sauce, sugar and vinegar and cook 1 minute until glossy. Serve over the rice.', 60, null, null);
+
+-- One-Pot Lemon Chicken Orzo
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'one-pot-lemon-chicken-orzo', 'one-pot-lemon-chicken-orzo-093695', 'One-Pot Lemon Chicken Orzo', 'Bite-size chicken, orzo and spinach cooked together in broth with lemon and a little Parmesan — one pot, about 30 minutes.', 'greek', 1, 10, 22, 32, 4, 'main', null, 0, array['stove']::text[], array['one-pot', 'weeknight', 'comfort']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'comfort']::text[], array['stew']::text[], array['tangy', 'savory']::text[], '{}'::text[], null, 'adapted', 'lemon-chicken-orzo', 'classic', 'Refrigerate up to 3 days. Loosen with a little broth or water when reheating.', null, 'owned', array['milk']::text[], array['chicken']::text[], array['gluten_free']::text[], array['chicken thigh', 'dried oregano', 'garlic', 'orzo', 'chicken broth', 'spinach', 'lemon', 'parmesan cheese']::text[], 'chicken broth|chicken thigh|dried oregano|garlic|lemon|orzo|parmesan cheese|spinach',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '0936950b-8503-4e5e-a5ed-6f3272c1ffdf';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 1, null, '1 tbsp olive oil', 'olive oil', 1, 'tbsp', null, false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 2, null, '1¼ lb boneless skinless chicken thighs, cut into 1-inch pieces', 'boneless skinless chicken thighs', 1.25, 'lb', 'cut into 1-inch pieces', false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 3, null, '1 tsp dried oregano', 'dried oregano', 1, 'tsp', null, false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 4, null, '½ tsp kosher salt', 'kosher salt', 0.5, 'tsp', null, false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 5, null, '2 cloves garlic, minced', 'garlic', 2, 'clove', 'minced', false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 6, null, '1¼ cups orzo', 'orzo', 1.25, 'cup', null, false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 7, null, '3½ cups low-sodium chicken broth', 'low-sodium chicken broth', 3.5, 'cup', null, false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 8, null, '3 cups baby spinach', 'baby spinach', 3, 'cup', null, false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 9, null, '1 lemon, zested and juiced', 'lemon', 1, null, 'zested and juiced', false),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 10, null, '⅓ cup Parmesan cheese, grated', 'Parmesan cheese', 0.33, 'cup', 'grated', false);
+delete from public.recipe_instructions where recipe_id = '0936950b-8503-4e5e-a5ed-6f3272c1ffdf';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 1, null, 'Heat the oil in a wide pot over medium-high heat. Season the chicken with oregano and salt and cook until browned on the outside, about 5 minutes.', 300, null, null),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 2, null, 'Stir in the garlic for 30 seconds, then add the orzo and broth. Bring to a boil, then lower to a simmer.', null, null, null),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 3, null, 'Cook, stirring often so the orzo doesn''t stick, until the orzo is tender, most of the broth is absorbed and the chicken reads 165°F, 10–12 minutes.', 660, null, 73.9),
+  ('0936950b-8503-4e5e-a5ed-6f3272c1ffdf', 4, null, 'Turn off the heat. Stir in the spinach, lemon zest and juice and Parmesan until the spinach wilts. Add a splash of water if it''s too thick.', null, null, null);
+
+-- Simple Beef & Broccoli
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'simple-beef-and-broccoli', 'simple-beef-and-broccoli-c6e6f3', 'Simple Beef & Broccoli', 'Thin slices of beef and broccoli in a savory soy-garlic sauce, ready in about 25 minutes.', 'chinese', 1, 15, 12, 27, 4, 'main', null, 0, array['stove']::text[], array['weeknight', 'high-protein']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick']::text[], array['stir_fry']::text[], array['savory']::text[], '{}'::text[], null, 'adapted', 'beef-and-broccoli', 'classic', 'Refrigerate up to 3 days; reheat until steaming hot.', null, 'owned', array['gluten', 'soy', 'wheat']::text[], array['beef']::text[], array['dairy_free']::text[], array['white rice', 'flank steak', 'cornstarch', 'broccoli floret', 'garlic', 'soy sauce', 'brown sugar']::text[], 'broccoli floret|brown sugar|cornstarch|flank steak|garlic|soy sauce|white rice',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = 'c6e6f3e6-bebd-40ac-8d74-2038c67286e1';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 1, null, '1½ cups long-grain white rice', 'long-grain white rice', 1.5, 'cup', null, false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 2, null, '1 lb flank steak, sliced thinly across the grain', 'flank steak', 1, 'lb', 'sliced thinly across the grain', false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 3, null, '1 tbsp cornstarch', 'cornstarch', 1, 'tbsp', null, false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 4, null, '2 tbsp vegetable oil', 'vegetable oil', 2, 'tbsp', null, false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 5, null, '4 cups broccoli florets', 'broccoli florets', 4, 'cup', null, false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 6, null, '3 cloves garlic, minced', 'garlic', 3, 'clove', 'minced', false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 7, null, '¼ cup soy sauce', 'soy sauce', 0.25, 'cup', null, false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 8, null, '2 tbsp brown sugar', 'brown sugar', 2, 'tbsp', null, false),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 9, null, '½ cup water', 'water', 0.5, 'cup', null, false);
+delete from public.recipe_instructions where recipe_id = 'c6e6f3e6-bebd-40ac-8d74-2038c67286e1';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 1, null, 'Cook the rice with 2¼ cups water: boil, cover, then cook on low 15 minutes.', 1080, null, null),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 2, null, 'Toss the beef with the cornstarch. Stir the soy sauce, sugar and water together in a cup.', null, null, null),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 3, null, 'Heat 1 tablespoon of oil in a large skillet over high heat. Sear the beef in one layer until browned, about 2 minutes per side, then move it to a plate. It finishes cooking in the sauce.', 240, null, null),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 4, null, 'Add the rest of the oil and the broccoli with 2 tablespoons of water. Cover and cook until bright green and just tender, 3 minutes. Stir in the garlic for 30 seconds.', 180, null, null),
+  ('c6e6f3e6-bebd-40ac-8d74-2038c67286e1', 5, null, 'Pour in the sauce, return the beef and simmer until the sauce thickens and the beef reads at least 145°F, 2 minutes. Serve over rice.', 120, null, 62.8);
+
+-- Crispy Baked Tofu Rice Bowls
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('303a6006-168e-4840-9dd4-45300f87b2ab', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'sesame-baked-tofu-bowls', 'crispy-baked-tofu-rice-bowls-303a60', 'Crispy Baked Tofu Rice Bowls', 'Cubes of tofu baked until golden, tossed in a sweet soy-sesame sauce and served over rice with cucumber and carrot.', 'korean', 1, 15, 30, 45, 4, 'main', null, 0, array['oven', 'stove']::text[], array['vegan', 'budget', 'meal-prep']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'budget']::text[], array['bake']::text[], array['tangy', 'savory']::text[], '{}'::text[], null, 'adapted', 'tofu-rice-bowl', 'classic', 'Refrigerate up to 4 days. The tofu softens but still tastes good; re-crisp at 400°F for 8 minutes.', null, 'owned', array['gluten', 'sesame', 'soy', 'wheat']::text[], array['tofu']::text[], array['pescatarian', 'vegetarian', 'vegan', 'dairy_free']::text[], array['extra-firm tofu', 'cornstarch', 'white rice', 'soy sauce', 'maple syrup', 'sesame oil', 'rice vinegar', 'cucumber', 'carrot', 'sesame seed']::text[], 'carrot|cornstarch|cucumber|extra-firm tofu|maple syrup|rice vinegar|sesame oil|sesame seed|soy sauce|white rice',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '303a6006-168e-4840-9dd4-45300f87b2ab';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 1, null, '14 oz extra-firm tofu, drained and patted dry', 'extra-firm tofu', 14, 'oz', 'drained and patted dry', false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 2, null, '1 tbsp cornstarch', 'cornstarch', 1, 'tbsp', null, false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 3, null, '1 tbsp vegetable oil', 'vegetable oil', 1, 'tbsp', null, false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 4, null, '1½ cups short-grain white rice', 'short-grain white rice', 1.5, 'cup', null, false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 5, null, '3 tbsp soy sauce', 'soy sauce', 3, 'tbsp', null, false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 6, null, '1 tbsp maple syrup', 'maple syrup', 1, 'tbsp', null, false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 7, null, '1 tbsp toasted sesame oil', 'toasted sesame oil', 1, 'tbsp', null, false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 8, null, '1 tsp rice vinegar', 'rice vinegar', 1, 'tsp', null, false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 9, null, '1 cucumber, thinly sliced', 'cucumber', 1, null, 'thinly sliced', false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 10, null, '2 carrots, grated', 'carrots', 2, null, 'grated', false),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 11, null, '1 tbsp sesame seeds', 'sesame seeds', 1, 'tbsp', null, false);
+delete from public.recipe_instructions where recipe_id = '303a6006-168e-4840-9dd4-45300f87b2ab';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 1, null, 'Heat the oven to 425°F and line a sheet pan with parchment.', null, 218.3, null),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 2, null, 'Cut the tofu into ¾-inch cubes, toss with the cornstarch and vegetable oil, and spread out on the pan. Bake until golden and crisp, turning once, 25–30 minutes.', 1680, 218.3, null),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 3, null, 'Meanwhile, rinse the rice and cook it with 2 cups water: boil, cover, then cook on low 15 minutes. Rest covered 10 minutes.', 1500, null, null),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 4, null, 'Whisk the soy sauce, maple syrup, sesame oil and vinegar in a large bowl. Add the hot tofu and toss to coat.', null, null, null),
+  ('303a6006-168e-4840-9dd4-45300f87b2ab', 5, null, 'Serve the tofu over rice with the cucumber and carrot, and scatter sesame seeds on top.', null, null, null);
+
+-- Chickpea & Spinach Curry
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('22d41196-4762-425c-81d9-c8e0da471c79', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'chickpea-spinach-curry', 'chickpea-and-spinach-curry-22d411', 'Chickpea & Spinach Curry', 'Canned chickpeas simmered in a gentle tomato and coconut curry with spinach. Mild, filling and ready in 30 minutes.', 'indian', 1, 10, 20, 30, 4, 'main', null, 0, array['stove']::text[], array['vegan', 'budget', 'pantry']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick', 'budget']::text[], array['stew']::text[], array['rich', 'aromatic']::text[], '{}'::text[], null, 'adapted', 'chana-saag', 'classic', 'Refrigerate up to 4 days or freeze up to 3 months. It tastes even better the next day.', null, 'owned', '{}'::text[], array['beans']::text[], array['pescatarian', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free']::text[], array['basmati rice', 'yellow onion', 'garlic', 'ginger', 'curry powder', 'garam masala', 'canned tomato', 'coconut milk', 'canned chickpea', 'spinach']::text[], 'basmati rice|canned chickpea|canned tomato|coconut milk|curry powder|garam masala|garlic|ginger|spinach|yellow onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '22d41196-4762-425c-81d9-c8e0da471c79';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 1, null, '1½ cups basmati rice', 'basmati rice', 1.5, 'cup', null, false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 2, null, '2 tbsp vegetable oil', 'vegetable oil', 2, 'tbsp', null, false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 3, null, '1 yellow onion, finely chopped', 'yellow onion', 1, null, 'finely chopped', false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 4, null, '3 cloves garlic, minced', 'garlic', 3, 'clove', 'minced', false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 5, null, '1 tbsp fresh ginger, finely grated', 'fresh ginger', 1, 'tbsp', 'finely grated', false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 6, null, '2 tsp mild curry powder', 'mild curry powder', 2, 'tsp', null, false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 7, null, '1 tsp garam masala', 'garam masala', 1, 'tsp', null, false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 8, null, '14 oz canned diced tomatoes', 'canned diced tomatoes', 14, 'oz', null, false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 9, null, '13½ oz canned coconut milk', 'canned coconut milk', 13.5, 'oz', null, false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 10, null, '30 oz canned chickpeas, two 15-oz cans, drained and rinsed', 'canned chickpeas', 30, 'oz', 'two 15-oz cans, drained and rinsed', false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 11, null, '1 tsp kosher salt', 'kosher salt', 1, 'tsp', null, false),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 12, null, '5 oz baby spinach', 'baby spinach', 5, 'oz', null, false);
+delete from public.recipe_instructions where recipe_id = '22d41196-4762-425c-81d9-c8e0da471c79';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 1, null, 'Rinse the rice and cook it with 2¼ cups water: boil, cover, then cook on low 15 minutes.', 1080, null, null),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 2, null, 'Heat the oil in a large pan over medium heat and cook the onion until soft and golden, 6–8 minutes.', 420, null, null),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 3, null, 'Stir in the garlic, ginger, curry powder and garam masala for 1 minute, until fragrant.', 60, null, null),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 4, null, 'Add the tomatoes, coconut milk, chickpeas and salt. Simmer, stirring now and then, until slightly thick, 10 minutes.', 600, null, null),
+  ('22d41196-4762-425c-81d9-c8e0da471c79', 5, null, 'Stir in the spinach until wilted. Taste and add more salt if needed. Serve with the rice.', null, null, null);
+
+-- Lemon-Butter Baked Cod
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('1d37c05d-d763-4240-be96-572c1d9bf9b5', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'lemon-butter-baked-cod', 'lemon-butter-baked-cod-1d37c0', 'Lemon-Butter Baked Cod', 'Mild white fish baked under buttery, lemony breadcrumbs, with green beans roasted on the same pan.', 'american', 1, 10, 15, 25, 4, 'main', null, 0, array['oven']::text[], array['one-pan', 'weeknight', 'quick']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick']::text[], array['bake']::text[], array['tangy', 'fresh']::text[], '{}'::text[], null, null, 'baked-cod', 'classic', 'Best fresh. Refrigerate up to 2 days.', null, 'owned', array['fish', 'gluten', 'milk', 'wheat']::text[], array['fish', 'beans']::text[], array['pescatarian']::text[], array['green bean', 'cod fillet', 'panko breadcrumb', 'lemon']::text[], 'cod fillet|green bean|lemon|panko breadcrumb',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '1d37c05d-d763-4240-be96-572c1d9bf9b5';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 1, null, '12 oz green beans, trimmed', 'green beans', 12, 'oz', 'trimmed', false),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 2, null, '1 tbsp olive oil', 'olive oil', 1, 'tbsp', null, false),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 3, null, '¾ tsp kosher salt, divided', 'kosher salt', 0.75, 'tsp', 'divided', false),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 4, null, '4 cod fillets, about 6 oz each, 1 inch thick', 'cod fillets', 4, null, 'about 6 oz each, 1 inch thick', false),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 5, null, '3 tbsp unsalted butter, melted', 'unsalted butter', 3, 'tbsp', 'melted', false),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 6, null, '½ cup panko breadcrumbs', 'panko breadcrumbs', 0.5, 'cup', null, false),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 7, null, '1 lemon, zested, then cut into wedges', 'lemon', 1, null, 'zested, then cut into wedges', false),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 8, null, '1 tbsp fresh parsley, chopped', 'fresh parsley', 1, 'tbsp', 'chopped', true);
+delete from public.recipe_instructions where recipe_id = '1d37c05d-d763-4240-be96-572c1d9bf9b5';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 1, null, 'Heat the oven to 425°F. Toss the green beans with the oil and ¼ teaspoon salt on one side of a sheet pan.', null, 218.3, null),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 2, null, 'Pat the cod dry and set it on the other side of the pan. Season with the rest of the salt.', null, null, null),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 3, null, 'Mix the melted butter, panko and lemon zest and press it on top of the fish.', null, null, null),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 4, null, 'Bake until the crumbs are golden and the fish flakes easily and reads 145°F, 12–15 minutes.', 780, 218.3, 62.8),
+  ('1d37c05d-d763-4240-be96-572c1d9bf9b5', 5, null, 'Serve with lemon wedges and parsley.', null, null, null);
+
+-- Stovetop Cheeseburgers
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('93f335fe-c0ea-435d-9d15-e926ce891b58', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'stovetop-cheeseburgers', 'stovetop-cheeseburgers-93f335', 'Stovetop Cheeseburgers', 'Juicy burgers cooked in a skillet and topped with melted cheese — no grill needed.', 'american', 1, 10, 12, 22, 4, 'main', null, 0, array['stove']::text[], array['kid-friendly', 'weeknight', 'comfort']::text[], array['Ground meat isn''t safe pink in the middle — use a thermometer rather than the colour.']::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick', 'comfort']::text[], array['pan_fry']::text[], '{}'::text[], '{}'::text[], null, null, 'cheeseburger', 'classic', 'Refrigerate cooked patties up to 3 days; reheat until 165°F.', null, 'owned', array['gluten', 'milk', 'wheat']::text[], array['beef', 'pork']::text[], '{}'::text[], array['ground beef', 'cheddar cheese', 'hamburger bun', 'lettuce leave', 'tomato']::text[], 'cheddar cheese|ground beef|hamburger bun|lettuce leave|tomato',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '93f335fe-c0ea-435d-9d15-e926ce891b58';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 1, null, '1¼ lb ground beef, 80/20', 'ground beef', 1.25, 'lb', '80/20', false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 2, null, '¾ tsp kosher salt', 'kosher salt', 0.75, 'tsp', null, false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 3, null, '½ tsp black pepper', 'black pepper', 0.5, 'tsp', null, false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 4, null, '1 tsp vegetable oil', 'vegetable oil', 1, 'tsp', null, false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 5, null, '4 slice cheddar cheese', 'cheddar cheese', 4, 'slice', null, false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 6, null, '4 hamburger buns, split', 'hamburger buns', 4, null, 'split', false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 7, null, '4 lettuce leaves', 'lettuce leaves', 4, null, null, false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 8, null, '1 tomato, sliced', 'tomato', 1, null, 'sliced', false),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 9, null, '4 tbsp ketchup', 'ketchup', 4, 'tbsp', null, true);
+delete from public.recipe_instructions where recipe_id = '93f335fe-c0ea-435d-9d15-e926ce891b58';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 1, null, 'Divide the beef into 4 balls and gently flatten each into a patty a little wider than the bun, about ¾ inch thick. Press a shallow dent in the middle so it stays flat. Wash your hands.', null, null, null),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 2, null, 'Season both sides with salt and pepper.', null, null, null),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 3, null, 'Heat the oil in a large skillet over medium-high heat. Cook the patties 4 minutes, flip, and cook until they read 160°F in the middle, 4–5 minutes more.', 540, null, 71.1),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 4, null, 'Lay a cheese slice on each patty for the last minute and cover the pan so it melts.', 60, null, null),
+  ('93f335fe-c0ea-435d-9d15-e926ce891b58', 5, null, 'Toast the buns cut-side down in the pan for 1 minute, then build the burgers with lettuce, tomato and ketchup.', 60, null, null);
+
+-- Easy Minestrone
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('8215a3c4-0b05-489c-afe9-e33ab5af881f', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'easy-minestrone', 'easy-minestrone-8215a3', 'Easy Minestrone', 'A hearty Italian vegetable soup with beans and small pasta, made from everyday vegetables and pantry staples.', 'italian', 1, 15, 30, 45, 6, 'main', null, 0, array['stove']::text[], array['vegetarian', 'budget', 'freezer-friendly', 'use-it-up']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'budget']::text[], array['stew']::text[], array['savory']::text[], '{}'::text[], null, 'adapted', 'minestrone', 'classic', 'Refrigerate up to 4 days (the pasta soaks up broth — add water when reheating). Freeze without the pasta for 3 months.', null, 'owned', array['gluten', 'milk', 'wheat']::text[], array['beans']::text[], array['pescatarian', 'vegetarian', 'vegan', 'dairy_free']::text[], array['yellow onion', 'carrot', 'celery stalk', 'garlic', 'zucchini', 'canned tomato', 'vegetable broth', 'cannellini bean', 'pasta', 'italian seasoning']::text[], 'canned tomato|cannellini bean|carrot|celery stalk|garlic|italian seasoning|pasta|vegetable broth|yellow onion|zucchini',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '8215a3c4-0b05-489c-afe9-e33ab5af881f';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 1, null, '2 tbsp olive oil', 'olive oil', 2, 'tbsp', null, false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 2, null, '1 yellow onion, chopped', 'yellow onion', 1, null, 'chopped', false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 3, null, '2 carrots, diced', 'carrots', 2, null, 'diced', false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 4, null, '2 celery stalks, diced', 'celery stalks', 2, null, 'diced', false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 5, null, '2 cloves garlic, minced', 'garlic', 2, 'clove', 'minced', false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 6, null, '1 zucchini, diced', 'zucchini', 1, null, 'diced', false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 7, null, '14 oz canned diced tomatoes', 'canned diced tomatoes', 14, 'oz', null, false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 8, null, '6 cups low-sodium vegetable broth', 'low-sodium vegetable broth', 6, 'cup', null, false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 9, null, '15 oz canned cannellini beans, drained and rinsed', 'canned cannellini beans', 15, 'oz', 'drained and rinsed', false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 10, null, '¾ cup small pasta, such as ditalini', 'small pasta', 0.75, 'cup', 'such as ditalini', false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 11, null, '1 tsp dried Italian seasoning', 'dried Italian seasoning', 1, 'tsp', null, false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 12, null, '1 tsp kosher salt', 'kosher salt', 1, 'tsp', null, false),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 13, null, '⅓ cup Parmesan cheese, grated, to serve', 'Parmesan cheese', 0.33, 'cup', 'grated, to serve', true);
+delete from public.recipe_instructions where recipe_id = '8215a3c4-0b05-489c-afe9-e33ab5af881f';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 1, null, 'Heat the oil in a large pot over medium heat. Cook the onion, carrots and celery until soft, 8 minutes.', 480, null, null),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 2, null, 'Stir in the garlic and zucchini for 2 minutes.', 120, null, null),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 3, null, 'Add the tomatoes, broth, beans, Italian seasoning and salt. Bring to a boil, then simmer 10 minutes.', 600, null, null),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 4, null, 'Add the pasta and simmer, stirring now and then, until tender, 8–10 minutes. Taste for salt.', 540, null, null),
+  ('8215a3c4-0b05-489c-afe9-e33ab5af881f', 5, null, 'Serve with Parmesan on top (leave it off to keep it vegan).', null, null, null);
+
+-- Classic Chicken Noodle Soup
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'classic-chicken-noodle-soup', 'classic-chicken-noodle-soup-a65b30', 'Classic Chicken Noodle Soup', 'Chicken thighs simmered in broth with carrots, celery and egg noodles — comforting and very forgiving.', 'american', 1, 15, 35, 50, 6, 'main', null, 0, array['stove']::text[], array['comfort', 'freezer-friendly', 'kid-friendly']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'soup', 'comfort']::text[], array['stew']::text[], array['fresh']::text[], '{}'::text[], null, null, 'chicken-noodle-soup', 'classic', 'Refrigerate up to 4 days. Freeze without the noodles for 3 months.', null, 'owned', array['egg', 'gluten', 'wheat']::text[], array['chicken']::text[], array['dairy_free']::text[], array['yellow onion', 'carrot', 'celery stalk', 'garlic', 'chicken broth', 'chicken thigh', 'dried thyme', 'egg noodle']::text[], 'carrot|celery stalk|chicken broth|chicken thigh|dried thyme|egg noodle|garlic|yellow onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = 'a65b30b1-9000-4811-8f4a-fd1d5645ef7e';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 1, null, '1 tbsp olive oil', 'olive oil', 1, 'tbsp', null, false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 2, null, '1 yellow onion, chopped', 'yellow onion', 1, null, 'chopped', false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 3, null, '3 carrots, sliced', 'carrots', 3, null, 'sliced', false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 4, null, '3 celery stalks, sliced', 'celery stalks', 3, null, 'sliced', false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 5, null, '2 cloves garlic, minced', 'garlic', 2, 'clove', 'minced', false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 6, null, '8 cups low-sodium chicken broth', 'low-sodium chicken broth', 8, 'cup', null, false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 7, null, '1½ lb boneless skinless chicken thighs', 'boneless skinless chicken thighs', 1.5, 'lb', null, false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 8, null, '1 tsp dried thyme', 'dried thyme', 1, 'tsp', null, false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 9, null, '1 tsp kosher salt', 'kosher salt', 1, 'tsp', null, false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 10, null, '4 oz wide egg noodles', 'wide egg noodles', 4, 'oz', null, false),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 11, null, '2 tbsp fresh parsley, chopped', 'fresh parsley', 2, 'tbsp', 'chopped', true);
+delete from public.recipe_instructions where recipe_id = 'a65b30b1-9000-4811-8f4a-fd1d5645ef7e';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 1, null, 'Heat the oil in a large pot over medium heat. Cook the onion, carrots and celery until starting to soften, 6 minutes. Stir in the garlic for 30 seconds.', 360, null, null),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 2, null, 'Add the broth, whole chicken thighs, thyme and salt. Bring to a boil, then simmer gently until the chicken reads 165°F, about 20 minutes.', 1200, null, 73.9),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 3, null, 'Lift out the chicken and shred it with two forks on a clean board.', null, null, null),
+  ('a65b30b1-9000-4811-8f4a-fd1d5645ef7e', 4, null, 'Add the noodles to the pot and simmer until tender, 6–8 minutes. Return the chicken, taste for salt and add the parsley.', 420, null, null);
+
+-- Smoky Lentil Sloppy Joes
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'smoky-lentil-sloppy-joes', 'smoky-lentil-sloppy-joes-1e3f30', 'Smoky Lentil Sloppy Joes', 'Brown lentils simmered in a tangy, smoky tomato sauce and piled onto toasted buns — all the mess of the classic, no meat.', 'american', 1, 10, 30, 40, 4, 'main', null, 0, array['stove']::text[], array['vegan', 'budget', 'kid-friendly']::text[], array['Many store-bought buns contain milk or eggs. For a vegan meal, choose buns labelled vegan.']::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'budget', 'comfort']::text[], array['stew']::text[], array['smoky', 'tangy']::text[], '{}'::text[], null, null, 'lentil-sloppy-joes', 'classic', 'Refrigerate the filling up to 4 days or freeze up to 3 months.', null, 'owned', array['gluten', 'wheat']::text[], array['pork', 'beans']::text[], array['dairy_free']::text[], array['yellow onion', 'bell pepper', 'garlic', 'brown lentil', 'tomato sauce', 'tomato paste', 'yellow mustard', 'maple syrup', 'cider vinegar', 'smoked paprika', 'hamburger bun']::text[], 'bell pepper|brown lentil|cider vinegar|garlic|hamburger bun|maple syrup|smoked paprika|tomato paste|tomato sauce|yellow mustard|yellow onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '1e3f30c7-4d21-430d-bcf4-b027f9df13ac';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 1, null, '1 tbsp olive oil', 'olive oil', 1, 'tbsp', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 2, null, '1 yellow onion, finely chopped', 'yellow onion', 1, null, 'finely chopped', false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 3, null, '1 green bell pepper, finely chopped', 'green bell pepper', 1, null, 'finely chopped', false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 4, null, '2 cloves garlic, minced', 'garlic', 2, 'clove', 'minced', false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 5, null, '1 cup dried brown lentils, rinsed', 'dried brown lentils', 1, 'cup', 'rinsed', false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 6, null, '2½ cups water', 'water', 2.5, 'cup', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 7, null, '8 oz tomato sauce', 'tomato sauce', 8, 'oz', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 8, null, '2 tbsp tomato paste', 'tomato paste', 2, 'tbsp', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 9, null, '1 tbsp yellow mustard', 'yellow mustard', 1, 'tbsp', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 10, null, '1 tbsp maple syrup', 'maple syrup', 1, 'tbsp', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 11, null, '1 tbsp apple cider vinegar', 'apple cider vinegar', 1, 'tbsp', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 12, null, '1 tsp smoked paprika', 'smoked paprika', 1, 'tsp', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 13, null, '1 tsp kosher salt', 'kosher salt', 1, 'tsp', null, false),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 14, null, '4 hamburger buns, toasted', 'hamburger buns', 4, null, 'toasted', false);
+delete from public.recipe_instructions where recipe_id = '1e3f30c7-4d21-430d-bcf4-b027f9df13ac';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 1, null, 'Heat the oil in a saucepan over medium heat. Cook the onion and pepper until soft, 6 minutes. Stir in the garlic for 30 seconds.', 360, null, null),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 2, null, 'Add the lentils and water. Bring to a boil, then cover and simmer until the lentils are tender, 20–25 minutes. Add a splash more water if it dries out.', 1320, null, null),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 3, null, 'Stir in the tomato sauce, tomato paste, mustard, maple syrup, vinegar, paprika and salt. Simmer uncovered until thick enough to sit on a bun, 5 minutes.', 300, null, null),
+  ('1e3f30c7-4d21-430d-bcf4-b027f9df13ac', 4, null, 'Toast the buns and spoon the filling on.', null, null, null);
+
+-- Pasta e Ceci (Pasta with Chickpeas)
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'pasta-e-ceci', 'pasta-e-ceci-pasta-with-chickpeas-1b96de', 'Pasta e Ceci (Pasta with Chickpeas)', 'A thick, brothy Roman-style pot of small pasta and chickpeas with garlic, rosemary and tomato.', 'italian', 1, 10, 25, 35, 4, 'main', null, 0, array['stove']::text[], array['vegan', 'budget', 'pantry', 'one-pot']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'budget']::text[], array['stew']::text[], array['spicy']::text[], '{}'::text[], 'Rome', 'adapted', 'pasta-e-ceci', 'classic', 'Refrigerate up to 3 days; it thickens as it sits, so loosen with water when reheating.', null, 'owned', array['gluten', 'wheat']::text[], array['beans']::text[], array['pescatarian', 'vegetarian', 'vegan', 'dairy_free']::text[], array['garlic', 'rosemary', 'tomato paste', 'canned chickpea', 'vegetable broth', 'dried pasta']::text[], 'canned chickpea|dried pasta|garlic|rosemary|tomato paste|vegetable broth',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '1b96ded9-68f2-4d8d-92ea-74057b616ac8';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 1, null, '3 tbsp olive oil, plus more to serve', 'olive oil', 3, 'tbsp', 'plus more to serve', false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 2, null, '3 cloves garlic, thinly sliced', 'garlic', 3, 'clove', 'thinly sliced', false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 3, null, '1 tsp fresh rosemary, finely chopped', 'fresh rosemary', 1, 'tsp', 'finely chopped', false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 4, null, '2 tbsp tomato paste', 'tomato paste', 2, 'tbsp', null, false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 5, null, '30 oz canned chickpeas, two 15-oz cans, drained and rinsed', 'canned chickpeas', 30, 'oz', 'two 15-oz cans, drained and rinsed', false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 6, null, '5 cups low-sodium vegetable broth', 'low-sodium vegetable broth', 5, 'cup', null, false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 7, null, '1 cup small dried pasta, such as ditalini', 'small dried pasta', 1, 'cup', 'such as ditalini', false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 8, null, '¾ tsp kosher salt', 'kosher salt', 0.75, 'tsp', null, false),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 9, null, '¼ tsp dried chili flakes', 'dried chili flakes', 0.25, 'tsp', null, true);
+delete from public.recipe_instructions where recipe_id = '1b96ded9-68f2-4d8d-92ea-74057b616ac8';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 1, null, 'Warm the oil, garlic and rosemary in a pot over medium-low heat until the garlic is pale gold, 2–3 minutes.', 180, null, null),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 2, null, 'Stir in the tomato paste for 1 minute, then add the chickpeas and broth. Simmer 10 minutes.', 660, null, null),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 3, null, 'Mash about a third of the chickpeas against the side of the pot to thicken the broth.', null, null, null),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 4, null, 'Add the pasta and salt and simmer, stirring often, until the pasta is tender and the pot is thick and soupy, 10–12 minutes. Add water if it gets too thick.', 660, null, null),
+  ('1b96ded9-68f2-4d8d-92ea-74057b616ac8', 5, null, 'Serve in bowls with a drizzle of olive oil (and chili flakes).', null, null, null);
+
+-- Red Lentil & Sweet Potato Soup
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'red-lentil-sweet-potato-soup', 'red-lentil-and-sweet-potato-soup-5e8ef1', 'Red Lentil & Sweet Potato Soup', 'Red lentils and sweet potato cooked until soft with cumin and ginger, then blended (or mashed) into a smooth, golden soup.', 'middle_eastern', 1, 15, 30, 45, 6, 'main', null, 0, array['stove']::text[], array['vegan', 'budget', 'freezer-friendly']::text[], array['If you blend in a countertop blender, fill it only halfway and hold the lid down with a towel — hot soup expands.']::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'soup', 'budget']::text[], array['stew']::text[], array['tangy', 'aromatic']::text[], '{}'::text[], null, 'adapted', 'red-lentil-soup', 'classic', 'Refrigerate up to 5 days or freeze up to 3 months.', null, 'owned', array['gluten', 'wheat']::text[], array['beans']::text[], array['pescatarian', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free']::text[], array['yellow onion', 'carrot', 'garlic', 'ginger', 'ground cumin', 'sweet potato', 'red lentil', 'vegetable broth', 'lemon']::text[], 'carrot|garlic|ginger|ground cumin|lemon|red lentil|sweet potato|vegetable broth|yellow onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '5e8ef109-f22e-437a-b3aa-c331c4d9690f';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 1, null, '2 tbsp olive oil', 'olive oil', 2, 'tbsp', null, false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 2, null, '1 yellow onion, chopped', 'yellow onion', 1, null, 'chopped', false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 3, null, '2 carrots, chopped', 'carrots', 2, null, 'chopped', false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 4, null, '3 cloves garlic, minced', 'garlic', 3, 'clove', 'minced', false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 5, null, '1 tbsp fresh ginger, grated', 'fresh ginger', 1, 'tbsp', 'grated', false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 6, null, '2 tsp ground cumin', 'ground cumin', 2, 'tsp', null, false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 7, null, '1 sweet potato, about 1 lb, peeled and diced', 'sweet potato', 1, null, 'about 1 lb, peeled and diced', false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 8, null, '1 cup dried red lentils, rinsed', 'dried red lentils', 1, 'cup', 'rinsed', false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 9, null, '6 cups low-sodium vegetable broth', 'low-sodium vegetable broth', 6, 'cup', null, false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 10, null, '1 tsp kosher salt', 'kosher salt', 1, 'tsp', null, false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 11, null, '1 lemon, juiced', 'lemon', 1, null, 'juiced', false),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 12, null, '4 pita breads, to serve', 'pita breads', 4, null, 'to serve', true);
+delete from public.recipe_instructions where recipe_id = '5e8ef109-f22e-437a-b3aa-c331c4d9690f';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 1, null, 'Heat the oil in a large pot over medium heat. Cook the onion and carrots until soft, 7 minutes. Stir in the garlic, ginger and cumin for 1 minute.', 480, null, null),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 2, null, 'Add the sweet potato, lentils, broth and salt. Bring to a boil, then simmer until the lentils have fallen apart and the sweet potato is very soft, 20–25 minutes.', 1320, null, null),
+  ('5e8ef109-f22e-437a-b3aa-c331c4d9690f', 3, null, 'Blend until smooth with a stick blender, or mash well with a potato masher for a chunkier soup. Stir in the lemon juice and taste for salt.', null, null, null);
+
+-- Aloo Gobi (Potato & Cauliflower)
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'aloo-gobi', 'aloo-gobi-potato-and-cauliflower-7ba84b', 'Aloo Gobi (Potato & Cauliflower)', 'A North Indian dry curry of potatoes and cauliflower cooked with cumin, turmeric, ginger and tomato until tender and golden.', 'indian', 2, 15, 30, 45, 4, 'main', null, 0, array['stove']::text[], array['vegan', 'budget']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'budget']::text[], array['pan_fry']::text[], array['spicy', 'fresh', 'aromatic']::text[], '{}'::text[], 'Punjab', 'traditional', 'aloo-gobi', 'classic', 'Refrigerate up to 4 days. Reheat in a covered pan with a splash of water.', null, 'owned', '{}'::text[], '{}'::text[], array['pescatarian', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free']::text[], array['cumin seed', 'yellow onion', 'ginger', 'garlic', 'ground turmeric', 'ground coriander', 'tomato', 'gold potato', 'cauliflower', 'garam masala', 'cilantro', 'basmati rice']::text[], 'basmati rice|cauliflower|cilantro|cumin seed|garam masala|garlic|ginger|gold potato|ground coriander|ground turmeric|tomato|yellow onion',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '7ba84b8d-cc6c-4dfe-b376-710c847e44c5';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 1, null, '3 tbsp vegetable oil', 'vegetable oil', 3, 'tbsp', null, false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 2, null, '1 tsp cumin seeds', 'cumin seeds', 1, 'tsp', null, false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 3, null, '1 yellow onion, finely chopped', 'yellow onion', 1, null, 'finely chopped', false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 4, null, '1 tbsp fresh ginger, grated', 'fresh ginger', 1, 'tbsp', 'grated', false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 5, null, '3 cloves garlic, minced', 'garlic', 3, 'clove', 'minced', false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 6, null, '1 green chili, finely chopped', 'green chili', 1, null, 'finely chopped', true),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 7, null, '1 tsp ground turmeric', 'ground turmeric', 1, 'tsp', null, false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 8, null, '2 tsp ground coriander', 'ground coriander', 2, 'tsp', null, false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 9, null, '1 tsp kosher salt', 'kosher salt', 1, 'tsp', null, false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 10, null, '2 tomatoes, chopped', 'tomatoes', 2, null, 'chopped', false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 11, null, '1 lb Yukon Gold potatoes, cut into ¾-inch cubes', 'Yukon Gold potatoes', 1, 'lb', 'cut into ¾-inch cubes', false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 12, null, '1 cauliflower, about 1.5 lb, cut into small florets', 'cauliflower', 1, null, 'about 1.5 lb, cut into small florets', false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 13, null, '1 tsp garam masala', 'garam masala', 1, 'tsp', null, false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 14, null, '2 tbsp fresh cilantro, chopped', 'fresh cilantro', 2, 'tbsp', 'chopped', false),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 15, null, '4 flatbreads or 3 cups cooked basmati rice, to serve', 'flatbreads or 3 cups cooked basmati rice', 4, null, 'to serve', false);
+delete from public.recipe_instructions where recipe_id = '7ba84b8d-cc6c-4dfe-b376-710c847e44c5';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 1, null, 'Heat the oil in a large, wide pan with a lid over medium heat. Add the cumin seeds and let them sizzle for 30 seconds.', null, null, null),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 2, null, 'Add the onion and cook until golden, 7–8 minutes. Stir in the ginger, garlic and chili for 1 minute, then the turmeric, coriander and salt.', 540, null, null),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 3, null, 'Add the tomatoes and cook, stirring, until they soften into a thick paste, 4 minutes.', 240, null, null),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 4, null, 'Add the potatoes and cauliflower and stir to coat. Add 3 tablespoons of water, cover and cook on medium-low, stirring gently every few minutes, until a knife slides easily into the potatoes, 15–20 minutes.', 1080, null, null),
+  ('7ba84b8d-cc6c-4dfe-b376-710c847e44c5', 5, null, 'Uncover, sprinkle with garam masala and cook 2 minutes more to dry it slightly. Scatter cilantro on top and serve with flatbread or rice.', 120, null, null);
+
+-- Garlic Sesame Noodles with Vegetables
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'garlic-sesame-noodles-vegetables', 'garlic-sesame-noodles-with-vegetables-a82ed7', 'Garlic Sesame Noodles with Vegetables', 'Spaghetti tossed with crisp-tender vegetables in a quick garlic, soy and toasted sesame sauce. Good hot or cold.', 'chinese', 1, 15, 15, 30, 4, 'main', null, 0, array['stove']::text[], array['vegan', 'weeknight', 'quick']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'quick']::text[], array['stir_fry']::text[], array['tangy', 'savory']::text[], '{}'::text[], null, 'adapted', 'sesame-noodles', 'classic', 'Refrigerate up to 3 days. Eat cold or warm in a skillet.', null, 'owned', array['gluten', 'sesame', 'soy', 'wheat']::text[], '{}'::text[], array['pescatarian', 'vegetarian', 'vegan', 'dairy_free']::text[], array['dried spaghetti', 'soy sauce', 'sesame oil', 'rice vinegar', 'maple syrup', 'garlic', 'broccoli floret', 'bell pepper', 'carrot', 'scallion', 'sesame seed']::text[], 'bell pepper|broccoli floret|carrot|dried spaghetti|garlic|maple syrup|rice vinegar|scallion|sesame oil|sesame seed|soy sauce',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = 'a82ed74b-ab13-4db4-b4b4-1356153bfa55';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 1, null, '12 oz dried spaghetti', 'dried spaghetti', 12, 'oz', null, false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 2, null, '3 tbsp soy sauce', 'soy sauce', 3, 'tbsp', null, false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 3, null, '2 tbsp toasted sesame oil', 'toasted sesame oil', 2, 'tbsp', null, false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 4, null, '1 tbsp rice vinegar', 'rice vinegar', 1, 'tbsp', null, false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 5, null, '1 tbsp maple syrup', 'maple syrup', 1, 'tbsp', null, false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 6, null, '1 tbsp vegetable oil', 'vegetable oil', 1, 'tbsp', null, false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 7, null, '3 cloves garlic, minced', 'garlic', 3, 'clove', 'minced', false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 8, null, '2 cups broccoli florets', 'broccoli florets', 2, 'cup', null, false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 9, null, '1 red bell pepper, sliced', 'red bell pepper', 1, null, 'sliced', false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 10, null, '2 carrots, cut into matchsticks', 'carrots', 2, null, 'cut into matchsticks', false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 11, null, '3 scallions, sliced', 'scallions', 3, null, 'sliced', false),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 12, null, '1 tbsp sesame seeds', 'sesame seeds', 1, 'tbsp', null, false);
+delete from public.recipe_instructions where recipe_id = 'a82ed74b-ab13-4db4-b4b4-1356153bfa55';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 1, null, 'Cook the spaghetti in boiling salted water until just tender. Drain and rinse briefly under warm water so it doesn''t stick.', 600, null, null),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 2, null, 'Whisk the soy sauce, sesame oil, vinegar and maple syrup in a cup.', null, null, null),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 3, null, 'Heat the vegetable oil in a large skillet over medium-high heat. Stir-fry the broccoli, pepper and carrots until crisp-tender, 4–5 minutes. Add the garlic for 30 seconds.', 300, null, null),
+  ('a82ed74b-ab13-4db4-b4b4-1356153bfa55', 4, null, 'Add the noodles and sauce and toss until coated and hot, 1–2 minutes. Top with scallions and sesame seeds.', 120, null, null);
+
+-- Sweet Potato & Black Bean Enchiladas
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('ed40d64c-db97-414b-bfcd-f855b7330b9e', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'sweet-potato-black-bean-enchiladas', 'sweet-potato-and-black-bean-enchiladas-ed40d6', 'Sweet Potato & Black Bean Enchiladas', 'Corn tortillas rolled around roasted sweet potato and black beans, covered in red enchilada sauce and baked. No cheese needed.', 'mexican', 2, 20, 45, 65, 4, 'main', null, 0, array['oven']::text[], array['vegan', 'make-ahead', 'gluten-free']::text[], array['Some enchilada sauces are thickened with wheat flour. If you''re cooking gluten-free, check the label.']::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner']::text[], array['roast', 'bake']::text[], array['spicy', 'tangy', 'fresh', 'aromatic']::text[], '{}'::text[], null, 'adapted', 'vegetable-enchiladas', 'classic', 'Refrigerate up to 3 days. Assemble ahead and refrigerate up to 1 day before baking (add 10 minutes).', null, 'owned', '{}'::text[], array['beans']::text[], array['pescatarian', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free']::text[], array['sweet potato', 'ground cumin', 'chili powder', 'black bean', 'corn kernel', 'enchilada sauce', 'corn tortilla', 'avocado', 'cilantro', 'lime']::text[], 'avocado|black bean|chili powder|cilantro|corn kernel|corn tortilla|enchilada sauce|ground cumin|lime|sweet potato',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = 'ed40d64c-db97-414b-bfcd-f855b7330b9e';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 1, null, '2 sweet potatoes, about 1.5 lb, peeled and cut into ½-inch cubes', 'sweet potatoes', 2, null, 'about 1.5 lb, peeled and cut into ½-inch cubes', false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 2, null, '2 tbsp olive oil', 'olive oil', 2, 'tbsp', null, false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 3, null, '1 tsp ground cumin', 'ground cumin', 1, 'tsp', null, false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 4, null, '1 tsp chili powder', 'chili powder', 1, 'tsp', null, false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 5, null, '¾ tsp kosher salt', 'kosher salt', 0.75, 'tsp', null, false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 6, null, '15 oz canned black beans, drained and rinsed', 'canned black beans', 15, 'oz', 'drained and rinsed', false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 7, null, '1 cup frozen corn kernels', 'frozen corn kernels', 1, 'cup', null, false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 8, null, '20 oz red enchilada sauce', 'red enchilada sauce', 20, 'oz', null, false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 9, null, '10 corn tortillas, 6-inch', 'corn tortillas', 10, null, '6-inch', false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 10, null, '1 avocado, sliced, to serve', 'avocado', 1, null, 'sliced, to serve', false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 11, null, '2 tbsp fresh cilantro, chopped', 'fresh cilantro', 2, 'tbsp', 'chopped', false),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 12, null, '1 lime, cut into wedges', 'lime', 1, null, 'cut into wedges', false);
+delete from public.recipe_instructions where recipe_id = 'ed40d64c-db97-414b-bfcd-f855b7330b9e';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 1, null, 'Heat the oven to 425°F. Toss the sweet potatoes with the oil, cumin, chili powder and salt on a sheet pan and roast until tender, 20–25 minutes.', 1320, 218.3, null),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 2, null, 'Turn the oven down to 375°F. In a bowl, mix the sweet potatoes with the beans, corn and ½ cup of the enchilada sauce.', null, 190.6, null),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 3, null, 'Warm the tortillas (wrapped in a damp towel, 30–45 seconds in the microwave or a few seconds each in a dry pan) so they bend without cracking.', null, null, null),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 4, null, 'Spread ½ cup sauce in a 9×13-inch dish. Fill each tortilla with the mixture, roll up and lay seam-side down. Pour the rest of the sauce over.', null, null, null),
+  ('ed40d64c-db97-414b-bfcd-f855b7330b9e', 5, null, 'Cover with foil and bake 15 minutes, then uncover and bake until bubbling, 5 minutes more. Serve with avocado, cilantro and lime.', 1200, 190.6, null);
+
+-- Black Bean Burrito Bowls
+insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
+  status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
+  attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
+values ('672050a1-3e49-46d1-bef4-1921313bf4f4', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'black-bean-burrito-bowls', 'black-bean-burrito-bowls-672050', 'Black Bean Burrito Bowls', 'Cilantro-lime rice topped with cumin-spiced black beans, corn, quick salsa and avocado. Build-your-own at the table.', 'mexican', 1, 15, 20, 35, 4, 'main', null, 0, array['stove']::text[], array['vegan', 'budget', 'meal-prep', 'gluten-free']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
+  'pending_review', array['main', 'dinner', 'budget']::text[], array['boil']::text[], array['tangy', 'fresh', 'aromatic']::text[], '{}'::text[], null, 'adapted', 'burrito-bowl', 'classic', 'Refrigerate the parts separately up to 4 days (slice the avocado fresh).', null, 'owned', '{}'::text[], array['beans']::text[], array['pescatarian', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free']::text[], array['white rice', 'lime', 'cilantro', 'black bean', 'ground cumin', 'garlic powder', 'corn kernel', 'tomato', 'red onion', 'avocado']::text[], 'avocado|black bean|cilantro|corn kernel|garlic powder|ground cumin|lime|red onion|tomato|white rice',
+  null, null, null, null, null, null, null, null)
+on conflict (id) do update set
+  slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
+  skill_level = excluded.skill_level, prep_minutes = excluded.prep_minutes, cook_minutes = excluded.cook_minutes,
+  total_minutes = excluded.total_minutes, servings = excluded.servings, course = excluded.course,
+  dessert_category = excluded.dessert_category, chill_minutes = excluded.chill_minutes, required_equipment = excluded.required_equipment,
+  tags = excluded.tags, tips = excluded.tips, image_url = excluded.image_url, image_alt = excluded.image_alt,
+  image_credit = excluded.image_credit, image_credit_url = excluded.image_credit_url, image_source_url = excluded.image_source_url,
+  image_license = excluded.image_license, image_is_representative = excluded.image_is_representative,
+  external_id = excluded.external_id, status = excluded.status, categories = excluded.categories, methods = excluded.methods,
+  flavors = excluded.flavors, occasions = excluded.occasions, region = excluded.region, authenticity = excluded.authenticity,
+  dish_key = excluded.dish_key, variant = excluded.variant, storage_notes = excluded.storage_notes, safety_note = excluded.safety_note,
+  text_license = excluded.text_license, allergens = excluded.allergens, proteins = excluded.proteins, diet_tags = excluded.diet_tags,
+  core_ingredients = excluded.core_ingredients, fingerprint = excluded.fingerprint, attribution = excluded.attribution,
+  reviewed_by = excluded.reviewed_by, reviewed_at = excluded.reviewed_at, calories_per_serving = excluded.calories_per_serving,
+  protein_g = excluded.protein_g, carbs_g = excluded.carbs_g, fat_g = excluded.fat_g, nutrition_source = excluded.nutrition_source;
+delete from public.recipe_ingredients where recipe_id = '672050a1-3e49-46d1-bef4-1921313bf4f4';
+insert into public.recipe_ingredients (recipe_id, position, component, raw_text, item, original_quantity, original_unit, preparation, is_optional) values
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 1, null, '1½ cups long-grain white rice', 'long-grain white rice', 1.5, 'cup', null, false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 2, null, '1 lime, zested and juiced', 'lime', 1, null, 'zested and juiced', false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 3, null, '¼ cup fresh cilantro, chopped', 'fresh cilantro', 0.25, 'cup', 'chopped', false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 4, null, '1 tbsp olive oil', 'olive oil', 1, 'tbsp', null, false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 5, null, '30 oz canned black beans, two 15-oz cans, drained and rinsed', 'canned black beans', 30, 'oz', 'two 15-oz cans, drained and rinsed', false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 6, null, '1 tsp ground cumin', 'ground cumin', 1, 'tsp', null, false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 7, null, '½ tsp garlic powder', 'garlic powder', 0.5, 'tsp', null, false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 8, null, '¾ tsp kosher salt', 'kosher salt', 0.75, 'tsp', null, false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 9, null, '1½ cups frozen corn kernels', 'frozen corn kernels', 1.5, 'cup', null, false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 10, null, '2 tomatoes, diced', 'tomatoes', 2, null, 'diced', false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 11, null, '½ red onion, finely chopped', 'red onion', 0.5, null, 'finely chopped', false),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 12, null, '1 avocado, sliced', 'avocado', 1, null, 'sliced', false);
+delete from public.recipe_instructions where recipe_id = '672050a1-3e49-46d1-bef4-1921313bf4f4';
+insert into public.recipe_instructions (recipe_id, position, component, body, timer_seconds, temperature_c, safe_internal_temp_c) values
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 1, null, 'Rinse the rice and cook it with 2¼ cups water: boil, cover, then cook on low 15 minutes. Fluff with a fork and stir in the lime zest, half the lime juice and half the cilantro.', 1080, null, null),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 2, null, 'Meanwhile, heat the oil in a saucepan over medium heat. Add the beans, cumin, garlic powder, ½ teaspoon salt and ¼ cup water. Simmer, mashing a few beans, until thick, 5 minutes.', 300, null, null),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 3, null, 'Cook the corn in a dry skillet over high heat until lightly charred in spots, 4–5 minutes.', 300, null, null),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 4, null, 'Mix the tomatoes, red onion, the rest of the lime juice, cilantro and salt for a quick salsa.', null, null, null),
+  ('672050a1-3e49-46d1-bef4-1921313bf4f4', 5, null, 'Serve the rice in bowls topped with beans, corn, salsa and avocado.', null, null, null);
+
 -- Seasoned Oven Fries
 insert into public.recipes (id, source_id, external_id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, visibility, is_mock,
   status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
@@ -2296,7 +3258,7 @@ insert into public.recipes (id, source_id, external_id, slug, title, description
   status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
   attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
 values ('1d5e7049-ed9c-40ad-95b3-5bce9db74f8a', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'creamy-coleslaw', 'creamy-coleslaw-1d5e70', 'Creamy Coleslaw', 'Crunchy cabbage and carrot in a light, tangy dressing.', 'american', 1, 15, 0, 15, 6, 'side', null, 0, '{}'::text[], array['budget']::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
-  'pending_review', array['side', 'salad', 'budget']::text[], array['no_cook']::text[], array['tangy']::text[], '{}'::text[], null, null, 'coleslaw', 'classic', 'Best the day it''s made; keeps 2 days refrigerated.', null, 'owned', array['egg']::text[], '{}'::text[], array['pescatarian', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free']::text[], array['green cabbage', 'carrot', 'mayonnaise', 'cider vinegar', 'celery seed']::text[], 'carrot|celery seed|cider vinegar|green cabbage|mayonnaise',
+  'pending_review', array['side', 'salad', 'budget']::text[], array['no_cook']::text[], array['tangy']::text[], '{}'::text[], null, null, 'coleslaw', 'classic', 'Best the day it''s made; keeps 2 days refrigerated.', null, 'owned', array['egg']::text[], '{}'::text[], array['pescatarian', 'vegetarian', 'gluten_free', 'dairy_free']::text[], array['green cabbage', 'carrot', 'mayonnaise', 'cider vinegar', 'celery seed']::text[], 'carrot|celery seed|cider vinegar|green cabbage|mayonnaise',
   null, null, null, null, null, null, null, null)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,
@@ -2414,7 +3376,7 @@ insert into public.recipes (id, source_id, external_id, slug, title, description
   status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, allergens, proteins, diet_tags, core_ingredients, fingerprint,
   attribution, reviewed_by, reviewed_at, calories_per_serving, protein_g, carbs_g, fat_g, nutrition_source)
 values ('7af3b3ac-465c-46db-adc3-58c3004353b0', (select id from public.recipe_sources where name = 'Kitchen Pantry Test Kitchen'), 'mango-sticky-rice', 'mango-sticky-rice-7af3b3', 'Mango Sticky Rice', 'Sweet coconut-soaked glutinous rice with ripe mango and a salty coconut cream.', 'thai', 2, 15, 25, 40, 4, 'dessert', 'fruit', 0, array['stove']::text[], '{}'::text[], '{}'::text[], null, null, null, null, null, null, null, 'public', false,
-  'pending_review', array['dessert']::text[], array['stew', 'steam']::text[], array['rich', 'sweet']::text[], '{}'::text[], null, 'traditional', 'mango-sticky-rice', 'classic', null, null, 'owned', array['sesame']::text[], '{}'::text[], array['pescatarian', 'vegetarian', 'gluten_free', 'dairy_free']::text[], array['glutinou rice', 'coconut milk', 'flour cornstarch', 'mango']::text[], 'coconut milk|flour cornstarch|glutinou rice|mango',
+  'pending_review', array['dessert']::text[], array['stew', 'steam']::text[], array['rich', 'sweet']::text[], '{}'::text[], null, 'traditional', 'mango-sticky-rice', 'classic', null, null, 'owned', array['sesame']::text[], '{}'::text[], array['pescatarian', 'vegetarian', 'vegan', 'gluten_free', 'dairy_free']::text[], array['glutinou rice', 'coconut milk', 'flour cornstarch', 'mango']::text[], 'coconut milk|flour cornstarch|glutinou rice|mango',
   null, null, null, null, null, null, null, null)
 on conflict (id) do update set
   slug = excluded.slug, title = excluded.title, description = excluded.description, cuisine = excluded.cuisine,

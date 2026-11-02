@@ -68,10 +68,14 @@ export function recipeFacets(recipe: Pick<Recipe, "ingredients">): RecipeFacets 
   const required = recipe.ingredients.filter((i) => !i.optional).map((i) => [i.item, i.preparation].filter(Boolean).join(", "));
   const hits = (terms: readonly string[]) => required.some((line) => terms.some((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(line)));
   const dietTags: string[] = [];
-  if (!hits(DIET_EXCLUDED_TERMS.pescatarian)) dietTags.push("pescatarian");
-  if (!hits(DIET_EXCLUDED_TERMS.vegetarian)) dietTags.push("vegetarian");
-  if (!hits(DIET_EXCLUDED_TERMS.vegan)) dietTags.push("vegan");
   const requiredAllergens = new Set(screenAllergens(required, ALL_ALLERGENS).conflicts.map((c) => c.allergen));
+  // Same rules as the dietConflicts filter: term lists plus the allergen rules
+  // (fish/shellfish for vegetarian; dairy and eggs for vegan).
+  const seafood = requiredAllergens.has("fish") || requiredAllergens.has("shellfish");
+  if (!hits(DIET_EXCLUDED_TERMS.pescatarian)) dietTags.push("pescatarian");
+  const vegetarian = !hits(DIET_EXCLUDED_TERMS.vegetarian) && !seafood;
+  if (vegetarian) dietTags.push("vegetarian");
+  if (vegetarian && !hits(DIET_EXCLUDED_TERMS.vegan) && !requiredAllergens.has("milk") && !requiredAllergens.has("egg")) dietTags.push("vegan");
   if (!requiredAllergens.has("gluten") && !requiredAllergens.has("wheat")) dietTags.push("gluten_free");
   if (!requiredAllergens.has("milk")) dietTags.push("dairy_free");
   const core = [...new Set(recipe.ingredients.filter((i) => !i.optional).map((i) => coreIngredient(i.item)).filter((c) => c && !STAPLE_CORE.has(c)))];

@@ -1,10 +1,12 @@
 import { brand } from "@kitchen-pantry/ui-tokens";
+import { socialProviderLabels, type SocialProvider } from "@kitchen-pantry/validation";
 import { Redirect, router } from "expo-router";
-import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Field, Input, Notice, Segmented } from "@/components/controls";
 import { useApp } from "@/lib/app-state";
+import { signInWithProvider, socialSignInOptions } from "@/lib/social-sign-in";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -16,8 +18,32 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ tone: "error" | "info"; text: string } | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [providers, setProviders] = useState<SocialProvider[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (dataMode === "supabase") void socialSignInOptions().then((p) => !cancelled && setProviders(p));
+    return () => {
+      cancelled = true;
+    };
+  }, [dataMode]);
 
   if (dataMode === "preview" || signedIn) return <Redirect href={profile ? "/" : "/onboarding"} />;
+
+  function switchTo(m: Mode) {
+    setMode(m);
+    setErrors({});
+    setMessage(null);
+  }
+
+  async function social(provider: SocialProvider) {
+    setBusy(true);
+    setMessage(null);
+    const result = await signInWithProvider(provider);
+    setBusy(false);
+    // Signed in: the app's session listener moves on to Home or onboarding.
+    if (!result.ok && !result.cancelled) setMessage({ tone: "error", text: result.message });
+  }
 
   async function submit() {
     setBusy(true);
@@ -38,7 +64,7 @@ export default function SignInScreen() {
         setMessage({ tone: "error", text: result.message });
         setErrors(result.fieldErrors ?? {});
       } else if (result.data.needsConfirmation) {
-        setMessage({ tone: "info", text: "Check your email to confirm your account, then sign in." });
+        setMessage({ tone: "info", text: `Check your email (${email.trim()}) for a link to confirm your account, then sign in here. Check spam if it hasn't arrived in a minute.` });
         setMode("sign-in");
       } else {
         router.replace("/onboarding");
@@ -58,16 +84,32 @@ export default function SignInScreen() {
           <View className="mt-8 gap-4">
             <Segmented
               value={mode}
-              onChange={(m) => {
-                setMode(m);
-                setErrors({});
-                setMessage(null);
-              }}
+              onChange={switchTo}
               options={[
                 { value: "sign-in", label: "Sign in" },
                 { value: "sign-up", label: "Create account" },
               ]}
             />
+            {providers.length > 0 ? (
+              <>
+                {providers.map((p) => (
+                  <Button
+                    key={p}
+                    variant="secondary"
+                    size="lg"
+                    label={`${mode === "sign-up" ? "Sign up" : "Continue"} with ${socialProviderLabels[p]}`}
+                    onPress={() => void social(p)}
+                    disabled={busy}
+                  />
+                ))}
+                <Text className="text-center text-[14px] text-muted">or with your email</Text>
+              </>
+            ) : null}
+            {mode === "sign-up" ? (
+              <Text className="text-[15px] text-muted">
+                Create a free account with your email and a password. We&apos;ll email you a link to confirm it.
+              </Text>
+            ) : null}
             <Field label="Email" error={errors.email}>
               <Input
                 value={email}
@@ -81,9 +123,9 @@ export default function SignInScreen() {
               />
             </Field>
             <Field
-              label="Password"
+              label={mode === "sign-up" ? "Choose a password" : "Password"}
               error={errors.password}
-              hint={mode === "sign-up" ? "At least 10 characters." : undefined}
+              hint={mode === "sign-up" ? "At least 10 characters. Mixing letters, numbers and symbols is safest." : undefined}
             >
               <Input
                 value={password}
@@ -103,6 +145,12 @@ export default function SignInScreen() {
               onPress={submit}
               disabled={busy}
             />
+            <Pressable accessibilityRole="button" onPress={() => switchTo(mode === "sign-up" ? "sign-in" : "sign-up")} className="py-1">
+              <Text className="text-center text-[15px] text-muted">
+                {mode === "sign-up" ? "Already have an account? " : "New to Kitchen Pantry? "}
+                <Text className="font-semibold text-foreground underline">{mode === "sign-up" ? "Sign in" : "Create an account"}</Text>
+              </Text>
+            </Pressable>
             <Text className="text-center text-[14px] text-muted">
               Same account as the Kitchen Pantry website.
             </Text>

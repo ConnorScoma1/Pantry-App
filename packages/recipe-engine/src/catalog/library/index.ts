@@ -6,6 +6,7 @@ import { TEST_KITCHEN_SOURCE } from "../build";
 import { dishIdeas } from "./ideas";
 import { worldCourses } from "./world-courses";
 import { worldMains } from "./world-mains";
+import { beginnerMains, plantMains } from "./beginner-mains";
 
 /**
  * The library's first collection: original Test Kitchen recipes written in
@@ -15,7 +16,7 @@ import { worldMains } from "./world-mains";
  */
 export const TEST_KITCHEN_LIBRARY_SOURCE: LibrarySourceInput = { name: TEST_KITCHEN_SOURCE.name, kind: "original", license: "owned" };
 
-export const LIBRARY_COLLECTION_INPUTS: readonly LibraryRecipeInput[] = [...worldMains, ...worldCourses, ...dishIdeas];
+export const LIBRARY_COLLECTION_INPUTS: readonly LibraryRecipeInput[] = [...worldMains, ...beginnerMains, ...plantMains, ...worldCourses, ...dishIdeas];
 
 export interface CollectionReport {
   accepted: number;

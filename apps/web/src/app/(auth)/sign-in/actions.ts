@@ -1,6 +1,6 @@
 "use server";
 
-import { issuesToFieldErrors, magicLinkSchema, signInSchema, signUpSchema } from "@kitchen-pantry/validation";
+import { authErrorMessage, issuesToFieldErrors, magicLinkSchema, signInSchema, signUpSchema, socialProviderSchema } from "@kitchen-pantry/validation";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured, siteUrl } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -31,7 +31,7 @@ export async function signInAction(_prev: AuthFormState, formData: FormData): Pr
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
     // Same message for unknown email and wrong password (no account enumeration).
-    return { status: "error", message: "That email and password don't match.", email: parsed.data.email };
+    return { status: "error", message: authErrorMessage(error.code, "sign-in"), email: parsed.data.email };
   }
   redirect(safeNext(formData.get("next")));
 }
@@ -52,7 +52,7 @@ export async function signUpAction(_prev: AuthFormState, formData: FormData): Pr
   });
   if (error) {
     console.error("[auth] sign-up failed", { code: error.code });
-    return { status: "error", message: "We couldn't create that account. Try a different email or sign in.", email: parsed.data.email };
+    return { status: "error", message: authErrorMessage(error.code, "sign-up"), email: parsed.data.email };
   }
   if (!data.session) {
     return { status: "sent", message: "Check your email to confirm your account.", email: parsed.data.email };
@@ -71,7 +71,33 @@ export async function magicLinkAction(_prev: AuthFormState, formData: FormData):
   });
   if (error) {
     console.error("[auth] magic link failed", { code: error.code });
-    return { status: "error", message: "We couldn't send a link right now. Please try again shortly.", email: parsed.data.email };
+    return { status: "error", message: authErrorMessage(error.code, "link"), email: parsed.data.email };
   }
   return { status: "sent", message: "Check your inbox for a sign-in link.", email: parsed.data.email };
+}
+
+/**
+ * Google / Apple / Facebook: Supabase sends the person to the provider and
+ * back to /auth/callback with a one-time code (PKCE — the verifier stays in
+ * this browser's cookie). A first sign-in creates the account.
+ */
+export async function socialSignInAction(_prev: AuthFormState, formData: FormData): Promise<AuthFormState> {
+  if (!isSupabaseConfigured) return notConfigured();
+  const provider = socialProviderSchema.safeParse(formData.get("provider"));
+  if (!provider.success) return { status: "error", message: authErrorMessage(undefined, "social") };
+  const requested = safeNext(formData.get("next"));
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: provider.data,
+    options: {
+      redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(requested)}`,
+      // Facebook needs to be asked for the email address explicitly.
+      ...(provider.data === "facebook" ? { scopes: "email" } : {}),
+    },
+  });
+  if (error || !data.url) {
+    console.error("[auth] social sign-in failed", { provider: provider.data, code: error?.code });
+    return { status: "error", message: authErrorMessage(error?.code, "social") };
+  }
+  redirect(data.url);
 }

@@ -4,7 +4,7 @@ An AI-powered kitchen assistant: weekly meal plans people actually want to cook,
 
 This repository is a **Turborepo monorepo** containing the web app (Next.js), the mobile app (Expo / React Native), shared packages and the Supabase database.
 
-> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional AI planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it**, **cooking history** and **saved grocery lists** work on web and mobile, and AI can run on Gemini, Claude, OpenAI or Groq (see **AI setup**). Seventeen database migrations are waiting for your review — `…0800_shared_household`, `…0900_store_prices`, `…1000_desserts`, `…1100_seasonal`, `…1200_smart_cart`, `…1300_surprise_me`, `…1400_weekly_planning`, `…1500_smart_savings`, `…1600_household_life`, `…1700_cooking_mode`, `…1800_recipe_library`, `…1900_shopping_optimizer`, `…2000_kitchen_import`, `…2100_use_soon_reminders`, `…2200_saved_grocery_lists`, `…2300_ai_costs` and `…2400_ai_plan_cache` (see the sections below). See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
+> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional AI planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it**, **cooking history** and **saved grocery lists** work on web and mobile, and AI can run on Gemini, Claude, OpenAI or Groq (see **AI setup**). Accounts can use email, an email link, or Google, Apple or Facebook (see **Sign-in and accounts**). Migrations up to `…2400_ai_plan_cache` have been applied to your Supabase project; `…2500_social_sign_in` is new and waiting for your review. See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
 
 ---
 
@@ -159,6 +159,57 @@ docs/ARCHITECTURE.md   Decisions, risks, roadmap
 docs/specs/            Product specs (platform, AI & specials, one store vs best deals)
 ```
 
+## Sign-in and accounts
+
+People can create an account with **email and password**, get an **email sign-in link** (no password), or use **Google, Apple or Facebook**. The web and phone apps share the same accounts. Signing in with a provider for the first time creates the account. The name the provider shares becomes the display name, and Apple "Hide my email" addresses are never used as a name (migration `…2500_social_sign_in`).
+
+The provider buttons appear on their own once a provider is switched on in Supabase. The app reads Supabase's public auth settings, re-checked every 5 minutes, so it never shows a button that would fail.
+
+### 1. Supabase URL settings (do this first)
+
+Supabase dashboard → **Authentication → URL Configuration**:
+
+- **Site URL:** `http://localhost:3000` while developing, later your real site (also set `NEXT_PUBLIC_SITE_URL`).
+- **Redirect URLs:** add `http://localhost:3000/**`, `kitchenpantry://**` (phone app), and `exp://**` (Expo Go while developing). Add `https://your-site/**` when you deploy.
+
+If a confirmation link still lands on the home page instead of `/auth/callback`, the app finishes the sign-in anyway.
+
+### 2. Email sign-up
+
+Supabase's built-in email service is for testing only. It **only sends to addresses on your Supabase organization's team**, and **at most 2 emails an hour**. Anyone else gets "We can't send email to that address yet." Choose one:
+
+- **While developing:** Authentication → Sign In / Providers → **Email** → turn off **Confirm email**. New accounts are signed in straight away. Turn it back on before launch.
+- **Before launch:** Authentication → **Emails → SMTP Settings** → add a real email service (Resend, which the invite emails already use, Postmark, SES, …). This needs a domain you've verified with that service.
+
+### 3. Google
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services → OAuth consent screen**: set it up (app name, support email, and your privacy policy URL before publishing).
+2. **Credentials → Create credentials → OAuth client ID → Web application.** Under **Authorized redirect URIs** add `https://<your-project-ref>.supabase.co/auth/v1/callback`.
+3. Supabase → **Authentication → Sign In / Providers → Google**: switch it on and paste the **Client ID** and **Client secret**.
+
+### 4. Facebook
+
+1. [Meta for Developers](https://developers.facebook.com/) → **Create app** → use case **Authenticate and request data from users with Facebook Login**.
+2. **Facebook Login → Settings → Valid OAuth Redirect URIs:** `https://<your-project-ref>.supabase.co/auth/v1/callback`.
+3. **App settings → Basic:** copy the **App ID** and **App secret**, and add a privacy policy URL.
+4. Supabase → **Facebook**: switch it on and paste them. The app asks for the `email` permission.
+5. The app works for you and your app's testers right away. Before the public can use it, switch the Meta app to **Live**.
+
+### 5. Apple
+
+**Needs a paid Apple Developer Program membership (US$99 a year), so it's your decision.** Apple also requires "Sign in with Apple" in an iPhone app that offers other social sign-ins.
+
+1. [Apple Developer](https://developer.apple.com/account/) → **Certificates, Identifiers & Profiles**:
+   - **Identifiers → App ID** for the app, with **Sign in with Apple** ticked.
+   - **Identifiers → Services ID** (for the web). Turn on Sign in with Apple, set the domain to `<your-project-ref>.supabase.co`, and set the return URL to `https://<your-project-ref>.supabase.co/auth/v1/callback`.
+   - **Keys → +**, tick Sign in with Apple, and download the `.p8` key. Note the **Key ID** and your **Team ID**.
+2. Supabase → **Apple**: switch it on and enter the Services ID (and the app's bundle ID) as client IDs. Generate the secret key as Supabase's Apple guide describes, from the Team ID, Key ID and `.p8` key. **The Apple secret expires every 6 months**, so put a reminder in your calendar to renew it.
+3. Apple shares the person's name only the first time they sign in, and may share a private relay email.
+
+### Phone app
+
+The phone app opens the provider in a secure in-app browser and comes back to `kitchenpantry://auth/callback`. It needs `expo-web-browser`, which is already added to `apps/mobile/package.json`. Run `npx expo install expo-web-browser` once (on Windows, `npx.cmd`) so the version matches your Expo SDK. In Expo Go, the return address starts with `exp://`, which is why it's in the redirect list above.
+
 ## AI setup (optional)
 
 The app works without any AI. A built-in planner picks dinners from recipes that already passed your allergy, diet, restriction, equipment, skill and "Not for us" rules, shares perishable ingredients across the week, and keeps weeknights quick. To add AI (week planning, recipe adaptations, new dinners from leftovers, cooking help), pick a provider. Costs and the full design are in [docs/AI_COSTS.md](docs/AI_COSTS.md).
@@ -287,7 +338,7 @@ The library is built to grow to 10,000–50,000 recipes. The plan, the research 
   - Save menus, or send the shopping list to your grocery list.
 - **Adding recipes.** Convert a licensed feed to the import format, or use `--format schema-org`, then run `npm run recipes:import`. New sources stay hidden until you approve them in `recipe_sources`.
 
-**Review before applying:** `supabase/migrations/20261101001800_recipe_library.sql` adds library columns, search, the server-only import, saved menus and household AI drafts; nothing is deleted. Apply it after `…1700`, re-run `supabase/seed_recipes.sql` (80 complete recipes and 273 dish ideas), then run `supabase/tests/recipe_library_smoke_test.sql` (41 checks).
+**Review before applying:** `supabase/migrations/20261101001800_recipe_library.sql` adds library columns, search, the server-only import, saved menus and household AI drafts; nothing is deleted. Apply it after `…1700`, re-run `supabase/seed_recipes.sql` (103 complete recipes and 273 dish ideas), then run `supabase/tests/recipe_library_smoke_test.sql` (41 checks).
 
 ## Barcodes and receipts
 

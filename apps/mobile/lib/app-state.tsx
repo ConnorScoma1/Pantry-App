@@ -58,7 +58,7 @@ import {
   type Result,
 } from "@kitchen-pantry/database";
 import type { DessertSettings, OnboardingProfile, SeasonalSettings, SkillLevel } from "@kitchen-pantry/shared-types";
-import { defaultOnboardingProfile, signInSchema, signUpSchema, issuesToFieldErrors } from "@kitchen-pantry/validation";
+import { authErrorMessage, defaultOnboardingProfile, signInSchema, signUpSchema, issuesToFieldErrors } from "@kitchen-pantry/validation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { unregisterPush } from "./push";
 import { deviceStorage } from "./storage";
@@ -205,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     const { error } = await supabase.auth.signInWithPassword(parsed.data);
     // Same message for unknown email and wrong password (no account enumeration).
-    if (error) return { ok: false, message: "That email and password don't match." };
+    if (error) return { ok: false, message: authErrorMessage(error.code, "sign-in") };
     return { ok: true, data: null };
   }, []);
 
@@ -217,7 +217,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         return { ok: false, message: "Please check your details.", fieldErrors: issuesToFieldErrors(parsed.error) };
       }
       const { data, error } = await supabase.auth.signUp(parsed.data);
-      if (error) return { ok: false, message: "We couldn't create that account. Try a different email or sign in." };
+      if (error) return { ok: false, message: authErrorMessage(error.code, "sign-up") };
       return { ok: true, data: { needsConfirmation: !data.session } };
     },
     [],

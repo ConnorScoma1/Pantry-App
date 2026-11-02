@@ -2,11 +2,16 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-/** Exchanges the code from a magic link / email confirmation for a session. */
+/** Exchanges the code from a magic link, email confirmation or Google / Apple / Facebook sign-in for a session. */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
   const next = safeNext(searchParams.get("next"));
+  // The person cancelled at Google / Apple / Facebook, or the provider refused.
+  if (!code && (searchParams.has("error") || searchParams.has("error_description"))) {
+    console.error("[auth] provider returned an error", { error: searchParams.get("error_code") ?? searchParams.get("error") });
+    return NextResponse.redirect(`${origin}/sign-in?error=social`);
+  }
 
   if (isSupabaseConfigured && code) {
     const supabase = await createSupabaseServerClient();

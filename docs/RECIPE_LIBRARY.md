@@ -85,6 +85,25 @@ Each part it understood is shown back as a chip.
 **Offline catalogue drafting** (`packages/ai/scripts/draft-library.ts`) uses the Message Batches API at half price. The drafts it produces go through the import tool and a person's review.
 
 **Initial collection.** 56 new original Test Kitchen recipes, imported through the pipeline. Together with the existing 24, that's **80 complete recipes in 28 cuisines**. Every template's core courses are covered. There are also **273 dish ideas across 73 cuisines**.
+
+**Beginner and plant-based dinners (added 2026-11-02).** A first-time cook (skill 1) could only be offered 6 dinners, so a 7-night week couldn't be filled, and a vegan household got 2. There are now 23 more original recipes (`catalog/library/beginner-mains.ts`):
+- **16 beginner dinners.** Each needs only a stove and/or an oven, has few ingredients and plain steps, and gives the USDA safe temperature on every step that cooks meat, poultry, fish or eggs.
+- **7 vegan, nut-free dinners.**
+
+That brings it to **103 complete recipes**. Suitable dinners per household type, with a typical home kitchen:
+
+| Household | Before | Now |
+|---|---:|---:|
+| Beginner | 6 | 27 |
+| Vegetarian beginner | 3 | 14 |
+| Vegan | 2 | 11 |
+| Vegan beginner | 0 | 7 |
+
+They start as "not yet reviewed", like the rest.
+
+While adding them, two diet-tag errors in the stored tags were fixed, so the library's search filters now agree with the meal-planning filter:
+- **Wrong "vegan" or "vegetarian" tags.** Black Bean & Cheddar Quesadillas and Creamy Coleslaw were tagged vegan, and Pan-Seared Halibut was tagged vegetarian.
+- **Plant ingredients treated as dairy.** Coconut milk, peanut butter and cream of tartar no longer count as dairy, so Mango Sticky Rice is now correctly vegan.
 - They're labelled honestly. Everything is "Not yet reviewed" until you or a reviewer sign it off: `update recipes set status = 'reviewed', reviewed_by = '…', reviewed_at = now() where …`.
 - "Traditional" is used only where the method and core ingredients follow the dish's origin. Otherwise it's "Adapted", with the change named in the description.
 
@@ -120,8 +139,8 @@ Not verified: Spoonacular's real catalogue size; Edamam's full terms; the licenc
 
 ## 4. Recommended way to reach 10,000+
 
-1. **Now (built):** 80 original recipes and 273 dish ideas; the import pipeline, search, variety and menus.
-2. **Review the collection.** Have a person (ideally someone who cooks) review and test the 80 recipes and mark them reviewed or tested. This is what lets the app say "Kitchen-tested".
+1. **Now (built):** 103 original recipes and 273 dish ideas; the import pipeline, search, variety and menus.
+2. **Review the collection.** Have a person (ideally someone who cooks) review and test the 103 recipes and mark them reviewed or tested. This is what lets the app say "Kitchen-tested".
 3. **License a core of 5,000–10,000 recipes you can host.** Get quotes from Edamam Recipe Licensing, CookButler and StockFood. The contract must cover:
    - hosting for the term, image rights, the right to edit and to calculate nutrition;
    - US territory;

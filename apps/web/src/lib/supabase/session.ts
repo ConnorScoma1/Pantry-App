@@ -31,9 +31,26 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   // API routes answer 401 themselves (the phone app sends a bearer token, not cookies).
   if (pathname.startsWith("/api/")) return response;
+  // Supabase sends people to the Site URL instead of /auth/callback when the
+  // callback isn't in its allowed redirect URLs. Finish the sign-in anyway.
+  if (!user && !pathname.startsWith("/auth/")) {
+    const code = searchParams.get("code");
+    if (code) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/callback";
+      url.search = `?code=${encodeURIComponent(code)}&next=${encodeURIComponent(pathname === "/sign-in" ? "/" : pathname)}`;
+      return NextResponse.redirect(url);
+    }
+    if (searchParams.has("error_description") || searchParams.has("error_code")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/sign-in";
+      url.search = "?error=social";
+      return NextResponse.redirect(url);
+    }
+  }
   if (!user && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/sign-in";

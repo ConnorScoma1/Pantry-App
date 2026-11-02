@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ButtonLink } from "@/components/ui/button";
 import { BrandLockup } from "@/components/shell/brand";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { socialSignInOptions } from "@/lib/supabase/providers";
 import { SignInForm } from "./sign-in-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -10,9 +11,10 @@ export const metadata: Metadata = { title: "Sign in" };
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; mode?: string }>;
 }) {
-  const { next, error } = await searchParams;
+  const { next, error, mode } = await searchParams;
+  const providers = await socialSignInOptions();
 
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
@@ -23,7 +25,13 @@ export default async function SignInPage({
           <p className="mt-2 text-[17px] text-muted">{brand.tagline}</p>
 
           {isSupabaseConfigured ? (
-            <SignInForm next={next ?? "/"} linkError={error === "link"} />
+            <SignInForm
+              next={next ?? "/"}
+              linkError={error === "link"}
+              socialError={error === "social"}
+              providers={providers}
+              startMode={mode === "sign-up" ? "sign-up" : "sign-in"}
+            />
           ) : (
             <div className="mt-8 rounded-card bg-surface p-6">
               <p className="font-semibold">Running in preview mode</p>

@@ -84,3 +84,15 @@ test("validateOnboardingStep checks only that step", async () => {
   assert.deepEqual(validateOnboardingStep("budget", p), {});
   assert.ok(validateOnboardingStep("goals", p).ranked);
 });
+
+test("social providers: only the ones Supabase reports as on", async () => {
+  const { enabledSocialProviders, authErrorMessage } = await import("./auth");
+  assert.deepEqual(enabledSocialProviders({ external: { google: true, apple: false, facebook: true, github: true, email: true } }), ["google", "facebook"]);
+  assert.deepEqual(enabledSocialProviders({ external: { google: "yes" } }), []);
+  assert.deepEqual(enabledSocialProviders(null), []);
+  assert.deepEqual(enabledSocialProviders({}), []);
+  // Sign-in never says whether an account exists.
+  assert.equal(authErrorMessage("invalid_credentials", "sign-in"), authErrorMessage("user_not_found", "sign-in"));
+  assert.match(authErrorMessage("over_email_send_rate_limit", "sign-up"), /Too many emails/);
+  assert.match(authErrorMessage(undefined, "sign-up"), /couldn't create/);
+});

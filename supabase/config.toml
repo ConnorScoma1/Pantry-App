@@ -34,7 +34,7 @@ jwt_expiry = 3600
 enable_signup = true
 
 [auth.email]
-enable_signup = true
+enabled = true
 double_confirm_changes = true
 # Off for local development so you can sign in immediately. Turn on in production.
 enable_confirmations = false

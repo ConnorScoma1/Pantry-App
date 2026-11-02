@@ -16,6 +16,8 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,
+        // Google / Apple / Facebook come back with a one-time code (see social-sign-in.ts).
+        flowType: "pkce",
       },
     })
   : null;

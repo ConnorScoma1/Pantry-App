@@ -85,18 +85,10 @@ DIET_EXCLUDED_TERMS.vegetarian = [
   "mussel",
   "oyster",
 ];
-DIET_EXCLUDED_TERMS.vegan = [
-  ...DIET_EXCLUDED_TERMS.vegetarian,
-  "egg",
-  "milk",
-  "butter",
-  "cream",
-  "cheese",
-  "yogurt",
-  "honey",
-  "ghee",
-  "whey",
-];
+// Dairy and eggs come from the allergen rules (dietConflicts), which know
+// "coconut milk", "peanut butter" and "cream of tartar" aren't dairy and
+// "Parmesan" is. Only what no allergen covers is listed here.
+DIET_EXCLUDED_TERMS.vegan = [...DIET_EXCLUDED_TERMS.vegetarian, "honey", "gelatin"];
 
 /**
  * Diet style and dietary restrictions, as hard filters. The term lists are
