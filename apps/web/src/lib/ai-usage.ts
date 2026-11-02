@@ -21,15 +21,18 @@ export type AiOutcome = "ok" | "fallback" | "cached" | "unused";
  */
 export async function reserveAiRequest(db: SupabaseLike, feature: AiFeature, dailyLimit: number, config: AiConfig | null = readAiConfig()): Promise<string | null> {
   if (dailyLimit <= 0) return null;
-  const monthly = config && (config.monthlyPersonLimit != null || config.monthlyBudgetUsd != null);
-  const { data, error } = monthly
-    ? await db.rpc("reserve_ai_request", {
-        feature_name: feature,
-        daily_limit: dailyLimit,
-        monthly_limit: config.monthlyPersonLimit ?? null,
-        monthly_budget_microusd: config.monthlyBudgetUsd == null ? null : Math.round(config.monthlyBudgetUsd * 1_000_000),
-      })
-    : await db.rpc("reserve_ai_request", { feature_name: feature, daily_limit: dailyLimit });
+  const monthly = Boolean(config && (config.monthlyPersonLimit != null || config.monthlyBudgetUsd != null));
+  // Always the 4-argument version: it also checks the subscription (migration …2800).
+  let { data, error } = await db.rpc("reserve_ai_request", {
+    feature_name: feature,
+    daily_limit: dailyLimit,
+    monthly_limit: config?.monthlyPersonLimit ?? null,
+    monthly_budget_microusd: config?.monthlyBudgetUsd == null ? null : Math.round(config.monthlyBudgetUsd * 1_000_000),
+  });
+  // Before …2300 is applied the 4-argument version doesn't exist; without monthly caps the old one is fine.
+  if (error && (error as { code?: string }).code === "PGRST202" && !monthly) {
+    ({ data, error } = await db.rpc("reserve_ai_request", { feature_name: feature, daily_limit: dailyLimit }));
+  }
   if (error) {
     // PGRST202 here means monthly caps are set but the …2300_ai_costs migration isn't applied: AI stays off.
     console.error("[ai] reserve failed", { code: (error as { code?: string }).code });

@@ -273,7 +273,7 @@ export function RecipesView() {
             type="button"
             onClick={() => setShowHidden((v) => !v)}
             aria-expanded={showHidden}
-            className="flex w-full items-center justify-between gap-3 text-left"
+            className="flex min-h-11 w-full items-center justify-between gap-3 text-left"
           >
             <span className="flex items-center gap-2.5">
               <ShieldAlert className="size-5 text-muted" aria-hidden />

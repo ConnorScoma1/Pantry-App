@@ -98,6 +98,12 @@ Two runs of `npm run ai:eval` (12 households each):
   - Claims about using up food that wasn't in the kitchen. These are now dropped.
 - **Reliability:** 3 of 12 weeks fell back to the built-in plan each run because the free tier was busy or slow (rate limits, and replies taking 20–45 s). Busy replies are retried once, and a week now gives up after 30 s and uses the standard plan. A paid key should mostly remove this; in the runs, successful replies took 2–8 s.
 - **Cost:** $0.016–0.017 for 12 weeks (about $0.0014 per week), in line with the estimate.
+- **Built-in planner (the free fallback), after the 2026-11-02 fixes:** 68/69 checks, up from 64/69. Three fixes:
+  - The same back-to-back protein repair the AI's weeks get.
+  - A firmer limit on long weeknight dinners.
+  - New beginner and vegan recipes, so those weeks are full.
+
+  The one remaining miss is "≥ 4 traditional dishes", which is where the AI is better.
 
 ## Changed alongside this work: diet safety
 

@@ -2,11 +2,12 @@ import { brand } from "@kitchen-pantry/ui-tokens";
 import { socialProviderLabels, type SocialProvider } from "@kitchen-pantry/validation";
 import { Redirect, router } from "expo-router";
 import { useEffect, useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Button, Field, Input, Notice, Segmented } from "@/components/controls";
 import { useApp } from "@/lib/app-state";
 import { signInWithProvider, socialSignInOptions } from "@/lib/social-sign-in";
+import { apiUrl } from "@/lib/config";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -154,6 +155,13 @@ export default function SignInScreen() {
             <Text className="text-center text-[14px] text-muted">
               Same account as the Kitchen Pantry website.
             </Text>
+            {apiUrl ? (
+              <Text className="text-center text-[13px] text-muted">
+                By continuing you agree to the{" "}
+                <Text accessibilityRole="link" className="underline" onPress={() => void Linking.openURL(`${apiUrl}/terms`)}>terms of use</Text> and{" "}
+                <Text accessibilityRole="link" className="underline" onPress={() => void Linking.openURL(`${apiUrl}/privacy`)}>privacy policy</Text>.
+              </Text>
+            ) : null}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

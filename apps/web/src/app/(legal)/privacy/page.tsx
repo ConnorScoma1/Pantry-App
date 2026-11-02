@@ -66,6 +66,7 @@ export default function PrivacyPage() {
         <li><strong>Mapbox</strong>: distances and routes for Best Deals, only when you use it.</li>
         <li><strong>Resend</strong>: emails such as household invites.</li>
         <li><strong>Expo</strong>: delivers push notifications to your phone, if you turn them on.</li>
+        <li><strong>Stripe</strong>, <strong>Apple</strong>, <strong>Google</strong> and <strong>RevenueCat</strong>: take subscription payments and tell us whether your subscription is active. We never see or store your card details; we keep only the subscription&apos;s status, renewal date and the store&apos;s reference for it.</li>
       </UL>
       <P>They process information on our behalf to provide these parts of the service. We may also share information if the law requires it.</P>
 

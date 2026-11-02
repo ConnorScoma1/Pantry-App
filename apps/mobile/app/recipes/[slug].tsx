@@ -248,7 +248,7 @@ function RecipeDetail({ slug }: { slug: string }) {
       {cookable ? (
       <>
       {/* Ingredients */}
-      <View className="mt-8 flex-row items-center justify-between gap-3">
+      <View className="mt-8 flex-row flex-wrap items-center justify-between gap-3">
         <Text accessibilityRole="header" className="text-2xl font-bold tracking-tight text-foreground">
           Ingredients
         </Text>
@@ -318,8 +318,8 @@ function RecipeDetail({ slug }: { slug: string }) {
                       accessibilityLabel={`Swaps for ${i.item}`}
                       accessibilityState={{ expanded: open }}
                       onPress={() => setSwapOpen(open ? null : i.position)}
-                      hitSlop={8}
-                      className="rounded-full px-2 py-0.5"
+                      hitSlop={10}
+                      className="rounded-full px-2.5 py-1.5"
                     >
                       <Text className="text-[14px] font-semibold text-accent">Swap?</Text>
                     </Pressable>

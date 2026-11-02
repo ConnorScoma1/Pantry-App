@@ -4,7 +4,7 @@ An AI-powered kitchen assistant: weekly meal plans people actually want to cook,
 
 This repository is a **Turborepo monorepo** containing the web app (Next.js), the mobile app (Expo / React Native), shared packages and the Supabase database.
 
-> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional AI planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it**, **cooking history** and **saved grocery lists** work on web and mobile, and AI can run on Gemini, Claude, OpenAI or Groq (see **AI setup**). Accounts can use email, an email link, or Google, Apple or Facebook (see **Sign-in and accounts**). Migrations up to `…2400_ai_plan_cache` have been applied to your Supabase project; `…2500_social_sign_in`, `…2600_delete_account` and `…2700_export_my_data` are new and waiting for your review. See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
+> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional AI planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import**, **use-soon reminders**, **Use it before you lose it**, **cooking history** and **saved grocery lists** work on web and mobile, and AI can run on Gemini, Claude, OpenAI or Groq (see **AI setup**). Accounts can use email, an email link, or Google, Apple or Facebook (see **Sign-in and accounts**). Migrations up to `…2400_ai_plan_cache` have been applied to your Supabase project; `…2500_social_sign_in`, `…2600_delete_account` and `…2700_export_my_data` have been applied; `…2800_subscriptions` and `…2900_billing_fixes` are new and waiting for your review. See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
 
 ---
 
@@ -160,20 +160,49 @@ docs/ARCHITECTURE.md   Decisions, risks, roadmap
 docs/specs/            Product specs (platform, AI & specials, one store vs best deals)
 ```
 
+## Subscriptions (free trial, then $24.99 a year)
+
+Built and **switched off**: until you turn it on, everyone has full access and nothing is charged. Nothing has been signed up for. Needs migrations `…2800_subscriptions` and `…2900_billing_fixes` (test: `subscriptions_smoke_test.sql`, 29 checks). An independent review found several problems, and `…2900` fixes them.
+
+**How it works:**
+- New accounts get a free trial (default 14 days) with everything included. When you first switch billing on, existing accounts start their trial at that moment, so nobody is locked out on day one.
+- After that, the app shows a subscribe page, but Profile and Household stay open (subscribe, download data, delete account), and nothing saved is lost.
+- One subscription covers everyone in the subscriber's **active** household.
+- AI requests are also refused in the database for people without access, so an expired account can't run up AI costs.
+- **Website:** Stripe Checkout. Subscribing during the trial keeps the rest of it (billing starts when the trial ends). Profile → Subscription → "Manage or cancel" opens Stripe's customer portal.
+- **iPhone / Android:** in-app purchase through RevenueCat (App Store / Google Play). The price shown is the store's own. Without RevenueCat set up, the app offers "Subscribe on the website", which US App Store rules allow.
+- If someone deletes their account on the website, renewal is turned off first; the database refuses to delete an account whose website subscription still renews. App Store and Google Play subscriptions must be cancelled in the store; the deletion screens say so.
+- Access is updated only by the stores' own webhooks (`/api/billing/stripe/webhook`, `/api/billing/revenuecat/webhook`). Signatures are checked and each event is applied once. For Stripe, the current subscription is re-read from Stripe, because events can arrive out of order. A failed renewal payment keeps access for a 14-day grace period, not the whole unpaid year. "Restore purchases" on another account moves an App Store or Google Play subscription to that account (RevenueCat transfer).
+
+**Setting it up (each step is free to set up; the stores take their share when people pay):**
+1. **Stripe:**
+   - Create a product with a **$24.99 yearly** price, and put its id in `STRIPE_PRICE_ID` along with `STRIPE_SECRET_KEY`.
+   - Under Developers → Webhooks, add `https://your-site/api/billing/stripe/webhook` with the events `customer.subscription.created`, `customer.subscription.updated` and `customer.subscription.deleted`. Put its signing secret in `STRIPE_WEBHOOK_SECRET`.
+   - Turn on the customer portal (Settings → Billing → Customer portal).
+   - Use test keys (`sk_test_…`) first.
+2. **App Store / Google Play:** create a yearly auto-renewing subscription in App Store Connect and Play Console.
+3. **RevenueCat:**
+   - Create a project, add both apps and the product, and make an entitlement (e.g. `premium`) and a default offering with an Annual package.
+   - Under Integrations → Webhooks, add `https://your-site/api/billing/revenuecat/webhook` with an Authorization header value. Use a long random string (24+ characters) and put the same value in `REVENUECAT_WEBHOOK_AUTH`. Set `REVENUECAT_ENTITLEMENT=premium`. Sandbox purchases count by default, so Apple's reviewers and your TestFlight testers can unlock the app; only testers you add can make them. Set `REVENUECAT_SANDBOX=off` to ignore them.
+   - In the phone app: run `npx expo install react-native-purchases`, set `EXPO_PUBLIC_REVENUECAT_IOS_KEY` / `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (RevenueCat's public SDK keys), and use a development build (`npx eas build --profile development`). Expo Go can't make real purchases.
+4. **Turn it on** in the Supabase SQL editor once purchases work: `update public.billing_settings set enforced = true;` The same row has `trial_days` (0–90) and `household_sharing`.
+5. If the price changes, update the store and Stripe prices and `NEXT_PUBLIC_SUBSCRIPTION_PRICE` (the website's label; Stripe and the stores always show the real amount before anyone pays).
+
 ## Privacy policy and account deletion
 
 The app stores require both before publishing, and so do Google and Facebook sign-in (each asks for a privacy policy URL).
 
 - **`/privacy`:** a plain-language privacy policy. It describes what the app actually stores and which services it uses (Supabase, your web host, Gemini, Kroger, Mapbox, Resend, Expo and the sign-in providers). Anyone can read it without an account.
+- **`/terms`:** plain-language terms of use. They cover the allergy and food-safety disclaimer (read labels; filtering can't guarantee a product is allergen-free), AI suggestions, store prices, accounts and shared households, and fair use. They include the subscription terms (trial, yearly renewal, cancelling, refunds through the store you paid). A governing-law section still needs adding.
 - **`/delete-account`:** a public page explaining how to delete an account (Google Play asks for this link).
 - **Profile → Your data → Download my data** (website; the phone app links there): one JSON file of everything the account can see. Row-level security decides every row, exactly as in the app, so nothing from other households is included. It leaves out server-only tables and public library recipes. Needs migration `…2700_export_my_data` (test: `export_my_data_smoke_test.sql`, 9 checks).
 - **Profile → Delete account** (web and phone): type DELETE to permanently delete the account. A household that was only that person's is deleted with everything in it. A shared household stays with the other members: if they were the owner, the longest-standing member becomes the owner, and the household's combined allergies are recalculated without them. Things they added stay, with "added by" cleared. This needs migration `…2600_delete_account` (test: `delete_account_smoke_test.sql`, 12 checks).
 
 Before launch:
 1. Set `NEXT_PUBLIC_CONTACT_EMAIL`. Until you do, the pages show a highlighted placeholder.
-2. Have the policy reviewed (it isn't legal advice), and update it whenever you add a service or feature. Change `privacyUpdated` in `apps/web/src/lib/legal.ts` when it changes.
+2. Have the policy and terms reviewed (they aren't legal advice), and update them whenever you add a service or feature. When either changes, update `privacyUpdated` / `termsUpdated` in `apps/web/src/lib/legal.ts`.
 3. The policy assumes a **paid** Gemini key; Google may use free-tier prompts to improve its products.
-4. Use `https://your-site/privacy` as the privacy policy URL for Google, Facebook, Apple and the app stores.
+4. Use `https://your-site/privacy` as the privacy policy URL, and `https://your-site/terms` as the terms URL, for Google, Facebook, Apple and the app stores.
 
 ## Sign-in and accounts
 

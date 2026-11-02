@@ -32,7 +32,8 @@ export function DeleteAccountCard({ shared }: { shared: boolean }) {
         {shared
           ? "Your shared household stays with the other members, along with what's in it (kitchen, plans, lists). If you're the owner, the longest-standing member becomes the owner."
           : "Your household and everything in it (kitchen, meal plans, grocery lists, saved recipes) are deleted too."}{" "}
-        This can&apos;t be undone. <Link href="/privacy" className="underline underline-offset-4">Privacy policy</Link>
+        A website subscription is cancelled automatically; an App Store or Google Play subscription isn&apos;t, so cancel
+        that in your store account first. This can&apos;t be undone. <Link href="/privacy" className="underline underline-offset-4">Privacy policy</Link>
       </Hint>
       {!open ? (
         <Button variant="danger" className="mt-4" icon={<Trash2 className="size-4" aria-hidden />} onClick={() => setOpen(true)}>

@@ -323,7 +323,7 @@ export function RecipeDetailView({ slug }: { slug: string }) {
                           aria-expanded={open}
                           aria-label={`Swaps for ${i.item}`}
                           onClick={() => setSwapOpen(open ? null : i.position)}
-                          className="-my-1 shrink-0 rounded-full px-3 py-1 text-[14px] font-semibold text-accent hover:bg-background"
+                          className="-my-2.5 inline-flex min-h-11 shrink-0 items-center rounded-full px-3 text-[14px] font-semibold text-accent hover:bg-background"
                         >
                           Swap?
                         </button>

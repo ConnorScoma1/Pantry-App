@@ -216,7 +216,7 @@ export function OnboardingFlow({
                     onClick={() => goTo(i)}
                     aria-label={`${s.title}${state === "done" ? " (done)" : state === "current" ? " (current step)" : ""}`}
                     aria-current={state === "current" ? "step" : undefined}
-                    className="block w-full py-1.5 disabled:cursor-default"
+                    className="-my-2 block w-full py-3.5 disabled:cursor-default"
                   >
                     <span
                       className={cn(

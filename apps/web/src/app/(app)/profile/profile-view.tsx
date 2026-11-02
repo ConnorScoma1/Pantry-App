@@ -9,6 +9,7 @@ import { useProfile } from "@/components/profile/profile-provider";
 import { RemindersCard } from "@/components/kitchen/reminders-card";
 import { DeleteAccountCard } from "@/components/profile/delete-account-card";
 import { YourDataCard } from "@/components/profile/your-data-card";
+import { SubscriptionCard } from "@/components/billing/subscription-card";
 import { SeasonalSettingsCard } from "@/components/seasonal/seasonal-settings";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, Hint, PageHeader } from "@/components/ui/card";
@@ -26,7 +27,9 @@ export function ProfileView() {
   const [message, setMessage] = useState<string | null>(null);
 
   const [today] = useState(() => todayIso());
+  const [justSubscribed, setJustSubscribed] = useState(false);
   useEffect(() => setTheme(readThemePreference()), []);
+  useEffect(() => setJustSubscribed(new URLSearchParams(window.location.search).has("subscribed")), []);
 
   function changeSkill(level: SkillLevel) {
     const previous = profile;
@@ -95,7 +98,7 @@ export function ProfileView() {
     <div className="animate-enter">
       <PageHeader title="Profile" />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <Eyebrow>Account</Eyebrow>
           {mode === "supabase" ? (
@@ -117,6 +120,8 @@ export function ProfileView() {
             </>
           )}
         </Card>
+
+        {mode === "supabase" ? <SubscriptionCard justSubscribed={justSubscribed} /> : null}
 
         <Card>
           <Eyebrow>Appearance</Eyebrow>
@@ -270,6 +275,10 @@ export function ProfileView() {
       <p className="mt-6 text-center text-[14px] text-muted">
         <Link href="/privacy" className="underline underline-offset-4">
           Privacy policy
+        </Link>{" "}
+        ·{" "}
+        <Link href="/terms" className="underline underline-offset-4">
+          Terms of use
         </Link>
       </p>
 

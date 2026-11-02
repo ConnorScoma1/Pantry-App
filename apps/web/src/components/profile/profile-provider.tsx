@@ -1,6 +1,6 @@
 "use client";
 
-import type { OnboardingProfile } from "@kitchen-pantry/shared-types";
+import type { AccessStatus, OnboardingProfile } from "@kitchen-pantry/shared-types";
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { loadPreviewProfile, savePreviewProfile } from "@/lib/preview-store";
@@ -13,7 +13,11 @@ interface ProfileContextValue {
   profile: OnboardingProfile;
   /** Replace the profile in local state (and in browser storage in preview mode). */
   updateLocal: (profile: OnboardingProfile) => void;
+  /** Subscription access; always open in preview mode or while billing is off. */
+  access: AccessStatus;
 }
+
+const OPEN: AccessStatus = { enforced: false, access: true, reason: "trial", trialEndsAt: null, trialDays: 14, subscription: null };
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
 
@@ -21,11 +25,13 @@ export function ProfileProvider({
   mode,
   email,
   initialProfile,
+  access = OPEN,
   children,
 }: {
   mode: DataMode;
   email: string | null;
   initialProfile: OnboardingProfile | null;
+  access?: AccessStatus;
   children: ReactNode;
 }) {
   const router = useRouter();
@@ -62,7 +68,7 @@ export function ProfileProvider({
   if (!checked || !profile) return <ShellSkeleton />;
 
   return (
-    <ProfileContext.Provider value={{ mode, email, profile, updateLocal }}>{children}</ProfileContext.Provider>
+    <ProfileContext.Provider value={{ mode, email, profile, updateLocal, access: mode === "supabase" ? access : OPEN }}>{children}</ProfileContext.Provider>
   );
 }
 

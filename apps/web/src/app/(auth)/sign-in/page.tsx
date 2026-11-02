@@ -52,7 +52,9 @@ export default async function SignInPage({
             </div>
           )}
           <p className="mt-8 text-center text-[14px] text-muted">
-            <Link href="/privacy" className="underline underline-offset-4">Privacy policy</Link>
+            By continuing you agree to the{" "}
+            <Link href="/terms" className="underline underline-offset-4">terms of use</Link> and{" "}
+            <Link href="/privacy" className="underline underline-offset-4">privacy policy</Link>.
           </p>
         </div>
       </div>

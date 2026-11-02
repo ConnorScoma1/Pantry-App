@@ -1,5 +1,5 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { Redirect, Tabs } from "expo-router";
+import { Redirect, Tabs, useSegments } from "expo-router";
 import type { ComponentProps } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { useApp } from "@/lib/app-state";
@@ -19,7 +19,8 @@ const tabs: Array<{ name: string; title: string; icon: IconName; activeIcon: Ico
 
 export default function TabsLayout() {
   const c = useThemeColors();
-  const { loading, signedIn, profile } = useApp();
+  const { loading, signedIn, profile, access } = useApp();
+  const segments = useSegments();
 
   // Gate the app: sign in (Supabase mode) → finish onboarding → tabs.
   if (loading) {
@@ -31,6 +32,8 @@ export default function TabsLayout() {
   }
   if (!signedIn) return <Redirect href="/sign-in" />;
   if (!profile) return <Redirect href="/onboarding" />;
+  // Trial or subscription over (billing switched on): the paywall, but Profile stays open.
+  if (access.enforced && !access.access && segments[segments.length - 1] !== "profile") return <Redirect href="/subscribe" />;
 
   return (
     <Tabs

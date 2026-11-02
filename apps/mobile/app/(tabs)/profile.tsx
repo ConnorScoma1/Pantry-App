@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { Button, Chip, ChipRow, ChoiceCard, Notice } from "@/components/controls";
 import { RemindersCard } from "@/components/kitchen/reminders-card";
-import { DeleteAccountCard, YourDataCard } from "@/components/profile/delete-account-card";
+import { DeleteAccountCard, SubscriptionCard, YourDataCard } from "@/components/profile/delete-account-card";
 import { SeasonalSettingsCard } from "@/components/seasonal/seasonal-settings";
 import { Body, Card, CardTitle, Eyebrow, Screen } from "@/components/ui";
 import { todayIso } from "@/lib/use-kitchen";
@@ -47,6 +47,8 @@ export default function ProfileScreen() {
           </>
         )}
       </Card>
+
+      {mode === "supabase" ? <SubscriptionCard /> : null}
 
       <Card>
         <Eyebrow>Cooking skill</Eyebrow>

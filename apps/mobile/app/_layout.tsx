@@ -21,6 +21,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="sign-in" options={{ gestureEnabled: false }} />
           <Stack.Screen name="auth/callback" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="subscribe" options={{ gestureEnabled: false }} />
           <Stack.Screen name="onboarding" options={{ gestureEnabled: false }} />
           <Stack.Screen name="household" />
           <Stack.Screen name="cart" />

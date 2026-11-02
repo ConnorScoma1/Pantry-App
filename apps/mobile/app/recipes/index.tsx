@@ -107,7 +107,7 @@ function RecipesScreen() {
           placeholderTextColor={c.subtle}
           accessibilityLabel="Search recipes"
           returnKeyType="search"
-          className="h-full flex-1 text-[17px] text-foreground"
+          className="h-full min-w-0 flex-1 text-[17px] text-foreground"
         />
       </View>
 

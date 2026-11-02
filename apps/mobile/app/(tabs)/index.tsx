@@ -13,6 +13,7 @@ import { PlanReadyCard } from "@/components/plan/weekly-drafts";
 import { SavingsSnapshot } from "@/components/savings-snapshot";
 import { TonightSection } from "@/components/household/who-is-eating";
 import { seasonalContext } from "@kitchen-pantry/recipe-engine";
+import { trialDaysLeft } from "@kitchen-pantry/database";
 import { Body, Card, CardTitle, Eyebrow, PrimaryButton, Screen } from "@/components/ui";
 import { dayLabel } from "@/components/plan/meal-card";
 import { addDays, nightsLeft, startOfWeek } from "@kitchen-pantry/meal-planner";
@@ -30,7 +31,8 @@ function greeting(date = new Date()): string {
 
 export default function HomeScreen() {
   const c = useThemeColors();
-  const { mode } = useApp();
+  const { mode, access } = useApp();
+  const trialLeft = mode === "supabase" && access.enforced && access.reason === "trial" ? trialDaysLeft(access) : null;
   const profile = useProfile();
   const kitchen = useKitchen();
   const recipes = useRecipes();
@@ -50,6 +52,14 @@ export default function HomeScreen() {
     <Screen title="Your week" subtitle={greeting()}>
       {mode === "preview" ? (
         <Notice tone="warning">Preview mode — Supabase isn&apos;t connected, so everything is saved on this device only.</Notice>
+      ) : null}
+
+      {trialLeft !== null && trialLeft <= 3 ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push("/subscribe")} className="rounded-card bg-accent-soft px-5 py-4">
+          <Text className="text-[15px] leading-5 text-foreground">
+            <Text className="font-bold">{trialLeft <= 1 ? "Your free trial ends today." : `Your free trial ends in ${trialLeft} days.`}</Text> Tap to subscribe and keep everything going.
+          </Text>
+        </Pressable>
       ) : null}
 
       <PlanReadyCard />

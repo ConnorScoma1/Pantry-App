@@ -14,3 +14,4 @@ export * from "./savings";
 export * from "./household-life";
 export * from "./menus";
 export * from "./shopping";
+export * from "./billing";

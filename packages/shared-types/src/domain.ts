@@ -529,3 +529,20 @@ export interface ActivityEvent {
   subject: string;
   detail: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Subscriptions (free trial, then paid) — see migration …2800_subscriptions.
+// ---------------------------------------------------------------------------
+export type AccessReason = "trial" | "subscribed" | "household" | "expired";
+export type SubscriptionSource = "stripe" | "app_store" | "play_store" | "revenuecat" | "grant";
+
+export interface AccessStatus {
+  /** False until the operator switches billing on: everyone has full access. */
+  enforced: boolean;
+  access: boolean;
+  reason: AccessReason;
+  trialEndsAt: string | null;
+  trialDays: number;
+  /** This person's own latest subscription, if any. */
+  subscription: { source: SubscriptionSource; status: string; expiresAt: string | null; willRenew: boolean; active: boolean } | null;
+}

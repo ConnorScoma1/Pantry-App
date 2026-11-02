@@ -16,6 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       mode={session.mode}
       email={session.mode === "supabase" ? (session.user?.email ?? null) : null}
       initialProfile={session.mode === "supabase" ? session.profile : null}
+      access={session.mode === "supabase" ? session.access : undefined}
     >
       <AppShell>{children}</AppShell>
     </ProfileProvider>

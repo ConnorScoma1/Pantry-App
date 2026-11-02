@@ -21,6 +21,12 @@ export default function DeleteAccountInfoPage() {
         <li>Can&apos;t sign in? Email <Contact email={contactEmail} /> from the address on your account and we&apos;ll delete it for you.</li>
       </UL>
 
+      <H2>If you subscribe</H2>
+      <UL>
+        <li>A subscription you bought on the website is cancelled automatically when you delete your account on the website.</li>
+        <li>An App Store or Google Play subscription isn&apos;t: cancel it in your store account (iPhone Settings → your name → Subscriptions, or Play Store → Payments &amp; subscriptions).</li>
+      </UL>
+
       <H2>What&apos;s deleted</H2>
       <UL>
         <li>Your account and sign-in, your profile, allergies, diet and preferences, ratings and favourites, cooking history, notifications and phone registrations, and any connected store account.</li>

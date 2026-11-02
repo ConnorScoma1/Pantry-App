@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { CircleUser } from "lucide-react";
 import { useProfile } from "@/components/profile/profile-provider";
 import { cn } from "@/lib/cn";
+import { Paywall } from "@/components/billing/paywall";
 import { BrandLockup, BrandMark } from "./brand";
 import { NotificationBell } from "./notification-bell";
 import { isActive, navItems } from "./nav-items";
@@ -16,7 +17,10 @@ import { isActive, navItems } from "./nav-items";
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const { mode } = useProfile();
+  const { mode, access } = useProfile();
+  // Trial or subscription over (and billing switched on): the app shows the
+  // paywall; Profile and Household stay open (subscribe, export, delete, leave).
+  const locked = mode === "supabase" && access.enforced && !access.access && !pathname.startsWith("/profile") && !pathname.startsWith("/household");
 
   return (
     <div className="min-h-dvh lg:flex">
@@ -85,7 +89,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </header>
 
         <main id="main" className="mx-auto w-full max-w-[1080px] px-4 pb-32 sm:px-6 lg:px-10 lg:pt-8 lg:pb-16">
-          {children}
+          {locked ? <Paywall /> : children}
         </main>
       </div>
 

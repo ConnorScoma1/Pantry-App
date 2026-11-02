@@ -108,6 +108,11 @@ async function draftOne(server: PlanningJobServer, svc: SupabaseLike, job: Claim
     if (used === null || used >= ai.dailyPlanLimit) ai = null; // fail closed
   }
   if (ai && !(await withinMonthlyCaps(svc, ai, c.userId))) ai = null;
+  // No AI for people whose trial or subscription has ended (billing switched on; migration …2800).
+  if (ai) {
+    const { data, error } = await svc.rpc("user_has_access", { target: c.userId });
+    if (!error && data === false) ai = null;
+  }
 
   const result = await draftWeek(
     {

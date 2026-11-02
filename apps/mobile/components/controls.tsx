@@ -66,10 +66,11 @@ export function Chip({
       accessibilityState={{ checked: selected }}
       accessibilityLabel={label}
       onPress={onPress}
-      className={`min-h-11 flex-row items-center gap-1.5 rounded-full border bg-background px-4 ${selected ? "border-2 border-foreground" : "border-border"}`}
+      className={`min-h-11 max-w-full flex-row items-center gap-1.5 rounded-full border bg-background px-4 py-2 ${selected ? "border-2 border-foreground" : "border-border"}`}
     >
       {selected ? <Ionicons name="checkmark" size={16} color={c.foreground} /> : null}
-      <Text className="text-[16px] font-medium text-foreground">{label}</Text>
+      {/* Long labels wrap on narrow phones instead of running off the screen. */}
+      <Text className="shrink text-[16px] font-medium text-foreground">{label}</Text>
     </Pressable>
   );
 }

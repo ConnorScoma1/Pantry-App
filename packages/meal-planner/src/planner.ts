@@ -209,6 +209,8 @@ function scoreFor(
   const hurry = input.goals.includes("save_time") ? 1.5 : 1;
   if (isWeeknight(date)) {
     if (recipe.totalMinutes > 40) score -= ((recipe.totalMinutes - 40) / 15) * 7 * hurry;
+    // Past 45 minutes a weeknight dinner is a real ask: only when nothing quicker fits.
+    if (recipe.totalMinutes > 45) score -= 12 * hurry;
   } else if (recipe.skillLevel >= 3 || recipe.totalMinutes > 60) {
     score += 10;
     if (recipe.totalMinutes > 60 && !note.startsWith("Shares")) note = "Saved for the weekend — it takes a little longer";
@@ -252,8 +254,60 @@ export function planWeek(input: PlanWeekInput): PlanWeekResult {
   }
 
   picks.sort((a, b) => a.date.localeCompare(b.date));
-  return { picks, unfilled: unfilled.sort(), summary: summarize(picks, chosen, input) };
+  // Choosing one night at a time can leave the same protein on back-to-back
+  // nights when there are few recipes to choose from; re-order to fix it.
+  const spread = spreadProteins(picks, new Map(input.candidates.map((c) => [c.recipe.id, c])), input.fixed ?? []);
+  return { picks: spread, unfilled: unfilled.sort(), summary: summarize(spread, chosen, input) };
 }
+
+/**
+ * Re-order a week's dinners so the same main protein doesn't land on two
+ * nights in a row (the AI doesn't always manage it, and the built-in planner's
+ * one-night-at-a-time choice can't always avoid it with a small pool), without moving long
+ * dishes onto weeknights and with as few moves as possible. Only open nights
+ * are shuffled; locked and planned meals stay put. A moved dinner's "why"
+ * may name its old night, so it gets a neutral note.
+ */
+export function spreadProteins(picks: PlannedPick[], recipes: ReadonlyMap<string, RankedRecipe>, fixed: ReadonlyArray<{ date: string; recipeId: string | null }> = []): PlannedPick[] {
+  if (picks.length < 3 || picks.length > 8) return picks;
+  const dates = picks.map((p) => p.date).sort();
+  const byDate = new Map(picks.map((p) => [p.date, p]));
+  const original = dates.map((d) => byDate.get(d)!);
+  const main = (id: string | null | undefined) => (id ? (recipeProteins(recipes.get(id)?.recipe ?? ({ ingredients: [] } as never))[0] ?? null) : null);
+  const minutes = (id: string) => recipes.get(id)?.recipe.totalMinutes ?? 0;
+  const weeknight = (d: string) => [1, 2, 3, 4].includes(new Date(`${d}T00:00:00Z`).getUTCDay());
+  const fixedOn = new Map(fixed.filter((f) => f.recipeId).map((f) => [f.date, f.recipeId!]));
+  const cost = (order: PlannedPick[]) => {
+    const at = new Map(order.map((p, i) => [dates[i]!, p.recipeId]));
+    for (const [d, id] of fixedOn) if (!at.has(d)) at.set(d, id);
+    const all = [...at.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    let c = 0;
+    for (let i = 1; i < all.length; i++) {
+      const consecutive = Date.parse(`${all[i]![0]}T00:00:00Z`) - Date.parse(`${all[i - 1]![0]}T00:00:00Z`) === 86_400_000;
+      const p = main(all[i]![1]);
+      if (consecutive && p && p === main(all[i - 1]![1])) c += 100;
+    }
+    order.forEach((p, i) => {
+      if (weeknight(dates[i]!) && minutes(p.recipeId) > 45 && !(weeknight(original[i]!.date) && original[i]!.recipeId === p.recipeId)) c += 50;
+      if (p !== original[i]) c += 1;
+    });
+    return c;
+  };
+  let best = original;
+  let bestCost = cost(original);
+  if (bestCost < 100) return original;
+  const permute = (rest: PlannedPick[], acc: PlannedPick[]) => {
+    if (rest.length === 0) {
+      const c = cost(acc);
+      if (c < bestCost) [best, bestCost] = [acc, c];
+      return;
+    }
+    for (let i = 0; i < rest.length; i++) permute([...rest.slice(0, i), ...rest.slice(i + 1)], [...acc, rest[i]!]);
+  };
+  permute(original, []);
+  return best.map((p, i) => (p === original[i] ? p : { ...p, date: dates[i]!, note: "Chosen to fit your week" }));
+}
+
 
 function summarize(picks: PlannedPick[], chosen: Chosen[], input: PlanWeekInput): string {
   if (picks.length === 0) return "We couldn't find enough recipes that fit your household this week.";

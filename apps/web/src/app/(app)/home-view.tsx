@@ -5,6 +5,7 @@ import Link from "next/link";
 import { summarizeKitchen } from "@kitchen-pantry/inventory-engine";
 import { useEffect, useMemo, useState } from "react";
 import { UrgencyBadge } from "@/components/kitchen/urgency-badge";
+import { TrialBanner } from "@/components/billing/trial-banner";
 import { useProfile } from "@/components/profile/profile-provider";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, Hint } from "@/components/ui/card";
@@ -45,6 +46,7 @@ export function HomeView() {
         <h1 className="text-[34px] font-bold leading-tight tracking-tight lg:text-[40px]">Your week</h1>
       </header>
 
+      <TrialBanner />
       <PlanReadyCard />
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">

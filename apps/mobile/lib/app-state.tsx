@@ -55,10 +55,10 @@ import {
   type MealPlanRepository,
   type ProfileStore,
   type RecipeRepository,
-  type Result,
-} from "@kitchen-pantry/database";
-import type { DessertSettings, OnboardingProfile, SeasonalSettings, SkillLevel } from "@kitchen-pantry/shared-types";
+  type Result, loadAccess, OPEN_ACCESS } from "@kitchen-pantry/database";
+import type { AccessStatus, DessertSettings, OnboardingProfile, SeasonalSettings, SkillLevel } from "@kitchen-pantry/shared-types";
 import { authErrorMessage, defaultOnboardingProfile, signInSchema, signUpSchema, issuesToFieldErrors } from "@kitchen-pantry/validation";
+import { AppState as RNAppState } from "react-native";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { unregisterPush } from "./push";
 import { deviceStorage } from "./storage";
@@ -71,6 +71,8 @@ interface AppState {
   /** True until the stored session and profile have been read. */
   loading: boolean;
   email: string | null;
+  /** The signed-in account id (for the store's purchase records); null in preview mode. */
+  userId: string | null;
   signedIn: boolean;
   profile: OnboardingProfile | null;
   kitchen: KitchenRepository;
@@ -104,6 +106,9 @@ interface AppState {
   signIn(email: string, password: string): Promise<Result<null>>;
   signUp(email: string, password: string): Promise<Result<{ needsConfirmation: boolean }>>;
   signOut(): Promise<void>;
+  /** Subscription access (always open in preview mode or while billing is off). */
+  access: AccessStatus;
+  refreshAccess(): Promise<AccessStatus>;
   /** Permanently delete this account (type DELETE to confirm); signs out on success. */
   deleteAccount(confirm: string): Promise<Result<null>>;
   saveProfile(profile: OnboardingProfile): Promise<Result<OnboardingProfile>>;
@@ -163,13 +168,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [signedIn, setSignedIn] = useState(mode === "preview");
   const [profile, setProfile] = useState<OnboardingProfile | null>(null);
+
+  const [access, setAccess] = useState<AccessStatus>(OPEN_ACCESS);
+  const refreshAccess = useCallback(async () => {
+    const next = supabase ? await loadAccess(asSupabaseLike(supabase)) : OPEN_ACCESS;
+    setAccess(next);
+    return next;
+  }, []);
 
   const loadProfile = useCallback(async () => {
     const result = await profiles.load();
     setProfile(result.ok ? result.data : null);
-  }, [profiles]);
+    if (supabase) await refreshAccess();
+  }, [profiles, refreshAccess]);
+
+  // Re-check when the app comes back to the foreground (a purchase or a trial ending).
+  useEffect(() => {
+    if (!supabase) return;
+    const sub = RNAppState.addEventListener("change", (state: string) => {
+      if (state === "active") void supabase!.auth.getSession().then(({ data }) => data.session && refreshAccess());
+    });
+    return () => sub.remove();
+  }, [refreshAccess]);
 
   useEffect(() => {
     let cancelled = false;
@@ -179,6 +202,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (cancelled) return;
         setSignedIn(Boolean(data.session));
         setEmail(data.session?.user.email ?? null);
+        setUserId(data.session?.user.id ?? null);
         if (data.session) await loadProfile();
       } else {
         await loadProfile();
@@ -190,6 +214,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const sub = supabase?.auth.onAuthStateChange((_event, session) => {
       setSignedIn(Boolean(session));
       setEmail(session?.user.email ?? null);
+      setUserId(session?.user.id ?? null);
       if (session) void loadProfile();
       else setProfile(null);
     });
@@ -240,7 +265,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) {
       return {
         ok: false,
-        message: error.code === "PGRST202" ? "Account deletion isn't set up on the server yet." : "We couldn't delete your account. Please try again, or contact us.",
+        message:
+          error.code === "PGRST202"
+            ? "Account deletion isn't set up on the server yet."
+            : (error as { hint?: string }).hint === "cancel_subscription_first"
+              ? "You have a website subscription that still renews. Delete your account on the Kitchen Pantry website (it turns renewal off for you), or cancel it there first."
+              : "We couldn't delete your account. Please try again, or contact us.",
       };
     }
     await supabase.auth.signOut().catch(() => undefined);
@@ -310,6 +340,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mode,
       loading,
       email,
+      userId,
       signedIn,
       profile,
       kitchen,
@@ -332,6 +363,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      access,
+      refreshAccess,
       deleteAccount,
       saveProfile,
       setSkillLevel,
@@ -339,7 +372,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setSeasonal,
       clearPreview,
     }),
-    [mode, loading, email, signedIn, profile, kitchen, recipes, mealPlans, loadProfile, signIn, signUp, signOut, deleteAccount, saveProfile, setSkillLevel, setDesserts, setSeasonal, clearPreview],
+    [mode, loading, email, userId, signedIn, profile, kitchen, recipes, mealPlans, loadProfile, signIn, signUp, signOut, access, refreshAccess, deleteAccount, saveProfile, setSkillLevel, setDesserts, setSeasonal, clearPreview],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
