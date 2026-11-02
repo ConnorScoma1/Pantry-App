@@ -35,9 +35,6 @@ export function DeleteAccountCard({ shared }: { shared: boolean }) {
       {!open ? (
         <View className="mt-4 gap-2">
           <Button variant="danger" icon="trash-outline" label="Delete my account…" onPress={() => setOpen(true)} />
-          {apiUrl ? (
-            <Button variant="ghost" label="Privacy policy" onPress={() => void Linking.openURL(`${apiUrl}/privacy`)} />
-          ) : null}
         </View>
       ) : (
         <View className="mt-4 gap-3">
@@ -70,6 +67,25 @@ export function DeleteAccountCard({ shared }: { shared: boolean }) {
           />
         </View>
       )}
+    </Card>
+  );
+}
+
+/** Profile → Your data. The download itself happens on the website (a file is easier to keep there). */
+export function YourDataCard() {
+  return (
+    <Card>
+      <Eyebrow>Your data</Eyebrow>
+      <Body>
+        Download a copy of everything your account can see (profile, allergies, kitchen, plans, lists, ratings and cooking
+        history) from Profile on the Kitchen Pantry website.
+      </Body>
+      {apiUrl ? (
+        <View className="mt-4 gap-2">
+          <Button variant="secondary" icon="download-outline" label="Open on the website" onPress={() => void Linking.openURL(`${apiUrl}/profile#your-data`)} />
+          <Button variant="ghost" label="Privacy policy" onPress={() => void Linking.openURL(`${apiUrl}/privacy`)} />
+        </View>
+      ) : null}
     </Card>
   );
 }

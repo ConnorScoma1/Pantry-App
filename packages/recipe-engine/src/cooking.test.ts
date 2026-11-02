@@ -48,3 +48,16 @@ test("chef mode: advanced dishes get mise en place by component and a timeline b
   assert.equal(stepMinutes({ timerSeconds: 600, body: "x" }), 10);
   assert.equal(stepMinutes({ timerSeconds: null, body: "Stir." }), 3);
 });
+
+test("substitutions: rules match the ingredient itself, not things that only contain its name", () => {
+  const ctx = { allergies: [] as never[] };
+  assert.deepEqual(substitutionsFor("garlic powder", ctx), [], "garlic powder isn't fresh garlic");
+  assert.deepEqual(substitutionsFor("peanut butter", ctx), [], "peanut butter isn't butter");
+  assert.deepEqual(substitutionsFor("wide egg noodles", ctx), [], "egg noodles aren't eggs");
+  assert.ok(substitutionsFor("garlic", ctx).length > 0);
+  assert.ok(substitutionsFor("unsalted butter", ctx).length > 0);
+  assert.ok(substitutionsFor("eggs", ctx).length > 0);
+  assert.ok(substitutionsFor("large eggs", ctx).length > 0);
+  // Allergies screen the swaps themselves.
+  assert.deepEqual(substitutionsFor("sour cream", { allergies: ["milk"] }), [], "both sour-cream swaps are dairy");
+});

@@ -12,6 +12,8 @@ export default function DeleteAccountInfoPage() {
     <article>
       <h1 className="text-[34px] font-bold leading-tight tracking-tight">Delete your {brand.name} account</h1>
 
+      <P>Want to keep a copy first? Profile → Your data → Download my data.</P>
+
       <H2>How to delete it</H2>
       <UL>
         <li><strong>On the website:</strong> <Link href="/sign-in?next=/profile%23delete-account" className="underline underline-offset-4">sign in</Link>, open <strong>Profile</strong>, scroll to <strong>Delete account</strong>, type DELETE and confirm.</li>

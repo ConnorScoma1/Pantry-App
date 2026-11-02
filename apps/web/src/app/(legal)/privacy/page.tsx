@@ -82,7 +82,8 @@ export default function PrivacyPage() {
         <li><strong>See and change</strong> your information at any time in the app (Profile, Kitchen, Plan, Grocery).</li>
         <li><strong>Turn off</strong> reminders and notifications in Profile, and disconnect a store account in Grocery → Smart Cart.</li>
         <li><strong>Delete your account</strong> in Profile → Delete account (<Link href="/delete-account" className="underline underline-offset-4">how it works</Link>).</li>
-        <li>Ask us for a copy of your information, or about anything on this page: <Contact email={contactEmail} />.</li>
+        <li><strong>Download a copy</strong> of your information in Profile → Your data (a JSON file).</li>
+        <li>Ask us about anything on this page: <Contact email={contactEmail} />.</li>
       </UL>
       <P>Depending on where you live, you may have further rights (for example to object or to complain to your data-protection authority).</P>
 

@@ -8,6 +8,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useProfile } from "@/components/profile/profile-provider";
 import { RemindersCard } from "@/components/kitchen/reminders-card";
 import { DeleteAccountCard } from "@/components/profile/delete-account-card";
+import { YourDataCard } from "@/components/profile/your-data-card";
 import { SeasonalSettingsCard } from "@/components/seasonal/seasonal-settings";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, Hint, PageHeader } from "@/components/ui/card";
@@ -260,6 +261,8 @@ export function ProfileView() {
             </Button>
           ) : null}
         </Card>
+
+        {mode === "supabase" ? <YourDataCard /> : null}
 
         {mode === "supabase" ? <DeleteAccountCard shared={Boolean(profile.householdDiet && profile.householdDiet.memberCount > 1)} /> : null}
       </div>

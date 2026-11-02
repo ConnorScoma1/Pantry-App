@@ -9,6 +9,7 @@ import {
   kitchenUpdatesAfterCooking,
   rankRecipe,
   type KitchenUpdate,
+  substitutionsFor,
 } from "@kitchen-pantry/recipe-engine";
 import { allergens, equipment, labelFor, skillLevels, worldCuisines, type Recipe } from "@kitchen-pantry/shared-types";
 import { router, useLocalSearchParams } from "expo-router";
@@ -67,6 +68,7 @@ function RecipeDetail({ slug }: { slug: string }) {
   const looking = !known && fetched?.slug !== slug;
   const ranked = useMemo(() => (recipe ? rankRecipe(recipe, data.context) : null), [recipe, data.context]);
   const [servings, setServings] = useState<number | null>(null);
+  const [swapOpen, setSwapOpen] = useState<number | null>(null);
   const [rating, setRating] = useState(false);
   const kitchen = useKitchen();
   const [afterCooking, setAfterCooking] = useState<KitchenUpdate[] | null>(null);
@@ -103,6 +105,11 @@ function RecipeDetail({ slug }: { slug: string }) {
   const serves = servings ?? recipe.servings;
   const factor = serves / recipe.servings;
   const owned = new Set(ranked.coverage.owned.map((i) => i.position));
+  // Curated swaps for what you'd have to buy (never invented; the household's allergies and "never" foods are screened out).
+  const subCtx = {
+    allergies: [...new Set([...data.context.profile.diet.allergies, ...(data.context.profile.householdDiet?.allergies ?? [])])],
+    avoid: [...data.context.profile.diet.neverRecommend, ...(data.context.profile.householdDiet?.neverRecommend ?? [])],
+  };
   const mine = data.myRatings.get(recipe.id);
   const { conflicts, warnings } = ranked.eligibility.allergens;
   const skillLabel = skillLevels.find((s) => s.level === recipe.skillLevel)?.label;
@@ -285,12 +292,15 @@ function RecipeDetail({ slug }: { slug: string }) {
             <View className="overflow-hidden rounded-card bg-surface">
               {group.items.map((i, index) => {
                 const have = owned.has(i.position);
+                const subs = have ? [] : substitutionsFor(i.item, subCtx);
+                const open = swapOpen === i.position;
                 return (
+                  <View key={i.position} className={`px-4 py-3 ${index < group.items.length - 1 ? "border-b border-border" : ""}`}>
+                  <View className="flex-row items-start gap-3">
                   <View
-                    key={i.position}
                     accessible
                     accessibilityLabel={`${formatIngredientLine(i, factor)}${i.optional ? ", optional" : ""}${have ? ", in your kitchen" : ""}`}
-                    className={`flex-row items-start gap-3 px-4 py-3 ${index < group.items.length - 1 ? "border-b border-border" : ""}`}
+                    className="flex-1 flex-row items-start gap-3"
                   >
                     <View
                       className={`mt-0.5 size-5 items-center justify-center rounded-full ${have ? "bg-accent" : "border-2 border-border"}`}
@@ -301,6 +311,28 @@ function RecipeDetail({ slug }: { slug: string }) {
                       {formatIngredientLine(i, factor)}
                       {i.optional ? <Text className="text-muted"> (optional)</Text> : null}
                     </Text>
+                  </View>
+                  {subs.length > 0 ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Swaps for ${i.item}`}
+                      accessibilityState={{ expanded: open }}
+                      onPress={() => setSwapOpen(open ? null : i.position)}
+                      hitSlop={8}
+                      className="rounded-full px-2 py-0.5"
+                    >
+                      <Text className="text-[14px] font-semibold text-accent">Swap?</Text>
+                    </Pressable>
+                  ) : null}
+                  </View>
+                  {open ? (
+                    <View className="mt-2 ml-8 gap-1">
+                      <Text className="text-[15px] text-muted">Don&apos;t have it? Instead you can use:</Text>
+                      {subs.map((x) => (
+                        <Text key={x} className="text-[15px] leading-5 text-muted">• {x}</Text>
+                      ))}
+                    </View>
+                  ) : null}
                   </View>
                 );
               })}

@@ -9,6 +9,7 @@ import {
   isCookable,
   kitchenUpdatesAfterCooking,
   rankRecipe,
+  substitutionsFor,
   type KitchenUpdate,
 } from "@kitchen-pantry/recipe-engine";
 import { allergens, equipment, labelFor, skillLevels, worldCuisines, type Recipe } from "@kitchen-pantry/shared-types";
@@ -64,6 +65,7 @@ export function RecipeDetailView({ slug }: { slug: string }) {
   const looking = !known && fetched?.slug !== slug;
   const ranked = useMemo(() => (recipe ? rankRecipe(recipe, data.context) : null), [recipe, data.context]);
   const [servings, setServings] = useState<number | null>(null);
+  const [swapOpen, setSwapOpen] = useState<number | null>(null);
   const [rating, setRating] = useState(false);
   const [cooking, setCooking] = useState(false);
   const kitchen = useKitchen();
@@ -101,6 +103,11 @@ export function RecipeDetailView({ slug }: { slug: string }) {
   const serves = servings ?? recipe.servings;
   const factor = serves / recipe.servings;
   const owned = new Set(ranked.coverage.owned.map((i) => i.position));
+  // Curated swaps for what you'd have to buy (never invented; the household's allergies and "never" foods are screened out).
+  const subCtx = {
+    allergies: [...new Set([...data.context.profile.diet.allergies, ...(data.context.profile.householdDiet?.allergies ?? [])])],
+    avoid: [...data.context.profile.diet.neverRecommend, ...(data.context.profile.householdDiet?.neverRecommend ?? [])],
+  };
   const mine = data.myRatings.get(recipe.id);
   const { conflicts, warnings } = ranked.eligibility.allergens;
   const cookable = isCookable(recipe);
@@ -290,8 +297,12 @@ export function RecipeDetailView({ slug }: { slug: string }) {
               <div key={group.component ?? "main"}>
                 {group.component ? <h3 className="mb-2 text-[15px] font-semibold">{group.component}</h3> : null}
                 <ul className="overflow-hidden rounded-card bg-surface">
-                  {group.items.map((i) => (
-                    <li key={i.position} className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-0">
+                  {group.items.map((i) => {
+                    const subs = owned.has(i.position) ? [] : substitutionsFor(i.item, subCtx);
+                    const open = swapOpen === i.position;
+                    return (
+                    <li key={i.position} className="border-b border-border px-4 py-3 last:border-0">
+                      <div className="flex items-start gap-3">
                       <span
                         className={cn(
                           "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
@@ -306,8 +317,31 @@ export function RecipeDetailView({ slug }: { slug: string }) {
                         {i.optional ? <span className="text-muted"> (optional)</span> : null}
                         {owned.has(i.position) ? <span className="sr-only"> — in your kitchen</span> : null}
                       </span>
+                      {subs.length > 0 ? (
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          aria-label={`Swaps for ${i.item}`}
+                          onClick={() => setSwapOpen(open ? null : i.position)}
+                          className="-my-1 shrink-0 rounded-full px-3 py-1 text-[14px] font-semibold text-accent hover:bg-background"
+                        >
+                          Swap?
+                        </button>
+                      ) : null}
+                      </div>
+                      {open ? (
+                        <div className="mt-2 ml-8 text-[15px] text-muted">
+                          <p>Don&apos;t have it? Instead you can use:</p>
+                          <ul className="mt-1 list-disc space-y-1 pl-5">
+                            {subs.map((x) => (
+                              <li key={x}>{x}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
                     </li>
-                  ))}
+                    );
+                  })}
                 </ul>
               </div>
             ))}
