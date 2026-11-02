@@ -89,3 +89,56 @@ test("weekly drafts (server): planning inputs are mapped and validated; a skip p
   const unfinished = await server.context(UUID);
   assert.ok(unfinished.ok && "skip" in unfinished.data, "an unreadable profile means no draft, never a guessed one");
 });
+
+test("use-soon reminders: preferences default sensibly, saved with a time zone, server run read back safely", async () => {
+  const { runUseSoonReminders, DEFAULT_NOTIFICATION_PREFERENCES } = await import("./index");
+  assert.deepEqual(DEFAULT_NOTIFICATION_PREFERENCES, { planReadyInApp: true, planReadyPush: false, useSoonInApp: true, useSoonPush: false, timeZone: null });
+
+  const storage = memoryStorage();
+  const repo = createLocalWeeklyPlanningRepository(storage);
+  // Saved before reminders existed: the new choices fill in with their defaults.
+  await storage.setItem("kp-preview-notification-prefs-v1", JSON.stringify({ planReadyInApp: false, planReadyPush: false }));
+  const old = await repo.preferences();
+  assert.ok(old.ok && old.data.useSoonInApp && !old.data.useSoonPush);
+  const saved = await repo.savePreferences({ planReadyInApp: true, planReadyPush: false, useSoonInApp: false, useSoonPush: false, timeZone: "America/Denver" });
+  assert.ok(saved.ok && saved.data.timeZone === "America/Denver" && !saved.data.useSoonInApp);
+  assert.ok(!(await repo.savePreferences({ planReadyInApp: true, planReadyPush: false, useSoonInApp: true, useSoonPush: false, timeZone: "Nowhere/Land" })).ok);
+
+  const upserts: Array<Record<string, unknown>> = [];
+  const stored = { plan_ready_in_app: true, plan_ready_push: true, use_soon_in_app: true, use_soon_push: false, time_zone: null as string | null };
+  const db = {
+    from: () => ({
+      upsert: async (row: Record<string, unknown>) => {
+        upserts.push({ ...row });
+        if ("time_zone" in row && row.time_zone === "Asia/Calcutta") return { data: null, error: { code: "23514", message: "Unknown time zone" } };
+        for (const [k, v] of Object.entries(row)) if (k in stored) (stored as Record<string, unknown>)[k] = v;
+        return { data: null, error: null };
+      },
+      select: () => ({ maybeSingle: async () => ({ data: { ...stored }, error: null }) }),
+    }),
+  } as unknown as SupabaseLike;
+  const supa = createSupabaseWeeklyPlanningRepository(db, async () => UUID);
+  // Only the changed switch is sent, so another screen's choice isn't overwritten.
+  const one = await supa.savePreferences({ useSoonPush: true, timeZone: "Europe/Paris" });
+  assert.deepEqual(Object.keys(upserts[0]!).sort(), ["time_zone", "updated_at", "use_soon_push", "user_id"]);
+  assert.ok(one.ok && one.data.planReadyPush && one.data.useSoonPush && one.data.timeZone === "Europe/Paris", "returns the full current settings");
+  assert.ok(!(await supa.savePreferences({})).ok, "an empty change is refused");
+  assert.ok(!(await supa.savePreferences({ useSoonPush: true, isAdmin: true })).ok, "unknown fields are refused");
+  // A zone the database doesn't know: the switch is still saved.
+  const zone = await supa.savePreferences({ useSoonInApp: false, timeZone: "Asia/Calcutta" });
+  assert.ok(zone.ok && !zone.data.useSoonInApp && zone.data.timeZone === "Europe/Paris");
+
+  let args: unknown = null;
+  const svc = {
+    rpc: async (_name: string, a: unknown) => {
+      args = a;
+      return {
+        data: { people: 2, notices: 1, push: [{ userId: UUID, title: "Use soon: Spinach", body: "Spinach (today)." }, { userId: "not-a-user", title: "x", body: "y" }, { userId: UUID, title: 5 }] },
+        error: null,
+      };
+    },
+  } as unknown as SupabaseLike;
+  const run = await runUseSoonReminders(svc, 99999);
+  assert.deepEqual(args, { max_people: 5000 });
+  assert.ok(run.ok && run.data.people === 2 && run.data.push.length === 1 && run.data.push[0]!.title === "Use soon: Spinach");
+});

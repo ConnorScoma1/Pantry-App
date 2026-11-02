@@ -1,11 +1,11 @@
-import { DEFAULT_NOTIFICATION_PREFERENCES } from "@kitchen-pantry/database";
+import { DEFAULT_NOTIFICATION_PREFERENCES, type WeeklyPlanningRepository } from "@kitchen-pantry/database";
 import { DEFAULT_WEEKLY_PLANNING, weeklySchedule } from "@kitchen-pantry/meal-planner";
 import type { AppNotification, NotificationPreferences, PlanningJob, WeeklyPlanningSettings } from "@kitchen-pantry/shared-types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppState as RNAppState } from "react-native";
 import { useApp } from "./app-state";
 import { apiUrl } from "./config";
-import { pushSupport, registerForPush, unregisterPush } from "./push";
+import { hasPushToken, pushSupport, registerForPush, unregisterPush } from "./push";
 
 function deviceTimeZone(): string {
   try {
@@ -13,6 +13,39 @@ function deviceTimeZone(): string {
   } catch {
     return DEFAULT_WEEKLY_PLANNING.timeZone;
   }
+}
+
+/**
+ * Phone notifications are per person but delivered per phone. Turning one on
+ * registers THIS phone (and asks permission) — also when it's already on for
+ * the account from another phone. After saving, if the account has no phone
+ * notifications left on (as the server now says), this phone is forgotten.
+ */
+function usePhonePush(repo: WeeklyPlanningRepository) {
+  const [thisPhone, setThisPhone] = useState(false);
+  useEffect(() => {
+    void hasPushToken().then(setThisPhone);
+  }, []);
+  const before = useCallback(
+    async (patch: Partial<NotificationPreferences>): Promise<string | null> => {
+      if (patch.planReadyPush !== true && patch.useSoonPush !== true) return null;
+      const reg = await registerForPush(repo);
+      if (!reg.ok) return reg.message;
+      setThisPhone(true);
+      return null;
+    },
+    [repo],
+  );
+  const after = useCallback(
+    async (saved: NotificationPreferences) => {
+      if (!saved.planReadyPush && !saved.useSoonPush) {
+        await unregisterPush(repo);
+        setThisPhone(false);
+      }
+    },
+    [repo],
+  );
+  return useMemo(() => ({ thisPhone, before, after }), [thisPhone, before, after]);
 }
 
 /** Weekly drafts on the phone — same settings and rules as the web. */
@@ -74,28 +107,95 @@ export function useWeeklyPlanning() {
     [repo, settings],
   );
 
+  const phone = usePhonePush(repo);
   const savePrefs = useCallback(
     async (patch: Partial<NotificationPreferences>) => {
-      const next = { ...prefs, ...patch };
+      if (loading) return;
       setError(null);
-      // Phone notifications: this phone must register its address first (and asks permission).
-      if (patch.planReadyPush === true) {
-        const reg = await registerForPush(repo);
-        if (!reg.ok) return setError(reg.message);
-      }
-      if (patch.planReadyPush === false) await unregisterPush(repo);
-      setPrefs(next);
-      const r = await repo.savePreferences(next);
+      const problem = await phone.before(patch);
+      if (problem) return setError(problem);
+      const prior = prefs;
+      setPrefs({ ...prefs, ...patch });
+      const r = await repo.savePreferences(patch);
       if (!r.ok) {
         setError(r.message);
-        setPrefs(prefs);
+        setPrefs(prior);
+        return;
       }
+      setPrefs(r.data);
+      await phone.after(r.data);
     },
-    [repo, prefs],
+    [repo, prefs, loading, phone],
   );
 
   const schedule = useMemo(() => weeklySchedule(settings, new Date()), [settings]);
-  return { mode, loading, saving, error, settings, prefs, server, latest, schedule, save, savePrefs, push: pushSupport(mode) };
+  // "On this phone" shows on only when this phone is the one receiving them.
+  const shown = { ...prefs, planReadyPush: prefs.planReadyPush && phone.thisPhone, useSoonPush: prefs.useSoonPush && phone.thisPhone };
+  return { mode, loading, saving, error, settings, prefs: shown, server, latest, schedule, save, savePrefs, push: pushSupport(mode) };
+}
+
+/**
+ * Use-soon reminders (just this person): a notice in the app and/or on this
+ * phone when kitchen items are due today or tomorrow. Saving also records
+ * this phone's time zone, so reminders come in this person's daytime.
+ */
+export function useReminders() {
+  const { mode, weekly: repo, accessToken } = useApp();
+  const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [server, setServer] = useState<{ running: boolean; reason: string | null }>({ running: false, reason: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const p = await repo.preferences();
+      let status = { running: false, reason: "Preview mode has no server, so reminders aren't sent — Home and My Kitchen still show what to use soon." as string | null };
+      if (mode === "supabase") {
+        status = { running: false, reason: "The Kitchen Pantry server isn't set up in this app (EXPO_PUBLIC_API_URL), so we can't check reminders." };
+        const token = await accessToken();
+        if (apiUrl && token) {
+          try {
+            const res = await fetch(`${apiUrl}/api/planning/status`, { headers: { Authorization: `Bearer ${token}` } });
+            const body = (await res.json()) as { reminders?: { running?: unknown; reason?: unknown } };
+            status = { running: body.reminders?.running === true, reason: typeof body.reminders?.reason === "string" ? body.reminders.reason : null };
+          } catch {
+            status = { running: false, reason: "Couldn't reach the Kitchen Pantry server to check reminders." };
+          }
+        }
+      }
+      if (cancelled) return;
+      if (p.ok) setPrefs(p.data);
+      setServer(status);
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, mode, accessToken]);
+
+  const phone = usePhonePush(repo);
+  const save = useCallback(
+    async (patch: Partial<Pick<NotificationPreferences, "useSoonInApp" | "useSoonPush">>) => {
+      if (loading) return;
+      setError(null);
+      const problem = await phone.before(patch);
+      if (problem) return setError(problem);
+      const prior = prefs;
+      setPrefs({ ...prefs, ...patch });
+      const r = await repo.savePreferences({ ...patch, timeZone: deviceTimeZone() });
+      if (!r.ok) {
+        setError(r.message);
+        setPrefs(prior);
+        return;
+      }
+      setPrefs(r.data);
+      await phone.after(r.data);
+    },
+    [repo, prefs, loading, phone],
+  );
+  const shown = { ...prefs, planReadyPush: prefs.planReadyPush && phone.thisPhone, useSoonPush: prefs.useSoonPush && phone.thisPhone };
+  return { mode, loading, error, prefs: shown, server, save, push: pushSupport(mode) };
 }
 
 export function useWeeklyJob(weekStart: string) {

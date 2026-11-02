@@ -432,7 +432,8 @@ export interface PlanningJob {
 
 export interface AppNotification {
   id: Uuid;
-  kind: "plan_ready";
+  /** plan_ready: next week's draft is ready · use_soon: kitchen items due today or tomorrow. */
+  kind: "plan_ready" | "use_soon";
   title: string;
   body: string | null;
   /** In-app path, e.g. /plan?week=2026-11-09 */
@@ -445,6 +446,11 @@ export interface AppNotification {
 export interface NotificationPreferences {
   planReadyInApp: boolean;
   planReadyPush: boolean;
+  /** Use-soon reminders: what's due today or tomorrow, once a day in the daytime. */
+  useSoonInApp: boolean;
+  useSoonPush: boolean;
+  /** This person's time zone, so reminders come in their daytime (null: the household's, else US Central). */
+  timeZone: string | null;
 }
 
 /** Smart Savings (milestone 12): an item that left the kitchen, from the pantry log. */

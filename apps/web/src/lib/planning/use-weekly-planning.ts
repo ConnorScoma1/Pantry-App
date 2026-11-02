@@ -9,6 +9,7 @@ import {
   markNotificationsReadAction,
   notificationPrefsAction,
   notificationsAction,
+  remindersStatusAction,
   saveNotificationPrefsAction,
   saveWeeklySettingsAction,
   weeklyJobAction,
@@ -101,12 +102,14 @@ export function useWeeklyPlanning() {
 
   const savePrefs = useCallback(
     async (patch: Partial<NotificationPreferences>) => {
-      const next = { ...prefs, ...patch };
-      setPrefs(next);
-      const r = await repo.savePreferences(next);
-      if (!r.ok) {
+      const before = prefs;
+      setPrefs({ ...prefs, ...patch });
+      // Only the changed switch is saved; the answer is the full, current settings.
+      const r = await repo.savePreferences(patch);
+      if (r.ok) setPrefs(r.data);
+      else {
         setError(r.message);
-        setPrefs(prefs);
+        setPrefs(before);
       }
     },
     [repo, prefs],
@@ -114,6 +117,52 @@ export function useWeeklyPlanning() {
 
   const schedule = useMemo(() => weeklySchedule(settings, new Date()), [settings]);
   return { mode, loading, saving, error, settings, prefs, server, latest, schedule, save, savePrefs };
+}
+
+/**
+ * Use-soon reminders (just this person): a notice in the bell and/or on the
+ * phone when kitchen items are due today or tomorrow. Saving also records
+ * this device's time zone, so reminders come in this person's daytime.
+ */
+export function useReminders() {
+  const { repo, mode } = useRepo();
+  const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_NOTIFICATION_PREFERENCES);
+  const [server, setServer] = useState<{ running: boolean; reason: string | null }>({ running: false, reason: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void Promise.all([
+      repo.preferences(),
+      mode === "supabase" ? remindersStatusAction() : Promise.resolve({ running: false, reason: "Preview mode has no server, so reminders aren't sent — Home and My Kitchen still show what to use soon." }),
+    ]).then(([p, status]) => {
+      if (cancelled) return;
+      if (p.ok) setPrefs(p.data);
+      setServer(status);
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [repo, mode]);
+
+  const save = useCallback(
+    async (patch: Partial<Pick<NotificationPreferences, "useSoonInApp" | "useSoonPush">>) => {
+      if (loading) return;
+      const before = prefs;
+      setPrefs({ ...prefs, ...patch });
+      setError(null);
+      const r = await repo.savePreferences({ ...patch, timeZone: browserTimeZone() });
+      if (r.ok) setPrefs(r.data);
+      else {
+        setError(r.message);
+        setPrefs(before);
+      }
+    },
+    [repo, prefs, loading],
+  );
+  return { mode, loading, error, prefs, server, save };
 }
 
 /** What the weekly draft job did for one week (for the banner on the plan). */
@@ -132,7 +181,7 @@ export function useWeeklyJob(weekStart: string) {
   return job;
 }
 
-/** This person's notices ("Next week's plan is ready"). Refreshes when the tab comes back into view. */
+/** This person's notices (plan ready, use soon). Refreshes when the tab comes back into view. */
 export function useNotifications() {
   const { repo } = useRepo();
   const [items, setItems] = useState<AppNotification[]>([]);

@@ -26,10 +26,31 @@ export const weeklyPlanningInputSchema = z.object({
 });
 export type WeeklyPlanningInput = z.infer<typeof weeklyPlanningInputSchema>;
 
+const timeZoneSchema = z.string().trim().min(1).max(64).refine(isTimeZone);
+
 export const notificationPreferencesSchema = z.object({
   planReadyInApp: z.boolean(),
   planReadyPush: z.boolean(),
+  useSoonInApp: z.boolean().default(true),
+  useSoonPush: z.boolean().default(false),
+  timeZone: timeZoneSchema.nullable().default(null),
 });
+
+/**
+ * A change to notification settings: only the switches being changed, so
+ * two screens (or two devices) can't overwrite each other's choices.
+ */
+export const notificationPreferencesPatchSchema = z
+  .object({
+    planReadyInApp: z.boolean(),
+    planReadyPush: z.boolean(),
+    useSoonInApp: z.boolean(),
+    useSoonPush: z.boolean(),
+    timeZone: timeZoneSchema.nullable(),
+  })
+  .partial()
+  .strict()
+  .refine((o) => Object.keys(o).length > 0);
 
 /** Expo push addresses only; anything else is refused. */
 export const pushTokenSchema = z.object({

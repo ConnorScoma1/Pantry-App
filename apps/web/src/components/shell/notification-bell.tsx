@@ -15,7 +15,7 @@ function when(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-/** "Next week's plan is ready" and future notices. Only this person's own. */
+/** "Next week's plan is ready", "Use soon: …". Only this person's own. */
 export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
   const n = useNotifications();
   const [open, setOpen] = useState(false);
@@ -71,7 +71,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
             ) : null}
           </div>
           {n.items.length === 0 ? (
-            <p className="px-3 pt-1 pb-3 text-[15px] text-muted">Nothing yet. With weekly drafts on, you&apos;ll hear here when next week&apos;s plan is ready.</p>
+            <p className="px-3 pt-1 pb-3 text-[15px] text-muted">Nothing yet. You&apos;ll hear here when food in your kitchen is due soon, and — with weekly drafts on — when next week&apos;s plan is ready.</p>
           ) : (
             <ul className="max-h-[60vh] overflow-y-auto">
               {n.items.map((item) => {

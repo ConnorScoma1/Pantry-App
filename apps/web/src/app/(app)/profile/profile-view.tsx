@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { useProfile } from "@/components/profile/profile-provider";
+import { RemindersCard } from "@/components/kitchen/reminders-card";
 import { SeasonalSettingsCard } from "@/components/seasonal/seasonal-settings";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, Hint, PageHeader } from "@/components/ui/card";
@@ -215,6 +216,8 @@ export function ProfileView() {
           shared={Boolean(profile.householdDiet && profile.householdDiet.memberCount > 1)}
           onChange={changeSeasonal}
         />
+
+        <RemindersCard />
 
         <Card>
           <Eyebrow>Household</Eyebrow>

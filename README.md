@@ -4,7 +4,7 @@ An AI-powered kitchen assistant: weekly meal plans people actually want to cook,
 
 This repository is a **Turborepo monorepo** containing the web app (Next.js), the mobile app (Expo / React Native), shared packages and the Supabase database.
 
-> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional Claude planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals** and **barcode and receipt import** work on web and mobile. Thirteen database migrations are waiting for your review — `…0800_shared_household`, `…0900_store_prices`, `…1000_desserts`, `…1100_seasonal`, `…1200_smart_cart`, `…1300_surprise_me`, `…1400_weekly_planning`, `…1500_smart_savings`, `…1600_household_life`, `…1700_cooking_mode`, `…1800_recipe_library`, `…1900_shopping_optimizer` and `…2000_kitchen_import` (see the sections below). See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
+> **Status:** Onboarding, **My Kitchen**, **Recipes**, **Meal Plan** (with optional Claude planning), a **shared household with a live grocery list**, **live Kroger store prices**, **optional dessert planning**, **seasonal cooking**, a **Specials tab**, **Cook the Specials**, **Smart Cart checkout**, **Surprise Me**, **weekly drafts**, the **Savings dashboard**, **who's eating / household activity** **cooking mode with Chef mode and a cooking assistant**, the **recipe library with menus**, **One Store vs. Best Deals**, **barcode and receipt import** and **use-soon reminders** work on web and mobile. Fourteen database migrations are waiting for your review — `…0800_shared_household`, `…0900_store_prices`, `…1000_desserts`, `…1100_seasonal`, `…1200_smart_cart`, `…1300_surprise_me`, `…1400_weekly_planning`, `…1500_smart_savings`, `…1600_household_life`, `…1700_cooking_mode`, `…1800_recipe_library`, `…1900_shopping_optimizer`, `…2000_kitchen_import` and `…2100_use_soon_reminders` (see the sections below). See **Going to production** for CI, monitoring and app builds. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the roadmap and [docs/specs](docs/specs) for the product specs.
 
 ---
 
@@ -124,6 +124,7 @@ Every result line should end in `t`.
 | `RESEND_API_KEY` / `INVITE_EMAIL_FROM` | `apps/web/.env.local` | Key **yes** | Optional: email household invites from the server |
 | `WEEKLY_DRAFTS` / `CRON_SECRET` | `apps/web/.env.local` | `CRON_SECRET` **yes** | Weekly drafts job switch (`on`) and the scheduler's bearer secret (32+ characters) |
 | `WEEKLY_DRAFTS_PER_RUN` / `EXPO_ACCESS_TOKEN` | `apps/web/.env.local` | Token **yes** | Households per job call (default 10); Expo push token only with enhanced push security |
+| `USE_SOON_REMINDERS` / `USE_SOON_PER_RUN` | `apps/web/.env.local` | No | Use-soon reminders job switch (`on`; also needs `CRON_SECRET` and the service role key) and people reminded per call (default 500) |
 | `EXPO_PUBLIC_SUPABASE_URL` / `_ANON_KEY` | `apps/mobile/.env` | No (RLS protects data) | Mobile Supabase; empty = preview mode |
 | `EXPO_PUBLIC_API_URL` | `apps/mobile/.env` | No | Your web server (e.g. `http://192.168.1.20:3000`) so the phone can plan with Claude and share invite links that open in a browser; needs Supabase sign-in |
 
@@ -279,6 +280,8 @@ The library is built to grow to 10,000–50,000 recipes. The plan, the research 
 
 **My Kitchen → Barcode** adds a product by its barcode. On the phone, point the camera at it; on the web, type the numbers under the bars (Chrome and Edge can also scan with the camera). The product's name, brand, size and a category guess come from **Open Food Facts**, a free open product database, and fill in the usual add form so you can check them first. If a product isn't there, add the name yourself — the barcode is kept with it.
 
+**After cooking**, tapping *Done — I cooked it* offers to update My Kitchen: what the recipe used is listed item by item ("Chicken thighs 2 lb → 0.5 lb left", "Broccoli — all used up"). Amounts are only subtracted when the kitchen's amount and the recipe's can be compared; otherwise the item says "Used it all?" and starts unticked. Staples like salt and oil are left alone, and nothing changes until you tap **Update** (the kitchen's history records each change).
+
 **My Kitchen → Receipt** reads a photo of a grocery receipt with the AI assistant and lists what you bought, with amounts and prices where they're printed. Food is ticked, everything else isn't; fix any names, untick what you don't want, and add the rest in one go (bought on the receipt's date, at the price paid).
 
 **How it stays honest and private:**
@@ -406,6 +409,23 @@ Plan → **Planning settings** → **Weekly drafts**. Off by default. One switch
 4. Set `EXPO_ACCESS_TOKEN` on the server only if you turned on Expo's "enhanced push security".
 
 **Security.** The job uses the service role, and only for this. The database lets only the server claim jobs, read a household's planning inputs and save a draft. While drafting, it works as one member of the household inside the database, so the same checks apply as in the app: which recipes that member can see, which household they're in, and that the week isn't confirmed. Members can read what the job did, but can't create or change jobs.
+
+## Use-soon reminders
+
+Profile → **Reminders**. Once a day, in the daytime, you hear about what in your kitchen is due **today or tomorrow**, going by the use-by dates your household entered — for example "Use soon: Chicken thighs and 2 more" / "Chicken thighs (by Nov 2), Spinach (by Nov 3)…". Dates are written out, and the in-app notice disappears at the end of your day, so an old reminder never points at food whose date has passed.
+
+- **Per person.** Each person chooses for themselves. **In the app** (the bell on the web, a card on the phone's Home) is on by default. **On my phone** is off until you turn it on in the phone app.
+- **When.** Between 8 AM and 8 PM in your own time zone (saved from your device when you change the setting; otherwise the household's weekly-drafts time zone, otherwise US Central). At most once a day, however often the job runs.
+- **What's included.** Items in your active household with a use-by date of today or tomorrow. Staples, used-up items and anything already past its date are left out — Home and My Kitchen already flag those, and the app never suggests eating something past its date. Dates are a guide, not a safety check.
+
+**Turn it on (server).** After you review and apply `…2100_use_soon_reminders.sql`:
+
+1. Set `USE_SOON_REMINDERS=on`. It uses the same `CRON_SECRET` and `SUPABASE_SERVICE_ROLE_KEY` as weekly drafts.
+2. Have something call `GET https://your-site/api/jobs/use-soon` **every hour** with `Authorization: Bearer <CRON_SECRET>` — the same way as weekly drafts above (a second Vercel cron entry, or a second `cron.schedule('kitchen-pantry-use-soon', '10 * * * *', …)` with the new URL).
+
+Run `supabase/tests/use_soon_reminders_smoke_test.sql` (15 checks) after applying. The migration also removes your notices about a household when you leave it, and keeps at most 10 phones per person.
+
+Phone notifications use the same setup as weekly drafts. The database alone decides who is reminded and what it says; the job can only run with the service role, and nobody signed in can read its bookkeeping.
 
 ## Surprise Me and learned taste
 

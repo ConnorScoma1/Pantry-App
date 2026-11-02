@@ -7,7 +7,7 @@ import { Platform } from "react-native";
 import { deviceStorage } from "./storage";
 
 /**
- * Phone notifications ("Next week's plan is ready") through Expo's push
+ * Phone notifications ("Next week's plan is ready", "Use soon: …") through Expo's push
  * service. The phone asks permission, gets its Expo push address and saves
  * it for the signed-in person; the Kitchen Pantry server sends the notice.
  * Needs a development or store build with the EAS project ID configured
@@ -50,6 +50,15 @@ export async function registerForPush(repo: WeeklyPlanningRepository): Promise<R
   }
 }
 
+/** Whether this phone has registered for notifications (for the signed-in person). */
+export async function hasPushToken(): Promise<boolean> {
+  try {
+    return Boolean(await deviceStorage.getItem(TOKEN_KEY));
+  } catch {
+    return false;
+  }
+}
+
 export async function unregisterPush(repo: WeeklyPlanningRepository): Promise<void> {
   const token = await deviceStorage.getItem(TOKEN_KEY);
   if (!token) return;
@@ -57,12 +66,12 @@ export async function unregisterPush(repo: WeeklyPlanningRepository): Promise<vo
   await deviceStorage.removeItem(TOKEN_KEY);
 }
 
-/** Tapping a notice opens the week it's about (in-app paths only). */
+/** Tapping a notice opens what it's about — the week, or My Kitchen (in-app paths only). */
 export function usePushNavigation() {
   useEffect(() => {
     if (Platform.OS !== "ios" && Platform.OS !== "android") return;
     const open = (url: unknown) => {
-      if (typeof url === "string" && /^\/plan(\?week=\d{4}-\d{2}-\d{2})?$/.test(url)) router.push(url as never);
+      if (typeof url === "string" && (/^\/plan(\?week=\d{4}-\d{2}-\d{2})?$/.test(url) || url === "/kitchen")) router.push(url as never);
     };
     const sub = Notifications.addNotificationResponseReceivedListener((r) => open(r.notification.request.content.data?.url));
     void Notifications.getLastNotificationResponseAsync().then((r) => (r ? open(r.notification.request.content.data?.url) : undefined));

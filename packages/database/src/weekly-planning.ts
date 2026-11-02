@@ -13,7 +13,7 @@ import type {
   RecommendationEvent,
   WeeklyPlanningSettings,
 } from "@kitchen-pantry/shared-types";
-import { notificationPreferencesSchema, pricingStoreSchema, pushTokenSchema, weeklyPlanningInputSchema } from "@kitchen-pantry/validation";
+import { notificationPreferencesPatchSchema, notificationPreferencesSchema, pricingStoreSchema, pushTokenSchema, weeklyPlanningInputSchema } from "@kitchen-pantry/validation";
 import { dbFailure, type KeyValueStorage, type Result, type SupabaseLike } from "./client";
 import { pantryRowToItem, type PantryRow } from "./kitchen";
 import { eventRowToEvent, RECIPE_SELECT, recipeRowToRecipe, ratingRowToRating, type EventRow, type RatingRow, type RecipeRow } from "./recipes";
@@ -34,12 +34,13 @@ export interface WeeklyPlanningRepository {
   notifications(): Promise<Result<AppNotification[]>>;
   markRead(ids: string[]): Promise<Result<null>>;
   preferences(): Promise<Result<NotificationPreferences>>;
-  savePreferences(input: unknown): Promise<Result<NotificationPreferences>>;
+  /** Saves only the switches in the change; returns the full, current settings. */
+  savePreferences(change: unknown): Promise<Result<NotificationPreferences>>;
   registerPushToken(input: unknown): Promise<Result<null>>;
   unregisterPushToken(token: string): Promise<Result<null>>;
 }
 
-export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = { planReadyInApp: true, planReadyPush: false };
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = { planReadyInApp: true, planReadyPush: false, useSoonInApp: true, useSoonPush: false, timeZone: null };
 
 const DEFAULT_SETTINGS: WeeklyPlanningSettings = {
   enabled: false,
@@ -90,7 +91,7 @@ const jobFromRow = (r: JobRow): PlanningJob => ({
 
 interface NoticeRow {
   id: string;
-  kind: "plan_ready";
+  kind: "plan_ready" | "use_soon";
   title: string;
   body: string | null;
   link: string | null;
@@ -111,6 +112,17 @@ const noticeFromRow = (r: NoticeRow): AppNotification => ({
 const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
 
 export function createSupabaseWeeklyPlanningRepository(db: SupabaseLike, userId: () => Promise<string | null>): WeeklyPlanningRepository {
+  async function readPreferences(): Promise<Result<NotificationPreferences>> {
+    const { data, error } = await db.from("notification_preferences").select("plan_ready_in_app, plan_ready_push, use_soon_in_app, use_soon_push, time_zone").maybeSingle();
+    if (error) return dbFailure("notification preferences", error, "Couldn't load notification settings.");
+    const row = data as { plan_ready_in_app: boolean; plan_ready_push: boolean; use_soon_in_app: boolean; use_soon_push: boolean; time_zone: string | null } | null;
+    return {
+      ok: true,
+      data: row
+        ? { planReadyInApp: row.plan_ready_in_app, planReadyPush: row.plan_ready_push, useSoonInApp: row.use_soon_in_app, useSoonPush: row.use_soon_push, timeZone: row.time_zone }
+        : DEFAULT_NOTIFICATION_PREFERENCES,
+    };
+  }
   return {
     async settings() {
       const { data, error } = await db.rpc("get_weekly_planning");
@@ -146,22 +158,28 @@ export function createSupabaseWeeklyPlanningRepository(db: SupabaseLike, userId:
       if (error) return dbFailure("mark notifications read", error, "Couldn't update notifications.");
       return { ok: true, data: null };
     },
-    async preferences() {
-      const { data, error } = await db.from("notification_preferences").select("plan_ready_in_app, plan_ready_push").maybeSingle();
-      if (error) return dbFailure("notification preferences", error, "Couldn't load notification settings.");
-      const row = data as { plan_ready_in_app: boolean; plan_ready_push: boolean } | null;
-      return { ok: true, data: row ? { planReadyInApp: row.plan_ready_in_app, planReadyPush: row.plan_ready_push } : DEFAULT_NOTIFICATION_PREFERENCES };
-    },
+    preferences: readPreferences,
     async savePreferences(input) {
-      const parsed = notificationPreferencesSchema.safeParse(input);
+      const parsed = notificationPreferencesPatchSchema.safeParse(input);
       if (!parsed.success) return { ok: false, message: "Please check the notification settings." };
       const uid = await userId();
       if (!uid) return { ok: false, message: "Please sign in again." };
-      const { error } = await db
-        .from("notification_preferences")
-        .upsert({ user_id: uid, plan_ready_in_app: parsed.data.planReadyInApp, plan_ready_push: parsed.data.planReadyPush, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
+      const c = parsed.data;
+      const row: Record<string, unknown> = { user_id: uid, updated_at: new Date().toISOString() };
+      if (c.planReadyInApp !== undefined) row.plan_ready_in_app = c.planReadyInApp;
+      if (c.planReadyPush !== undefined) row.plan_ready_push = c.planReadyPush;
+      if (c.useSoonInApp !== undefined) row.use_soon_in_app = c.useSoonInApp;
+      if (c.useSoonPush !== undefined) row.use_soon_push = c.useSoonPush;
+      if (c.timeZone !== undefined) row.time_zone = c.timeZone;
+      // Only the columns sent are changed (the rest keep their saved values or defaults).
+      let { error } = await db.from("notification_preferences").upsert(row, { onConflict: "user_id" });
+      if (error && error.code === "23514" && "time_zone" in row) {
+        // A zone name the database doesn't know: keep the switches, skip the zone.
+        delete row.time_zone;
+        ({ error } = await db.from("notification_preferences").upsert(row, { onConflict: "user_id" }));
+      }
       if (error) return dbFailure("save notification preferences", error, "Couldn't save notification settings. Please try again.");
-      return { ok: true, data: parsed.data };
+      return readPreferences();
     },
     async registerPushToken(input) {
       const parsed = pushTokenSchema.safeParse(input);
@@ -229,7 +247,9 @@ export function createLocalWeeklyPlanningRepository(storage: KeyValueStorage): W
       return { ok: true, data: { ...DEFAULT_NOTIFICATION_PREFERENCES, ...(await readJson(storage, LOCAL_NOTICE_PREFS_KEY, {})) } };
     },
     async savePreferences(input) {
-      const parsed = notificationPreferencesSchema.safeParse(input);
+      const change = notificationPreferencesPatchSchema.safeParse(input);
+      if (!change.success) return { ok: false, message: "Please check the notification settings." };
+      const parsed = notificationPreferencesSchema.safeParse({ ...DEFAULT_NOTIFICATION_PREFERENCES, ...(await readJson(storage, LOCAL_NOTICE_PREFS_KEY, {})), ...change.data });
       if (!parsed.success) return { ok: false, message: "Please check the notification settings." };
       await storage.setItem(LOCAL_NOTICE_PREFS_KEY, JSON.stringify(parsed.data));
       return { ok: true, data: parsed.data };
@@ -376,4 +396,26 @@ export function createPlanningJobServer(svc: SupabaseLike): PlanningJobServer {
       return { ok: true, data: null };
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Use-soon reminders (server, service role only). The database decides who
+// is told what, once a day in each person's daytime; this just reads back
+// the phone notifications to send.
+// ---------------------------------------------------------------------------
+export interface UseSoonRun {
+  people: number;
+  notices: number;
+  push: Array<{ userId: string; title: string; body: string }>;
+}
+
+export async function runUseSoonReminders(svc: SupabaseLike, maxPeople = 500): Promise<Result<UseSoonRun>> {
+  const { data, error } = await svc.rpc("use_soon_reminders", { max_people: Math.min(Math.max(Math.trunc(maxPeople) || 500, 1), 5000) });
+  if (error) return dbFailure("use-soon reminders", error, "Couldn't run use-soon reminders.");
+  const raw = (data ?? {}) as { people?: unknown; notices?: unknown; push?: unknown };
+  const push = (Array.isArray(raw.push) ? raw.push : [])
+    .map((p) => p as { userId?: unknown; title?: unknown; body?: unknown })
+    .filter((p): p is { userId: string; title: string; body: string } => typeof p.userId === "string" && isUuid(p.userId) && typeof p.title === "string" && typeof p.body === "string")
+    .map((p) => ({ userId: p.userId, title: p.title.slice(0, 120), body: p.body.slice(0, 300) }));
+  return { ok: true, data: { people: Number(raw.people) || 0, notices: Number(raw.notices) || 0, push } };
 }

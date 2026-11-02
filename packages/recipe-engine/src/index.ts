@@ -11,3 +11,4 @@ export * from "./cooking";
 export * from "./library";
 export { catalogRecipes, libraryCollection, libraryCollectionReport, LIBRARY_COLLECTION_INPUTS, TEST_KITCHEN_LIBRARY_SOURCE } from "./catalog/library";
 export { buildImportSql, buildRecipeSeedSql } from "./catalog/seed-sql";
+export * from "./after-cooking";

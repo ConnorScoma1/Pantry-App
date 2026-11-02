@@ -1,4 +1,4 @@
-import { pantryCategories, removalReasons, storageLocations } from "@kitchen-pantry/shared-types";
+import { pantryCategories, removalReasons, storageLocations, type PantryItem } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
 
 const isoDate = z.iso.date("Use a valid date").nullable();
@@ -68,5 +68,23 @@ export function emptyPantryItemInput(): PantryItemInput {
     estimatedRemainingPct: null,
     pricePaidCents: null,
     isStaple: false,
+  };
+}
+
+/** An existing kitchen item as form values (to edit or adjust it). */
+export function pantryItemToInput(item: PantryItem): PantryItemInput {
+  return {
+    ingredientId: item.ingredientId,
+    name: item.name,
+    category: item.category,
+    quantity: item.quantity,
+    unit: item.unit,
+    storageLocation: item.storageLocation,
+    purchasedOn: item.purchasedOn,
+    useBy: item.useBy,
+    openedOn: item.openedOn,
+    estimatedRemainingPct: item.estimatedRemainingPct,
+    pricePaidCents: item.pricePaidCents,
+    isStaple: item.isStaple,
   };
 }

@@ -2,6 +2,7 @@
 
 import { createSupabaseWeeklyPlanningRepository, type Result, type WeeklyPlanningRepository } from "@kitchen-pantry/database";
 import type { AppNotification, NotificationPreferences, PlanningJob, WeeklyPlanningSettings } from "@kitchen-pantry/shared-types";
+import { useSoonStatus } from "@/lib/planning/reminders";
 import { weeklyDraftsStatus } from "@/lib/planning/weekly";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -25,6 +26,10 @@ async function withRepo<T>(fn: (repo: WeeklyPlanningRepository) => Promise<Resul
 /** Whether the server job is set up (so the page can be honest when it isn't). */
 export async function weeklyServerStatusAction(): Promise<{ running: boolean; reason: string | null }> {
   return weeklyDraftsStatus();
+}
+/** Whether use-soon reminders are being sent by this server. */
+export async function remindersStatusAction(): Promise<{ running: boolean; reason: string | null }> {
+  return useSoonStatus();
 }
 export async function weeklySettingsAction(): Promise<Result<WeeklyPlanningSettings>> {
   return withRepo((r) => r.settings());

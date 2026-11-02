@@ -7,7 +7,9 @@ import {
   groupByComponent,
   isChefRecipe,
   isCookable,
+  kitchenUpdatesAfterCooking,
   rankRecipe,
+  type KitchenUpdate,
 } from "@kitchen-pantry/recipe-engine";
 import { allergens, equipment, labelFor, skillLevels, worldCuisines, type Recipe } from "@kitchen-pantry/shared-types";
 import {
@@ -33,6 +35,8 @@ import { RatingLabel, SkillDots } from "@/components/recipes/recipe-card";
 import { PhotoCredit, RecipeArt } from "@/components/recipes/recipe-art";
 import { RateSheet } from "@/components/recipes/rate-sheet";
 import { CookingMode } from "@/components/recipes/cooking-mode";
+import { AfterCookingSheet } from "@/components/recipes/after-cooking-sheet";
+import { useKitchen } from "@/lib/kitchen/use-kitchen";
 import { AuthenticityBadge, SafetyNote, SourceLine, StatusBadge, StorageNote } from "@/components/recipes/library-badges";
 import { IdeaPanel, VersionsPanel } from "@/components/recipes/versions-panel";
 import { Button } from "@/components/ui/button";
@@ -62,6 +66,8 @@ export function RecipeDetailView({ slug }: { slug: string }) {
   const [servings, setServings] = useState<number | null>(null);
   const [rating, setRating] = useState(false);
   const [cooking, setCooking] = useState(false);
+  const kitchen = useKitchen();
+  const [afterCooking, setAfterCooking] = useState<KitchenUpdate[] | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Record that the recipe was opened (once per visit) for repeat-avoidance later.
@@ -381,10 +387,24 @@ export function RecipeDetailView({ slug }: { slug: string }) {
           onDone={() => {
             void logEvent(recipe.id, "cooked", "detail");
             setCooking(false);
-            setRating(true);
+            // Offer to take what was used out of My Kitchen first (only with the household's OK), then rate.
+            const updates = kitchenUpdatesAfterCooking(recipe, factor, kitchen.items, kitchen.today);
+            if (updates.length) setAfterCooking(updates);
+            else setRating(true);
           }}
         />
       ) : null}
+
+      <AfterCookingSheet
+        open={afterCooking !== null}
+        updates={afterCooking ?? []}
+        kitchen={kitchen}
+        onClose={(message) => {
+          setAfterCooking(null);
+          if (message) setNotice(message);
+          setRating(true);
+        }}
+      />
 
       <RateSheet
         open={rating}

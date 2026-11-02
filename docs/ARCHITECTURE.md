@@ -78,7 +78,7 @@ Product specs live in [`docs/specs`](specs): the original platform spec (01), **
 | # | Milestone | Specs | Status |
 | --- | --- | --- | --- |
 | 1 | **Foundation** — monorepo, tokens, schema + RLS, auth, onboarding, web + mobile shells | 01 | **Done** |
-| 2 | **My Kitchen inventory** — items, staples checklist, use-by urgency, transaction log, category guessing; mobile sign-in + onboarding | 01 §5–6, 02 §9.1 | **Done (web + mobile)** · barcode/receipt import added in milestone 19 |
+| 2 | **My Kitchen inventory** — items, staples checklist, use-by urgency, transaction log, category guessing; mobile sign-in + onboarding | 01 §5–6, 02 §9.1 | **Done (web + mobile)** · barcode/receipt import and "update My Kitchen after cooking" added in milestone 19 |
 | 3 | **Recipes & ratings** — approved-source catalogue, recipe detail, skill/equipment/allergy filtering, ratings, favourites, recommendation history | 01 §7, 02 §4 | **Done (web + mobile)** — incl. credited photos, "Not for us" + history |
 | 4 | **AI weekly meal planning** — Claude-ranked plans from deterministic candidates; planning modes *Budget First / Balanced / Chef's Choice / Use What I Have* | 01 §8, 02 §3 | **Done (web + mobile)** · costs wait on milestone 5–6 prices |
 | 5 | **Shared household + grocery list** — invites (link or email), owner/member roles, personal allergies combined for planning, one live grocery list built from the meal plan | 01 §9, 04 | **Done (web + mobile)** · migration awaits review · package sizes + prices wait on milestone 6 |
@@ -95,6 +95,7 @@ Product specs live in [`docs/specs`](specs): the original platform spec (01), **
 | 15 | Shared household part 2 — per-person servings and "who's eating tonight", shared kitchen activity feed | 04 | **Done (web + mobile)** · migration awaits review |
 | 16 | Cooking mode, Chef mode, production readiness (server-sent invite email needs an email provider) | 01 §11–14, §18 | **Done (web + mobile)** · CI, health check, error logging, EAS profiles, optional Resend invites · migration awaits review |
 | 19 | **Barcode scanning & receipt import** — scan or type a barcode (Open Food Facts, cached and rationed on the server) to pre-fill an item; photograph a receipt, Claude reads the lines, the household reviews and adds them with price paid and date | 01 §5 | **Done (web + mobile)** · phone needs `expo-camera` + `expo-image-picker` installed · migration awaits review |
+| — | **Use-soon reminders** — once a day in each person's daytime, a notice (bell / phone Home) and optional phone notification about kitchen items due today or tomorrow; per-person switches in Profile → Reminders | 01 Phase 6 | **Done (web + mobile)** · needs `USE_SOON_REMINDERS=on` and an hourly call to `/api/jobs/use-soon` · migration awaits review |
 | 18 | **Global recipe library & menus** — 75 cuisines, statuses (tested / reviewed / not yet reviewed / idea), import pipeline with validation and duplicate detection, database search, natural-language search, variety engine, menu builder, AI versions | 08 | **Done (web + mobile)** · 80 complete recipes + 273 dish ideas · licensed catalogue still to choose (see [RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)) · migration awaits review |
 
 ## 6. Design notes for the new features (specs 02 & 03)
@@ -147,6 +148,7 @@ Results are cached by a hash of inputs; arithmetic, conversions, list consolidat
 | 15 | ✅ `user_preferences.portion`, `meal_attendance` (own answers only), `meal_guests`, `meal_attendance_range()`, `household_activity()` |
 | 16 | ✅ `ai_usage.feature` allows `cooking_help` (its own daily limit) |
 | 19 | ✅ check on `pantry_items.barcode` (8–14 digits; `source` / `barcode` existed since milestone 1), `receipt_import` AI feature. Receipt photos and product lookups aren't stored |
+| — | ✅ `notification_preferences.use_soon_in_app` / `use_soon_push` / `time_zone` (checked against Postgres's zone list), `notifications.kind` allows `use_soon`, `notifications.expires_at` (expired notices hidden), `use_soon_runs` (job bookkeeping, no access for users), `use_soon_reminders()` (server only), notices removed on leaving a household, at most 10 push addresses per person |
 | 18 | ✅ library columns on `recipes` (status, categories, methods, flavours, occasions, region, authenticity, dish key, version, safety/storage notes, licence, reviewer, facts for search, `search_document`), `search_recipes()`, `recipe_library_facets()`, `recipe_import_batches` + `import_recipe_batch()` (server only), `menus` + `menu_courses` + `save_menu()`, `save_household_recipe()` and the `recipe_draft` AI feature |
 
 ## 7. Open decisions (added by specs 02 & 03)
@@ -160,12 +162,21 @@ Results are cached by a hash of inputs; arithmetic, conversions, list consolidat
 
 ## 8. Next step
 
-**Review and apply** the thirteen pending migrations (`…0800_shared_household.sql` through `…2000_kitchen_import.sql`), add Kroger API keys and a Mapbox token, and try the list against real stores. Then switch on Kroger carts (README, *Smart Cart*) and weekly drafts (README, *Weekly drafts*). Every planned milestone is built. Next: have a person review the 80 library recipes, request quotes for a hosting licence (see [RECIPE_LIBRARY.md](RECIPE_LIBRARY.md) §4), find a permitted price source for a second store chain (so Best Deals can compare across chains, not only Kroger-family stores), and do real-device testing (push notifications, wake lock, timers, location).
+**Review and apply** the fourteen pending migrations (`…0800_shared_household.sql` through `…2100_use_soon_reminders.sql`), add Kroger API keys and a Mapbox token, and try the list against real stores. Then switch on Kroger carts (README, *Smart Cart*), weekly drafts (README, *Weekly drafts*) and use-soon reminders (README, *Use-soon reminders*). Every planned milestone is built. Next: have a person review the 80 library recipes, request quotes for a hosting licence (see [RECIPE_LIBRARY.md](RECIPE_LIBRARY.md) §4), find a permitted price source for a second store chain (so Best Deals can compare across chains, not only Kroger-family stores), and do real-device testing (push notifications, wake lock, timers, location).
 
 ### How barcodes and receipts work
 
+- **After cooking.** `recipe-engine/src/after-cooking.ts` matches the recipe's ingredients to kitchen items (`pantryItemMatches`, soonest use-by first, staples and expired items skipped) and works out what's left with `convert()` in the item's own unit. Comparable amounts become "reduce" or "used up" (ticked); anything that can't be compared becomes "used it all?" (unticked). The apps apply only what the household confirms, through the normal update/remove calls, so the pantry history logs each change.
+
 - **Barcodes.** `integrations/src/open-food-facts.ts` checks the GTIN check digit (UPC-A becomes EAN-13), asks Open Food Facts' v2 product endpoint for five fields only, strips markup and guesses a category (`guessCategory`, then Open Food Facts categories). The web server caches answers (found or not) for a week and rations calls: 12 a minute for the whole server (their limit is 15), 30 an hour per person. Phones call `/api/products/barcode`; the browser uses a server action. Items save with `source = 'barcode'` and the code.
 - **Receipts.** `ai/src/receipt.ts` checks the image bytes match the declared type (JPEG/PNG/WebP, ≤ 3.5 MB; the browser shrinks photos to 1,600 px first), sends it to Claude with structured outputs, and cleans the answer: markup removed, long digit runs (cards, accounts, phones, item codes) cut out, payment and total lines dropped, units limited to ones we track, prices bounded, dates only when plausible. The household reviews; `addMany()` saves the ticked lines in one insert with `source = 'receipt'`. `/api/kitchen/receipt` accepts the browser's session (same-origin JSON only) or a phone's bearer token, and has its own daily AI limit.
+
+### How use-soon reminders work
+
+- Something calls `/api/jobs/use-soon` hourly with the cron secret (`lib/planning/reminders.ts`). It calls `use_soon_reminders()` with the service role; the database does the rest.
+- For each person with reminders on (in the app or on the phone), in their active household: it works out their local time (their saved time zone, else the household's weekly-drafts zone, else US Central), skips anyone outside 8 AM–8 PM or already reminded today (`use_soon_runs`), and finds non-staple items with quantity left whose use-by date is today or tomorrow. Past-date items are never included.
+- It writes the notice ("Use soon: Chicken thighs and 2 more" / "Chicken thighs (by Nov 2)…", link `/kitchen`, expiring at the end of the person's day) when in-app is on, and returns the phone notifications to send; the server looks up push addresses and sends them through Expo, forgetting dead addresses. Old use-soon notices and run rows are tidied after a week.
+- Notification switches are saved one at a time (only the changed column), and the apps take the server's answer, so two screens or devices can't overwrite each other. The apps save the device's time zone whenever the person changes a reminder switch. On the phone, turning on any phone notification registers this phone; when the server says none are left on, the phone is forgotten.
 
 ### How One Store vs. Best Deals works
 
