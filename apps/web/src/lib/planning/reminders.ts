@@ -1,5 +1,5 @@
 import "server-only";
-import { createPlanningJobServer, runUseSoonReminders } from "@kitchen-pantry/database";
+import { createPlanningJobServer, runTrialReminders, runUseSoonReminders } from "@kitchen-pantry/database";
 import { sendExpoPushes } from "@kitchen-pantry/integrations";
 import { serviceRoleConfigured, serviceSupabase } from "@/lib/supabase/service";
 import { isCronRequest } from "./weekly";
@@ -60,4 +60,36 @@ export async function runUseSoon(): Promise<{ ok: true; data: UseSoonSummary } |
     if (sent.stale.length > 0) await server.forgetPushTokens(sent.stale);
   }
   return { ok: true, data: summary };
+}
+
+// ---------------------------------------------------------------------------
+// "Your free trial ends soon" (migration …3000). Runs with the hourly jobs
+// (use-soon and weekly drafts) and on its own route; it does nothing until
+// billing is switched on, and reminds each person once.
+// ---------------------------------------------------------------------------
+export async function runTrialEnding(): Promise<{ ok: true; data: { people: number; pushes: { sent: number; failed: number } } } | { ok: false; message: string }> {
+  const svc = serviceSupabase();
+  if (!svc) return { ok: false, message: "The server's Supabase service role key isn't set." };
+  const run = await runTrialReminders(svc, 500);
+  if (!run.ok) return run;
+  const pushes = { sent: 0, failed: 0 };
+  if (run.data.push.length === 0) return { ok: true, data: { people: run.data.people, pushes } };
+  const server = createPlanningJobServer(svc);
+  const byUser = new Map(run.data.push.map((p) => [p.userId, p]));
+  const ids = [...byUser.keys()];
+  for (let i = 0; i < ids.length; i += 50) {
+    const tokens = await server.pushTokens(ids.slice(i, i + 50));
+    if (!tokens.ok || tokens.data.length === 0) continue;
+    const sent = await sendExpoPushes(
+      tokens.data.map((t) => {
+        const p = byUser.get(t.userId)!;
+        return { to: t.token, title: p.title, body: p.body, data: { url: "/subscribe" } };
+      }),
+      { accessToken: process.env.EXPO_ACCESS_TOKEN || null },
+    );
+    pushes.sent += sent.sent;
+    pushes.failed += sent.failed;
+    if (sent.stale.length > 0) await server.forgetPushTokens(sent.stale);
+  }
+  return { ok: true, data: { people: run.data.people, pushes } };
 }

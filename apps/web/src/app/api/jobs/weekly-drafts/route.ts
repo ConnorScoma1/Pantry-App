@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { runTrialEnding } from "@/lib/planning/reminders";
 import { isCronRequest, runWeeklyDrafts, weeklyDraftsStatus } from "@/lib/planning/weekly";
 
 /**
@@ -14,7 +15,9 @@ async function handle(request: Request) {
   if (!weeklyDraftsStatus().running) return NextResponse.json({ ok: false, message: "Weekly drafts are off." }, { status: 404 });
   if (!isCronRequest(request)) return NextResponse.json({ ok: false, message: "Not allowed." }, { status: 401 });
   const result = await runWeeklyDrafts();
-  return NextResponse.json(result, { status: result.ok ? 200 : 500 });
+  // Trial reminders ride along (nothing happens until billing is switched on).
+  const trial = await runTrialEnding();
+  return NextResponse.json({ ...result, trial }, { status: result.ok ? 200 : 500 });
 }
 
 export const GET = handle;

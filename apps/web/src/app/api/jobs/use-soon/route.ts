@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isCronRequest, runUseSoon, useSoonStatus } from "@/lib/planning/reminders";
+import { isCronRequest, runTrialEnding, runUseSoon, useSoonStatus } from "@/lib/planning/reminders";
 
 /**
  * Use-soon reminders job. Call it hourly with `Authorization: Bearer $CRON_SECRET`
@@ -14,7 +14,9 @@ async function handle(request: Request) {
   if (!useSoonStatus().running) return NextResponse.json({ ok: false, message: "Use-soon reminders are off." }, { status: 404 });
   if (!isCronRequest(request)) return NextResponse.json({ ok: false, message: "Not allowed." }, { status: 401 });
   const result = await runUseSoon();
-  return NextResponse.json(result, { status: result.ok ? 200 : 500 });
+  // Trial reminders ride along (nothing happens until billing is switched on).
+  const trial = await runTrialEnding();
+  return NextResponse.json({ ...result, trial }, { status: result.ok ? 200 : 500 });
 }
 
 export const GET = handle;

@@ -91,7 +91,7 @@ const jobFromRow = (r: JobRow): PlanningJob => ({
 
 interface NoticeRow {
   id: string;
-  kind: "plan_ready" | "use_soon";
+  kind: "plan_ready" | "use_soon" | "trial_ending";
   title: string;
   body: string | null;
   link: string | null;
@@ -407,6 +407,18 @@ export interface UseSoonRun {
   people: number;
   notices: number;
   push: Array<{ userId: string; title: string; body: string }>;
+}
+
+/** "Your free trial ends soon" (migration …3000): once per person, only while billing is on. */
+export async function runTrialReminders(svc: SupabaseLike, maxPeople = 500): Promise<Result<{ people: number; push: Array<{ userId: string; title: string; body: string }> }>> {
+  const { data, error } = await svc.rpc("trial_reminders", { max_people: Math.min(Math.max(Math.trunc(maxPeople) || 500, 1), 5000) });
+  if (error) return dbFailure("trial reminders", error, "Couldn't run trial reminders.");
+  const raw = (data ?? {}) as { people?: unknown; push?: unknown };
+  const push = (Array.isArray(raw.push) ? raw.push : [])
+    .map((p) => p as { userId?: unknown; title?: unknown; body?: unknown })
+    .filter((p): p is { userId: string; title: string; body: string } => typeof p.userId === "string" && isUuid(p.userId) && typeof p.title === "string" && typeof p.body === "string")
+    .map((p) => ({ userId: p.userId, title: p.title.slice(0, 120), body: p.body.slice(0, 300) }));
+  return { ok: true, data: { people: Number(raw.people) || 0, push } };
 }
 
 export async function runUseSoonReminders(svc: SupabaseLike, maxPeople = 500): Promise<Result<UseSoonRun>> {

@@ -448,8 +448,8 @@ export interface PlanningJob {
 
 export interface AppNotification {
   id: Uuid;
-  /** plan_ready: next week's draft is ready · use_soon: kitchen items due today or tomorrow. */
-  kind: "plan_ready" | "use_soon";
+  /** plan_ready: next week's draft is ready · use_soon: kitchen items due today or tomorrow · trial_ending: the free trial ends within 2 days. */
+  kind: "plan_ready" | "use_soon" | "trial_ending";
   title: string;
   body: string | null;
   /** In-app path, e.g. /plan?week=2026-11-09 */

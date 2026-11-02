@@ -11,6 +11,32 @@ import { i, s } from "./helpers";
  * every step that cooks meat, poultry, fish or eggs. Original recipes in our
  * own words; all start as "not yet reviewed" until a person tests them.
  */
+/**
+ * Photos: each checked on its own page on 2026-11-02 ("Free to use under the
+ * Unsplash License" / the Pexels License), showing a SIMILAR dish, so they're
+ * labelled "Similar dish" and credited. The lentil sloppy joes, burrito bowls
+ * and enchiladas have none yet: the closest free photos showed meat or
+ * cheese, which would mislead on a vegan recipe.
+ */
+const unsplashPhoto = (photoId: string, pageSlug: string, alt: string, creditName: string, username: string) => ({
+  url: `https://images.unsplash.com/${photoId}`,
+  alt,
+  license: "unsplash" as const,
+  creditName,
+  creditUrl: `https://unsplash.com/@${username}`,
+  sourceUrl: `https://unsplash.com/photos/${pageSlug}`,
+  representative: true,
+});
+const pexelsPhoto = (url: string, pageSlug: string, alt: string, creditName: string, username: string) => ({
+  url,
+  alt,
+  license: "pexels" as const,
+  creditName,
+  creditUrl: `https://www.pexels.com/@${username}/`,
+  sourceUrl: `https://www.pexels.com/photo/${pageSlug}/`,
+  representative: true,
+});
+
 export const beginnerMains: LibraryRecipeInput[] = [
   {
     externalId: "sheet-pan-chicken-fajitas",
@@ -26,6 +52,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["oven"],
     tags: ["one-pan", "weeknight", "kid-friendly"],
     methods: ["roast"],
+    image: unsplashPhoto("photo-1756521973435-4e4e1d2884b7", "chicken-fajitas-with-onions-peppers-and-sour-cream-R8XWXFgz9fQ", "Chicken fajitas with onions, peppers and sour cream", "Hybrid Storytellers", "hybridstorytellers"),
     ingredients: [
       i(1.5, "lb", "boneless skinless chicken breasts", "cut into thin strips"),
       i(2, null, "bell peppers", "sliced into strips"),
@@ -62,6 +89,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["oven", "stove"],
     tags: ["weeknight", "high-protein"],
     methods: ["bake"],
+    image: unsplashPhoto("photo-1742349166781-70e38f10b7ed", "salmon-and-rice-served-on-a-floral-plate-ANUYfc2aPXU", "Glazed salmon fillet with rice on a floral plate", "smboro", "smboro"),
     ingredients: [
       i(1.5, "cup", "long-grain white rice"),
       i(4, null, "salmon fillets", "about 6 oz each"),
@@ -94,6 +122,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["vegetarian", "budget", "pantry", "kid-friendly"],
     methods: ["boil"],
+    image: unsplashPhoto("photo-1713561058969-793049b01712", "a-plate-of-spaghetti-with-tomato-sauce-and-parsley-Htb3Neu9Tmg", "Plate of spaghetti with tomato sauce and parsley", "Mandy Bourke", "myshegotripped"),
     ingredients: [
       i(1, "lb", "spaghetti"),
       i(3, "tbsp", "olive oil"),
@@ -127,6 +156,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["weeknight", "kid-friendly", "budget"],
     methods: ["pan_fry"],
+    image: unsplashPhoto("photo-1687881063470-a78e6ea2590e", "three-tacos-with-meat-lettuce-and-sauce-on-a-white-plate-oDC_9Uq1los", "Three tacos with seasoned meat, lettuce and sauce on a white plate", "Robby McCullough", "mybbor"),
     ingredients: [
       i(1, "tbsp", "vegetable oil"),
       i(1, null, "yellow onion", "finely chopped"),
@@ -163,6 +193,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove", "oven"],
     tags: ["vegetarian", "budget", "use-it-up"],
     methods: ["bake"],
+    image: unsplashPhoto("photo-1755531567087-b1169c42aa3c", "frittata-with-avocado-and-vegetables-served-with-dessert-5Gi9toZT9kw", "Vegetable frittata served with avocado", "Ria Huang", "riah215"),
     ingredients: [
       i(10, null, "eggs"),
       i(0.25, "cup", "milk"),
@@ -196,6 +227,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove", "oven"],
     tags: ["vegetarian", "make-ahead", "kid-friendly", "comfort"],
     methods: ["bake", "boil"],
+    image: unsplashPhoto("photo-1620041631703-45ddcef3dae0", "white-and-brown-dish-on-silver-tray-WeNvx6MeMr8", "Baked pasta with tomato sauce and melted cheese on a tray", "Carnivore Style", "carnivorestyle"),
     ingredients: [
       i(1, "lb", "ziti", "or penne"),
       i(24, "oz", "jarred marinara sauce"),
@@ -226,6 +258,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["oven"],
     tags: ["one-pan", "weeknight", "budget"],
     methods: ["roast"],
+    image: unsplashPhoto("photo-1675619450128-d8001229a56f", "a-plate-of-food-with-sausages-potatoes-and-salad-KEs360uEST4", "Plate of sausages with potatoes and salad", "Luna Wang", "lunawangjl"),
     ingredients: [
       i(1.5, "lb", "Yukon Gold potatoes", "cut into 1-inch pieces"),
       i(2, null, "bell peppers", "cut into strips"),
@@ -256,6 +289,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["weeknight", "budget"],
     methods: ["stir_fry"],
+    image: unsplashPhoto("photo-1788603913464-cc204d311c13", "stir-fried-green-beans-with-chili-SiNy1z5kn1M", "Stir-fried green beans with sliced red chili on a white plate", "Zoshua Colah", "zoshuacolah"),
     ingredients: [
       i(1.5, "cup", "jasmine rice"),
       i(1, "tbsp", "vegetable oil"),
@@ -289,6 +323,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["one-pot", "weeknight", "comfort"],
     methods: ["stew"],
+    image: unsplashPhoto("photo-1791465596490-84f9961452cc", "orzo-pasta-with-mushrooms-and-carrots-ZfYxuyKm770", "Orzo pasta with mushrooms and diced carrots on a white plate", "Theo Lonic", "thorai9akira"),
     ingredients: [
       i(1, "tbsp", "olive oil"),
       i(1.25, "lb", "boneless skinless chicken thighs", "cut into 1-inch pieces"),
@@ -323,6 +358,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["weeknight", "high-protein"],
     methods: ["stir_fry"],
+    image: unsplashPhoto("photo-1783375175952-705a0600e05c", "a-bowl-of-beef-and-broccoli-with-white-rice-BA2UZ6w8JfY", "Bowl of beef and broccoli with white rice", "sheri silver", "sheri_silver"),
     ingredients: [
       i(1.5, "cup", "long-grain white rice"),
       i(1, "lb", "flank steak", "sliced thinly across the grain"),
@@ -357,6 +393,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["oven", "stove"],
     tags: ["vegan", "budget", "meal-prep"],
     methods: ["bake"],
+    image: unsplashPhoto("photo-1764674963000-0d113663bc0d", "bowl-of-tofu-corn-broccoli-and-carrots-_VWg1YZNDnM", "Bowl of tofu with corn, broccoli, carrots and sesame seeds", "XinYing Lin", "xinyinglin"),
     ingredients: [
       i(14, "oz", "extra-firm tofu", "drained and patted dry"),
       i(1, "tbsp", "cornstarch"),
@@ -393,6 +430,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["vegan", "budget", "pantry"],
     methods: ["stew"],
+    image: unsplashPhoto("photo-1788602564560-9bcbf0f9acb6", "chana-masala-with-fried-bhatura-bread-Idh9dnG2v8w", "Bowl of chickpea curry with cilantro beside fried bread", "Zoshua Colah", "zoshuacolah"),
     ingredients: [
       i(1.5, "cup", "basmati rice"),
       i(2, "tbsp", "vegetable oil"),
@@ -429,6 +467,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["oven"],
     tags: ["one-pan", "weeknight", "quick"],
     methods: ["bake"],
+    image: unsplashPhoto("photo-1562656407-7f78d2507827", "fish-dish-with-sliced-lemon-zOYuGvDlZ7g", "Cooked white fish fillet with sliced lemon", "Hristo Sahatchiev", "hrsahatchiev"),
     ingredients: [
       i(12, "oz", "green beans", "trimmed"),
       i(1, "tbsp", "olive oil"),
@@ -461,6 +500,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["kid-friendly", "weeknight", "comfort"],
     methods: ["pan_fry"],
+    image: unsplashPhoto("photo-1572802419224-296b0aeee0d9", "double-patty-cheeseburger-jh5XyK4Rr3Y", "Double patty cheeseburger", "amirali mirhashemian", "amir_v_ali"),
     ingredients: [
       i(1.25, "lb", "ground beef", "80/20"),
       i(0.75, "tsp", "kosher salt"),
@@ -496,6 +536,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["vegetarian", "budget", "freezer-friendly", "use-it-up"],
     methods: ["stew"],
+    image: unsplashPhoto("photo-1778079840437-74db44e6edb9", "spoonful-of-pasta-soup-with-vegetables-BqwRblBr2o4", "Spoonful of vegetable soup with small pasta", "Jay Sekhar", "js5928"),
     ingredients: [
       i(2, "tbsp", "olive oil"),
       i(1, null, "yellow onion", "chopped"),
@@ -533,6 +574,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["comfort", "freezer-friendly", "kid-friendly"],
     methods: ["stew"],
+    image: unsplashPhoto("photo-1672667509947-865215fa66db", "a-bowl-of-soup-with-noodles-carrots-and-celery-KYI21FX9EWM", "Bowl of chicken soup with noodles, carrots and celery", "Babs Gorniak", "babs_gorniak"),
     ingredients: [
       i(1, "tbsp", "olive oil"),
       i(1, null, "yellow onion", "chopped"),
@@ -614,6 +656,7 @@ export const plantMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["vegan", "budget", "pantry", "one-pot"],
     methods: ["stew"],
+    image: pexelsPhoto("https://images.pexels.com/photos/33597401/pexels-photo-33597401.jpeg", "chickpea-soup-with-vegetables-in-white-bowl-33597401", "Chickpea soup with vegetables in a white bowl", "Brad Hines", "culturesnap"),
     ingredients: [
       i(3, "tbsp", "olive oil", "plus more to serve"),
       i(3, "clove", "garlic", "thinly sliced"),
@@ -648,6 +691,7 @@ export const plantMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["vegan", "budget", "freezer-friendly"],
     methods: ["stew"],
+    image: unsplashPhoto("photo-1741026079032-7cb660e44bad", "lentil-soup-with-accompaniments-is-ready-to-eat-BIRp2p8vR8k", "Bowl of orange lentil soup with accompaniments", "Markus Winkler", "markuswinkler"),
     ingredients: [
       i(2, "tbsp", "olive oil"),
       i(1, null, "yellow onion", "chopped"),
@@ -685,6 +729,7 @@ export const plantMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["vegan", "budget"],
     methods: ["pan_fry"],
+    image: unsplashPhoto("photo-1789990642036-e10c2df4fc81", "poori-and-potato-curry-breakfast-LBknd0DOoRk", "Bowl of spiced potato curry with fried bread", "Zoshua Colah", "zoshuacolah"),
     ingredients: [
       i(3, "tbsp", "vegetable oil"),
       i(1, "tsp", "cumin seeds"),
@@ -725,6 +770,7 @@ export const plantMains: LibraryRecipeInput[] = [
     equipment: ["stove"],
     tags: ["vegan", "weeknight", "quick"],
     methods: ["stir_fry"],
+    image: unsplashPhoto("photo-1788601299617-3052a7c8fa70", "noodles-with-vegetables-in-black-bowl-t2XScZ1IGH0", "Stir-fried noodles with vegetables and sesame seeds in a black bowl", "Zoshua Colah", "zoshuacolah"),
     ingredients: [
       i(12, "oz", "dried spaghetti"),
       i(3, "tbsp", "soy sauce"),

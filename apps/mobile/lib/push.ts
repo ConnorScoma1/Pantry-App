@@ -66,12 +66,12 @@ export async function unregisterPush(repo: WeeklyPlanningRepository): Promise<vo
   await deviceStorage.removeItem(TOKEN_KEY);
 }
 
-/** Tapping a notice opens what it's about — the week, or My Kitchen (in-app paths only). */
+/** Tapping a notice opens what it's about — the week, My Kitchen or the subscribe screen (in-app paths only). */
 export function usePushNavigation() {
   useEffect(() => {
     if (Platform.OS !== "ios" && Platform.OS !== "android") return;
     const open = (url: unknown) => {
-      if (typeof url === "string" && (/^\/plan(\?week=\d{4}-\d{2}-\d{2})?$/.test(url) || url === "/kitchen")) router.push(url as never);
+      if (typeof url === "string" && (/^\/plan(\?week=\d{4}-\d{2}-\d{2})?$/.test(url) || url === "/kitchen" || url === "/subscribe")) router.push(url as never);
     };
     const sub = Notifications.addNotificationResponseReceivedListener((r) => open(r.notification.request.content.data?.url));
     void Notifications.getLastNotificationResponseAsync().then((r) => (r ? open(r.notification.request.content.data?.url) : undefined));

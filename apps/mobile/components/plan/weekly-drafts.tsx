@@ -119,22 +119,26 @@ export function WeeklyDraftBanner({ weekStart, plan }: { weekStart: string; plan
   return <Notice tone={job.status === "failed" ? "warning" : "info"}>{job.message ?? "There's no draft for this week."}</Notice>;
 }
 
-/** Home: the newest unread notice — "plan is ready" first, then "use soon". */
+/** Home: the newest unread notice — "plan is ready" first, then "trial ends soon", then "use soon". */
 export function PlanReadyCard() {
   const n = useNotifications();
-  const notice = n.items.find((x) => x.kind === "plan_ready" && !x.readAt) ?? n.items.find((x) => x.kind === "use_soon" && !x.readAt);
+  const notice =
+    n.items.find((x) => x.kind === "plan_ready" && !x.readAt) ??
+    n.items.find((x) => x.kind === "trial_ending" && !x.readAt) ??
+    n.items.find((x) => x.kind === "use_soon" && !x.readAt);
   if (!notice) return null;
   const plan = notice.kind === "plan_ready";
+  const trial = notice.kind === "trial_ending";
   return (
     <View accessibilityRole="summary" className="gap-3 rounded-card bg-accent-soft p-5">
       <Text className="text-[17px] font-semibold text-foreground">{notice.title}</Text>
       {notice.body ? <Text className="text-[15px] leading-5 text-foreground">{notice.body}</Text> : null}
       <View className="flex-row flex-wrap gap-2">
         <Button
-          label={plan ? "Review the plan" : "Open My Kitchen"}
+          label={plan ? "Review the plan" : trial ? "Subscribe" : "Open My Kitchen"}
           onPress={() => {
             void n.markRead([notice.id]);
-            router.push((notice.link ?? (plan ? "/plan" : "/kitchen")) as never);
+            router.push((trial ? "/subscribe" : (notice.link ?? (plan ? "/plan" : "/kitchen"))) as never);
           }}
         />
         <Button label={plan ? "Later" : "Got it"} variant="ghost" onPress={() => void n.markRead([notice.id])} />
