@@ -7,6 +7,10 @@ import { dishIdeas } from "./ideas";
 import { worldCourses } from "./world-courses";
 import { worldMains } from "./world-mains";
 import { beginnerMains, plantMains } from "./beginner-mains";
+import { americasRecipes } from "./americas";
+import { europeRecipes } from "./europe";
+import { africaMiddleEastRecipes } from "./africa-middle-east";
+import { asiaRecipes } from "./asia";
 
 /**
  * The library's first collection: original Test Kitchen recipes written in
@@ -16,7 +20,17 @@ import { beginnerMains, plantMains } from "./beginner-mains";
  */
 export const TEST_KITCHEN_LIBRARY_SOURCE: LibrarySourceInput = { name: TEST_KITCHEN_SOURCE.name, kind: "original", license: "owned" };
 
-export const LIBRARY_COLLECTION_INPUTS: readonly LibraryRecipeInput[] = [...worldMains, ...beginnerMains, ...plantMains, ...worldCourses, ...dishIdeas];
+export const LIBRARY_COLLECTION_INPUTS: readonly LibraryRecipeInput[] = [
+  ...worldMains,
+  ...beginnerMains,
+  ...plantMains,
+  ...worldCourses,
+  ...americasRecipes,
+  ...europeRecipes,
+  ...africaMiddleEastRecipes,
+  ...asiaRecipes,
+  ...dishIdeas,
+];
 
 export interface CollectionReport {
   accepted: number;

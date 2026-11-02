@@ -100,7 +100,7 @@ Product specs live in [`docs/specs`](specs): the original platform spec (01), **
 | — | **Cooking history** — meals cooked (from the "cooked" log and ratings), monthly list with ratings and notes, 30-day stats, cuisines cooked most, "worth making again" | 01 Phase 6 | **Done (web + mobile)** · no migration |
 | — | **Use it before you lose it** — pick one or more ingredients to use up; ranked recipe ideas that use the most of them, with what you'd still buy, basics listed separately, "you have …" when short, and an on-request extra-cost check at the household's store | 01 §6 | **Done (web + mobile)** · "Ask AI for a new idea" needs `ANTHROPIC_API_KEY` · no migration |
 | — | **Use-soon reminders** — once a day in each person's daytime, a notice (bell / phone Home) and optional phone notification about kitchen items due today or tomorrow; per-person switches in Profile → Reminders | 01 Phase 6 | **Done (web + mobile)** · needs `USE_SOON_REMINDERS=on` and an hourly call to `/api/jobs/use-soon` · migration awaits review |
-| 18 | **Global recipe library & menus** — 75 cuisines, statuses (tested / reviewed / not yet reviewed / idea), import pipeline with validation and duplicate detection, database search, natural-language search, variety engine, menu builder, AI versions | 08 | **Done (web + mobile)** · 103 complete recipes + 273 dish ideas · licensed catalogue still to choose (see [RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)) · migration awaits review |
+| 18 | **Global recipe library & menus** — 75 cuisines, statuses (tested / reviewed / not yet reviewed / idea), import pipeline with validation and duplicate detection, database search, natural-language search, variety engine, menu builder, AI versions | 08 | **Done (web + mobile)** · 203 complete recipes + 173 dish ideas · licensed catalogue still to choose (see [RECIPE_LIBRARY.md](RECIPE_LIBRARY.md)) · migration awaits review |
 
 ## 6. Design notes for the new features (specs 02 & 03)
 
@@ -166,7 +166,7 @@ Results are cached by a hash of inputs; arithmetic, conversions, list consolidat
 
 ## 8. Next step
 
-**Review and apply** the seventeen pending migrations (`…0800_shared_household.sql` through `…2400_ai_plan_cache.sql`), add Kroger API keys and a Mapbox token, and try the list against real stores. Then switch on Kroger carts (README, *Smart Cart*), weekly drafts (README, *Weekly drafts*) and use-soon reminders (README, *Use-soon reminders*). Every planned milestone is built. Next: have a person review the 103 library recipes, request quotes for a hosting licence (see [RECIPE_LIBRARY.md](RECIPE_LIBRARY.md) §4), find a permitted price source for a second store chain (so Best Deals can compare across chains, not only Kroger-family stores), and do real-device testing (push notifications, wake lock, timers, location).
+**Review and apply** the seventeen pending migrations (`…0800_shared_household.sql` through `…2400_ai_plan_cache.sql`), add Kroger API keys and a Mapbox token, and try the list against real stores. Then switch on Kroger carts (README, *Smart Cart*), weekly drafts (README, *Weekly drafts*) and use-soon reminders (README, *Use-soon reminders*). Every planned milestone is built. Next: have a person review the 203 library recipes, request quotes for a hosting licence (see [RECIPE_LIBRARY.md](RECIPE_LIBRARY.md) §4), find a permitted price source for a second store chain (so Best Deals can compare across chains, not only Kroger-family stores), and do real-device testing (push notifications, wake lock, timers, location).
 
 ### How barcodes and receipts work
 

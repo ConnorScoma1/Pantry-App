@@ -2,7 +2,7 @@
   "name": "kitchen-pantry",
   "version": "0.1.0",
   "private": true,
-  "description": "Kitchen Pantry — AI-powered kitchen, meal planning and grocery budgeting platform.",
+  "description": "Kitchen Pantry \u2014 AI-powered kitchen, meal planning and grocery budgeting platform.",
   "packageManager": "npm@10.9.2",
   "engines": {
     "node": ">=20.19.0"
@@ -41,8 +41,5 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "@types/react": "~19.3.0"
-  },
-  "dependencies": {
-    "expo-web-browser": "~58.0.7"
   }
 }

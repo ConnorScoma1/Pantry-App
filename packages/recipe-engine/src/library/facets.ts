@@ -68,7 +68,11 @@ export function recipeFacets(recipe: Pick<Recipe, "ingredients">): RecipeFacets 
   const required = recipe.ingredients.filter((i) => !i.optional).map((i) => [i.item, i.preparation].filter(Boolean).join(", "));
   const hits = (terms: readonly string[]) => required.some((line) => terms.some((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(line)));
   const dietTags: string[] = [];
-  const requiredAllergens = new Set(screenAllergens(required, ALL_ALLERGENS).conflicts.map((c) => c.allergen));
+  const requiredScreen = screenAllergens(required, ALL_ALLERGENS);
+  const requiredAllergens = new Set(requiredScreen.conflicts.map((c) => c.allergen));
+  // "Gluten-free" is a claim people with coeliac disease rely on, so a likely
+  // hidden source (bouillon, boxed stock, oats, seasoning mixes) withholds it too.
+  const glutenWarning = requiredScreen.warnings.some((w) => w.allergen === "gluten" || w.allergen === "wheat");
   // Same rules as the dietConflicts filter: term lists plus the allergen rules
   // (fish/shellfish for vegetarian; dairy and eggs for vegan).
   const seafood = requiredAllergens.has("fish") || requiredAllergens.has("shellfish");
@@ -76,7 +80,7 @@ export function recipeFacets(recipe: Pick<Recipe, "ingredients">): RecipeFacets 
   const vegetarian = !hits(DIET_EXCLUDED_TERMS.vegetarian) && !seafood;
   if (vegetarian) dietTags.push("vegetarian");
   if (vegetarian && !hits(DIET_EXCLUDED_TERMS.vegan) && !requiredAllergens.has("milk") && !requiredAllergens.has("egg")) dietTags.push("vegan");
-  if (!requiredAllergens.has("gluten") && !requiredAllergens.has("wheat")) dietTags.push("gluten_free");
+  if (!requiredAllergens.has("gluten") && !requiredAllergens.has("wheat") && !glutenWarning) dietTags.push("gluten_free");
   if (!requiredAllergens.has("milk")) dietTags.push("dairy_free");
   const core = [...new Set(recipe.ingredients.filter((i) => !i.optional).map((i) => coreIngredient(i.item)).filter((c) => c && !STAPLE_CORE.has(c)))];
   return { allergens, proteins, dietTags, core, fingerprint: [...core].sort().join("|") };

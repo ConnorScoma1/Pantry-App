@@ -22,6 +22,22 @@ test("non-dairy look-alikes are not flagged as dairy", () => {
   assert.deepEqual(r.conflicts, []);
 });
 
+test("named cheeses, custards and less common seafood are caught", () => {
+  for (const line of ["1 cup Pecorino Romano, grated", "4 oz Gruyère", "6 slices provolone", "1 cup cheese curds", "0.5 cup labneh"]) {
+    assert.equal(screenAllergens([line], ["milk"]).conflicts.length, 1, line);
+  }
+  assert.equal(screenAllergens(["1 cup hollandaise"], ["egg"]).conflicts.length, 1);
+  assert.equal(screenAllergens(["1 lb salt cod (bacalhau)"], ["fish"]).conflicts.length, 1);
+  assert.equal(screenAllergens(["1 tsp shrimp paste (belacan)"], ["shellfish"]).conflicts.length, 1);
+  assert.equal(screenAllergens(["8 oz udon noodles", "1 tbsp Shaoxing wine"], ["wheat"]).conflicts.length, 2);
+});
+
+test("look-alike names are not flagged: butter lettuce, butter beans, oyster mushrooms, bean curd", () => {
+  assert.deepEqual(screenAllergens(["1 head butter lettuce", "1 can butter beans", "4 oz bean curd"], ["milk"]).conflicts, []);
+  assert.deepEqual(screenAllergens(["8 oz oyster mushrooms"], ["shellfish"]).conflicts, []);
+  assert.equal(screenAllergens(["2 tbsp oyster sauce"], ["shellfish"]).conflicts.length, 1);
+});
+
 test("eggplant is not egg, buckwheat is not wheat", () => {
   assert.deepEqual(screenAllergens(["1 eggplant"], ["egg"]).conflicts, []);
   assert.deepEqual(screenAllergens(["1 cup buckwheat groats"], ["wheat"]).conflicts, []);

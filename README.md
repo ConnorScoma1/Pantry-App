@@ -384,7 +384,7 @@ The library is built to grow to 10,000–50,000 recipes. The plan, the research 
   - Save menus, or send the shopping list to your grocery list.
 - **Adding recipes.** Convert a licensed feed to the import format, or use `--format schema-org`, then run `npm run recipes:import`. New sources stay hidden until you approve them in `recipe_sources`.
 
-**Review before applying:** `supabase/migrations/20261101001800_recipe_library.sql` adds library columns, search, the server-only import, saved menus and household AI drafts; nothing is deleted. Apply it after `…1700`, re-run `supabase/seed_recipes.sql` (103 complete recipes and 273 dish ideas), then run `supabase/tests/recipe_library_smoke_test.sql` (41 checks).
+**Review before applying:** `supabase/migrations/20261101001800_recipe_library.sql` adds library columns, search, the server-only import, saved menus and household AI drafts; nothing is deleted. Apply it after `…1700`, re-run `supabase/seed_recipes.sql` (203 complete recipes and 173 dish ideas), then run `supabase/tests/recipe_library_smoke_test.sql` (41 checks).
 
 ## Barcodes and receipts
 

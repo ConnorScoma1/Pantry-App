@@ -99,6 +99,12 @@ That brings it to **103 complete recipes**. Suitable dinners per household type,
 | Vegan | 2 | 11 |
 | Vegan beginner | 0 | 7 |
 
+**100 more dishes from around the world (added 2026-11-02).** 100 of the dish ideas are now full original recipes, 25 per region (`catalog/library/americas.ts`, `europe.ts`, `africa-middle-east.ts`, `asia.ts`), and their idea entries were removed. Every one went through the import pipeline (validation, units, USDA safe temperatures, safety notes, allergens) and the duplicate check. Recipes changed for a home kitchen are marked "adapted" and say what changed. That brings the library to **203 complete recipes and 173 dish ideas**.
+
+Photos: 145 of the 203 recipes have a credited "Similar dish" photo (Unsplash or Pexels; each licence checked on the photo's own page, and each image looked at before use). 58 have none yet, usually because no free photo clearly showed the dish, or the only ones showed an ingredient the recipe doesn't use.
+
+While writing these, the allergen screen gained named cheeses (Pecorino, Gruyère, provolone…), custards and egg sauces, less common fish and shrimp pastes, more wheat foods (udon, orzo, gnocchi, Shaoxing wine, bread loaves) and bouillon as a hidden source; "butter lettuce", "butter beans", "bean curd" and "oyster mushrooms" are no longer misread. "Gluten-free" is now withheld when an ingredient is a likely hidden source (stock, bouillon, oats). This corrected three existing recipes: Spaghetti Carbonara (now shows milk), and Lemon Chicken Orzo and Bruschetta (now show wheat and gluten).
+
 They start as "not yet reviewed", like the rest.
 
 While adding them, two diet-tag errors in the stored tags were fixed, so the library's search filters now agree with the meal-planning filter:
@@ -139,8 +145,8 @@ Not verified: Spoonacular's real catalogue size; Edamam's full terms; the licenc
 
 ## 4. Recommended way to reach 10,000+
 
-1. **Now (built):** 103 original recipes and 273 dish ideas; the import pipeline, search, variety and menus.
-2. **Review the collection.** Have a person (ideally someone who cooks) review and test the 103 recipes and mark them reviewed or tested. This is what lets the app say "Kitchen-tested".
+1. **Now (built):** 203 original recipes and 173 dish ideas; the import pipeline, search, variety and menus.
+2. **Review the collection.** Have a person (ideally someone who cooks) review and test the 203 recipes and mark them reviewed or tested. This is what lets the app say "Kitchen-tested".
 3. **License a core of 5,000–10,000 recipes you can host.** Get quotes from Edamam Recipe Licensing, CookButler and StockFood. The contract must cover:
    - hosting for the term, image rights, the right to edit and to calculate nutrition;
    - US territory;

@@ -46,7 +46,7 @@ insert into results select 'text search ranks the title first', (select r.dish_k
 insert into results select 'regions', (select bool_and(r.cuisine = any(public.cuisines_in_regions(array['africa']))) and count(*) >= 2 from public.search_recipes('{"regions":["africa"],"limit":100}') s join public.recipes r on r.id = s.recipe_id);
 insert into results select 'pages and total', (select count(*) = 5 and min(total) > 5 from public.search_recipes('{"limit":5,"seed":"a"}'))
   and not exists (select recipe_id from public.search_recipes('{"limit":5,"seed":"a"}') intersect select recipe_id from public.search_recipes('{"limit":5,"offset":5,"seed":"a"}'));
-insert into results select 'facets count complete recipes and ideas', (select (f ->> 'complete')::int >= 70 and (f ->> 'ideas')::int >= 200 and (f -> 'cuisines' ->> 'thai')::int >= 4 from public.recipe_library_facets() f);
+insert into results select 'facets count complete recipes and ideas', (select (f ->> 'complete')::int >= 200 and (f ->> 'ideas')::int >= 150 and (f -> 'cuisines' ->> 'thai')::int >= 4 from public.recipe_library_facets() f);
 do $$ begin
   perform public.search_recipes('{"maxMinutes":"lots"}');
   insert into results values ('bad filter values are rejected', false);
