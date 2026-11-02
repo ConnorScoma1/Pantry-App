@@ -4,7 +4,8 @@ import { filterItems, groupByCategory, summarizeKitchen } from "@kitchen-pantry/
 import { storageLocations, type PantryItem, type StorageLocation } from "@kitchen-pantry/shared-types";
 import { scannedToPrefill } from "@kitchen-pantry/integrations";
 import type { PantryItemInput } from "@kitchen-pantry/validation";
-import { ListChecks, Plus, ReceiptText, Refrigerator, ScanBarcode, Search, TriangleAlert } from "lucide-react";
+import { ArrowRight, ListChecks, Plus, ReceiptText, Refrigerator, ScanBarcode, Search, TriangleAlert } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ItemRow } from "@/components/kitchen/item-row";
 import { BarcodeSheet } from "@/components/kitchen/barcode-sheet";
@@ -109,6 +110,14 @@ export function KitchenView() {
               ))}
             </ul>
           )}
+          {items.length > 0 ? (
+            <Link
+              href={summary.useSoon.length > 0 ? `/kitchen/use-it-up?items=${summary.useSoon.slice(0, 3).map((v) => v.item.id).join(",")}` : "/kitchen/use-it-up"}
+              className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-accent hover:underline"
+            >
+              Find recipes to use {summary.useSoon.length > 0 ? "these" : "something"} up <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          ) : null}
         </Card>
       </div>
 

@@ -145,12 +145,19 @@ export function HomeView() {
                 </ul>
               </>
             )}
-            <Link
-              href="/kitchen"
-              className="mt-4 inline-flex items-center gap-1.5 text-[15px] font-semibold text-accent hover:underline"
-            >
-              Go to My Kitchen <ArrowRight className="size-4" aria-hidden />
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1">
+              {useSoon.length > 0 ? (
+                <Link
+                  href={`/kitchen/use-it-up?items=${useSoon.slice(0, 3).map((u) => u.item.id).join(",")}`}
+                  className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-accent hover:underline"
+                >
+                  Find recipes to use them <ArrowRight className="size-4" aria-hidden />
+                </Link>
+              ) : null}
+              <Link href="/kitchen" className="inline-flex min-h-11 items-center gap-1.5 text-[15px] font-semibold text-accent hover:underline">
+                Go to My Kitchen <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </div>
           </div>
         </div>
       </Card>

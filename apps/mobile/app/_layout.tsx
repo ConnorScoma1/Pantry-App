@@ -28,6 +28,8 @@ export default function RootLayout() {
           <Stack.Screen name="compare" />
           <Stack.Screen name="scan" />
           <Stack.Screen name="receipt" />
+          <Stack.Screen name="use-it-up" />
+          <Stack.Screen name="history" />
           <Stack.Screen name="invite/[token]" />
         </Stack>
       </AppProvider>

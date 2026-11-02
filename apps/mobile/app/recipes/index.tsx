@@ -83,6 +83,9 @@ function RecipesScreen() {
             ]}
           />
         </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Cooking history" onPress={() => router.push("/history")} className="size-11 items-center justify-center rounded-full border border-border">
+          <Ionicons name="time-outline" size={18} color={c.foreground} />
+        </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel="Menus" onPress={() => router.push("/menus")} className="min-h-11 flex-row items-center gap-1.5 rounded-full border border-border px-4">
           <Ionicons name="restaurant-outline" size={16} color={c.foreground} />
           <Text className="text-[15px] font-semibold text-foreground">Menus</Text>

@@ -1,6 +1,6 @@
 "use server";
 
-import { createSupabaseRecipeRepository, type RecipeRepository, type Result } from "@kitchen-pantry/database";
+import { createSupabaseRecipeRepository, type CookingHistoryData, type RecipeRepository, type Result } from "@kitchen-pantry/database";
 import type { RatingSummary, Recipe, RecipeRating, RecommendationEvent } from "@kitchen-pantry/shared-types";
 import { answerCookingQuestion, type CookingHelp } from "@/lib/cooking/help";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
@@ -38,6 +38,9 @@ export async function rateRecipeAction(input: unknown): Promise<Result<RecipeRat
 }
 export async function recommendationEventsAction(): Promise<Result<RecommendationEvent[]>> {
   return run((r) => r.events());
+}
+export async function cookingHistoryAction(): Promise<Result<CookingHistoryData>> {
+  return run((r) => r.history());
 }
 export async function logRecommendationEventAction(input: unknown): Promise<Result<RecommendationEvent>> {
   return run((r) => r.logEvent(input));

@@ -36,8 +36,19 @@ export interface RecipeRepository {
   bySlug(slug: string): Promise<Result<Recipe | null>>;
   /** How many complete recipes and ideas the library has, by cuisine and category. */
   facets(): Promise<Result<LibraryFacetCounts>>;
+  /**
+   * Cooking history: this household's "cooked" events (newest first, up to
+   * 300) and the recipes behind them and its ratings, even ones outside the
+   * working set loaded by `list()`.
+   */
+  history(): Promise<Result<CookingHistoryData>>;
   /** Preview mode only: keep an AI draft on this device (with Supabase the server saves it for the household). */
   keepDraft?(recipe: Recipe): Promise<void>;
+}
+
+export interface CookingHistoryData {
+  cooked: RecommendationEvent[];
+  recipes: Recipe[];
 }
 
 export interface LibraryFacetCounts {
@@ -380,6 +391,19 @@ export function createSupabaseRecipeRepository(db: SupabaseLike): RecipeReposito
       if (error) return dbFailure("rate", error, SAVE_FAILED);
       return { ok: true, data: ratingRowToRating(data as RatingRow) };
     },
+    async history() {
+      const [events, rated] = await Promise.all([
+        db.from("recommendation_events").select(EVENT_SELECT).eq("event", "cooked").order("created_at", { ascending: false }).limit(300),
+        db.from("recipe_ratings").select("recipe_id").order("created_at", { ascending: false }).limit(500),
+      ]);
+      if (events.error) return dbFailure("cooking history", events.error, LOAD_FAILED);
+      if (rated.error) return dbFailure("cooking history ratings", rated.error, LOAD_FAILED);
+      const cooked = (events.data as EventRow[]).map(eventRowToEvent);
+      const ids = [...new Set([...cooked.map((e) => e.recipeId), ...(rated.data as Array<{ recipe_id: string }>).map((r) => r.recipe_id)])];
+      const recipes = ids.length ? await rowsById(ids) : { ok: true as const, data: [] };
+      if (!recipes.ok) return recipes;
+      return { ok: true, data: { cooked, recipes: recipes.data } };
+    },
     async events() {
       const { data, error } = await db
         .from("recommendation_events")
@@ -489,6 +513,12 @@ export function createLocalRecipeRepository(
     async events() {
       const all = await readJson<RecommendationEvent[]>(LOCAL_EVENTS_KEY, []);
       return { ok: true, data: [...all].sort((a, b) => b.createdAt.localeCompare(a.createdAt)) };
+    },
+    async history() {
+      const events = (await readJson<RecommendationEvent[]>(LOCAL_EVENTS_KEY, [])).filter((e) => e.event === "cooked").sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 300);
+      const ratings = await readJson<RecipeRating[]>(LOCAL_RATINGS_KEY, []);
+      const ids = new Set([...events.map((e) => e.recipeId), ...ratings.map((r) => r.recipeId)]);
+      return { ok: true, data: { cooked: events, recipes: [...catalogue, ...(await drafts())].filter((r) => ids.has(r.id)) } };
     },
     async logEvent(input) {
       const parsed = recommendationEventInputSchema.safeParse(input);

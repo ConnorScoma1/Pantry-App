@@ -125,7 +125,16 @@ export default function HomeScreen() {
             </View>
           </>
         )}
-        <Pressable accessibilityRole="link" onPress={() => router.navigate("/kitchen")} className="mt-4 min-h-10 justify-center">
+        {useSoon.length > 0 ? (
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push(`/use-it-up?items=${useSoon.slice(0, 3).map((u) => u.item.id).join(",")}`)}
+            className="mt-4 min-h-10 justify-center"
+          >
+            <Text className="text-[16px] font-semibold text-accent">Find recipes to use them →</Text>
+          </Pressable>
+        ) : null}
+        <Pressable accessibilityRole="link" onPress={() => router.navigate("/kitchen")} className={`${useSoon.length > 0 ? "mt-1" : "mt-4"} min-h-10 justify-center`}>
           <Text className="text-[16px] font-semibold text-accent">Go to My Kitchen →</Text>
         </Pressable>
       </Card>

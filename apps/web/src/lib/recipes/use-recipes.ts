@@ -11,6 +11,7 @@ import type {
 } from "@kitchen-pantry/shared-types";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  cookingHistoryAction,
   favoritesAction,
   listRecipesAction,
   logRecommendationEventAction,
@@ -33,6 +34,7 @@ const supabaseRecipes: RecipeRepository = {
   myRatings: () => myRatingsAction(),
   rate: (input) => rateRecipeAction(input),
   events: () => recommendationEventsAction(),
+  history: () => cookingHistoryAction(),
   logEvent: (input) => logRecommendationEventAction(input),
   search: (query) => searchLibraryAction(query),
   bySlug: (slug) => recipeBySlugAction(slug),

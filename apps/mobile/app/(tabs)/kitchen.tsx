@@ -72,6 +72,13 @@ export default function KitchenScreen() {
               <ItemRow key={v.item.id} view={v} last={i === arr.length - 1} onPress={() => open(v.item)} />
             ))}
           </View>
+          <Pressable
+            accessibilityRole="link"
+            onPress={() => router.push(`/use-it-up?items=${summary.useSoon.slice(0, 3).map((v) => v.item.id).join(",")}`)}
+            className="mt-3 min-h-11 justify-center"
+          >
+            <Text className="text-[16px] font-semibold text-accent">Find recipes to use these up →</Text>
+          </Pressable>
         </Card>
       ) : null}
 

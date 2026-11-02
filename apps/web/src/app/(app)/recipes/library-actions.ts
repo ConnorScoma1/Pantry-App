@@ -5,7 +5,7 @@ import { createSupabaseMenuRepository, createSupabaseRecipeRepository, type Libr
 import type { LibraryPage } from "@kitchen-pantry/recipe-engine";
 import { allergens, dietStyles, equipment, type Recipe, type SavedMenu } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
-import { draftForHousehold, type DraftResult } from "@/lib/library/drafts";
+import { draftForHousehold, draftUseUpForHousehold, type DraftResult } from "@/lib/library/drafts";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -65,4 +65,15 @@ export async function draftRecipeAction(input: unknown, preview?: unknown): Prom
   }
   const s = await signedIn();
   return s ? draftForHousehold(input, { db: s.db, householdKey: s.userId }) : EXPIRED;
+}
+
+/** A new AI dinner around the picked kitchen ingredients (Use it before you lose it). */
+export async function draftUseUpAction(input: unknown, preview?: unknown): Promise<Result<DraftResult>> {
+  if (!isSupabaseConfigured) {
+    const h = previewHousehold.safeParse(preview);
+    if (!h.success) return { ok: false, message: "Your preview profile couldn't be read." };
+    return draftUseUpForHousehold(input, { preview: { household: h.data as DraftHousehold } });
+  }
+  const s = await signedIn();
+  return s ? draftUseUpForHousehold(input, { db: s.db, householdKey: s.userId }) : EXPIRED;
 }

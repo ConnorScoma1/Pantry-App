@@ -1,7 +1,7 @@
 "use client";
 
 import { labelFor, skillLevels, varietyModes, worldCuisines, type VarietyMode } from "@kitchen-pantry/shared-types";
-import { ChevronDown, Compass, EyeOff, Search, ShieldAlert, UtensilsCrossed } from "lucide-react";
+import { ChevronDown, Compass, EyeOff, Search, ShieldAlert, History, UtensilsCrossed } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -80,9 +80,14 @@ export function RecipesView() {
         title="Recipes"
         subtitle="Picked for your household — your skills, your kitchen and what needs using up first."
         action={
-          <Link href="/menus" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-[15px] font-semibold hover:bg-surface">
-            <UtensilsCrossed className="size-4" aria-hidden /> Menus
-          </Link>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Link href="/recipes/history" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-[15px] font-semibold hover:bg-surface">
+              <History className="size-4" aria-hidden /> History
+            </Link>
+            <Link href="/menus" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-[15px] font-semibold hover:bg-surface">
+              <UtensilsCrossed className="size-4" aria-hidden /> Menus
+            </Link>
+          </div>
         }
       />
 
