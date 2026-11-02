@@ -2,23 +2,34 @@
 
 import { filterItems, groupByCategory, summarizeKitchen } from "@kitchen-pantry/inventory-engine";
 import { storageLocations, type PantryItem, type StorageLocation } from "@kitchen-pantry/shared-types";
-import { ListChecks, Plus, Refrigerator, Search, TriangleAlert } from "lucide-react";
+import { scannedToPrefill } from "@kitchen-pantry/integrations";
+import type { PantryItemInput } from "@kitchen-pantry/validation";
+import { ListChecks, Plus, ReceiptText, Refrigerator, ScanBarcode, Search, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 import { ItemRow } from "@/components/kitchen/item-row";
+import { BarcodeSheet } from "@/components/kitchen/barcode-sheet";
 import { ItemSheet } from "@/components/kitchen/item-sheet";
+import { ReceiptSheet } from "@/components/kitchen/receipt-sheet";
 import { StaplesSheet } from "@/components/kitchen/staples-sheet";
 import { Button } from "@/components/ui/button";
 import { Card, Eyebrow, PageHeader } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import { useProfile } from "@/components/profile/profile-provider";
 import { useKitchen } from "@/lib/kitchen/use-kitchen";
 
-type Editing = { kind: "new" } | { kind: "edit"; item: PantryItem } | null;
+type Editing =
+  | { kind: "new" }
+  | { kind: "edit"; item: PantryItem }
+  | { kind: "barcode"; code: string; prefill: Partial<PantryItemInput>; note: string }
+  | null;
 
 export function KitchenView() {
   const kitchen = useKitchen();
+  const { mode } = useProfile();
   const { items, loading, error, today } = kitchen;
   const [editing, setEditing] = useState<Editing>(null);
   const [staplesOpen, setStaplesOpen] = useState(false);
+  const [importing, setImporting] = useState<null | "barcode" | "receipt">(null);
   const [location, setLocation] = useState<StorageLocation | "all">("all");
   const [query, setQuery] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
@@ -75,6 +86,12 @@ export function KitchenView() {
               icon={<ListChecks className="size-5" aria-hidden />}
             >
               Mark staples
+            </Button>
+            <Button variant="secondary" onClick={() => setImporting("barcode")} icon={<ScanBarcode className="size-5" aria-hidden />}>
+              Barcode
+            </Button>
+            <Button variant="secondary" onClick={() => setImporting("receipt")} icon={<ReceiptText className="size-5" aria-hidden />}>
+              Receipt
             </Button>
           </div>
         </Card>
@@ -195,8 +212,14 @@ export function KitchenView() {
         today={today}
         repository={kitchen.repository}
         onClose={() => setEditing(null)}
+        prefill={editing?.kind === "barcode" ? editing.prefill : null}
+        note={editing?.kind === "barcode" ? editing.note : null}
         onSave={async (input) => {
-          const result = editingItem ? await kitchen.update(editingItem.id, input) : await kitchen.add(input);
+          const result = editingItem
+            ? await kitchen.update(editingItem.id, input)
+            : editing?.kind === "barcode"
+              ? await kitchen.add(input, { source: "barcode", barcode: editing.code })
+              : await kitchen.add(input);
           if (result.ok) setNotice(editingItem ? `Updated ${result.data.name}.` : `Added ${result.data.name}.`);
           return result;
         }}
@@ -205,6 +228,40 @@ export function KitchenView() {
           const result = await kitchen.remove(editingItem.id, reason);
           if (result.ok) setNotice(`Removed ${editingItem.name}.`);
           return result;
+        }}
+      />
+
+      <BarcodeSheet
+        open={importing === "barcode"}
+        onClose={() => setImporting(null)}
+        onFound={(code, product, available) => {
+          setImporting(null);
+          // Preview mode keeps items in this browser only, without the barcode.
+          const keeps = mode === "supabase" ? " — the barcode is saved with it" : "";
+          setEditing({
+            kind: "barcode",
+            code,
+            prefill: product ? scannedToPrefill(product) : {},
+            note: product
+              ? `From Open Food Facts${product.brand ? ` · ${product.brand}` : ""}${product.sizeLabel ? ` · ${product.sizeLabel}` : ""}. Check the details, then add it.`
+              : available
+                ? `That barcode isn't in Open Food Facts yet. Add the name yourself${keeps}.`
+                : `Product lookups aren't set up on this server yet. Add the name yourself${keeps}.`,
+          });
+        }}
+      />
+
+      <ReceiptSheet
+        open={importing === "receipt"}
+        onClose={() => setImporting(null)}
+        today={today}
+        onAdd={async (inputs) => {
+          const r = await kitchen.addMany(inputs, { source: "receipt" });
+          if (r.ok) {
+            setImporting(null);
+            setNotice(`Added ${r.data.length} item${r.data.length === 1 ? "" : "s"} from your receipt.`);
+          }
+          return r.ok ? { ok: true } : { ok: false, message: r.message };
         }}
       />
 

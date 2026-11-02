@@ -9,12 +9,16 @@ import {
   type PantryItem,
   type RatingSummary,
   type Recipe,
+  type RecipeCourse,
   type RecipeIngredient,
   type RecipeRating,
   type RecommendationEvent,
 } from "@kitchen-pantry/shared-types";
 import { matchesAnyTerm } from "./allergens";
+import { tasteFit, tasteProfile, type TasteProfile } from "./taste";
+import { friendlyDate, holidayWhen, seasonalApplies, seasonalContext, seasonalFit, type SeasonalContext } from "./seasonal";
 import { checkEligibility, recommendationLabel, type EligibilityResult, type RecommendationLabel } from "./eligibility";
+import { isCookable, libraryOf } from "./library/facets";
 
 // ---------------------------------------------------------------------------
 // Display helpers
@@ -177,11 +181,20 @@ export interface RankingContext {
   myRatings: ReadonlyMap<string, RecipeRating>;
   /** Recipes the household said "Not for us" to (latest event wins). */
   dismissed?: ReadonlySet<string>;
+  /**
+   * Season, in-season produce and opted-in holidays. Null = seasonal recipes
+   * off; left out = worked out from the profile and `today`.
+   */
+  seasonal?: SeasonalContext | null;
+  /** What the household has enjoyed (from its own ratings). Null = off; left out = worked out from myRatings. */
+  taste?: TasteProfile | null;
 }
 
 export interface RankedRecipe {
   recipe: Recipe;
   score: number;
+  /** In-season produce it uses (for an "In season" label); empty when seasons are off. */
+  inSeason?: string[];
   /** Plain-English "why you're seeing this", most important first. */
   reasons: string[];
   /** Soft negatives, e.g. a disliked ingredient. */
@@ -196,6 +209,18 @@ export interface RankedRecipe {
   label: RecommendationLabel;
   rating: RatingSummary | null;
   favorite: boolean;
+}
+
+/** Main proteins a recipe features (for variety across a week). */
+export function recipeProteins(recipe: Recipe): string[] {
+  const text = recipe.ingredients
+    .filter((i) => !i.optional && !/\b(broth|stock|bouillon)\b/i.test(i.item))
+    .map((i) => i.item.toLowerCase())
+    .join(" | ");
+  return Object.entries(PROTEIN_WORDS)
+    .filter(([, words]) => words.some((w) => new RegExp(`\\b${w}`).test(text)))
+    .map(([protein]) => protein)
+    .filter((p) => p !== "eggs"); // eggs are usually a binder, not the main protein
 }
 
 function goalWeight(goals: readonly CookingGoal[], goal: CookingGoal): number {
@@ -217,6 +242,28 @@ const PROTEIN_WORDS: Record<string, string[]> = {
   beans: ["bean", "chickpea", "lentil"],
 };
 
+const union = <T>(a: readonly T[], b: readonly T[] | undefined): T[] => (b?.length ? [...new Set([...a, ...b])] : [...a]);
+
+/**
+ * The profile to plan with: the person's own taste plus everyone's
+ * allergies, restrictions, dislikes and "never recommend" items, so a
+ * shared meal is safe for the whole household.
+ */
+export function householdProfile(profile: OnboardingProfile): OnboardingProfile {
+  const h = profile.householdDiet;
+  if (!h) return profile;
+  return {
+    ...profile,
+    diet: {
+      ...profile.diet,
+      allergies: union(profile.diet.allergies, h.allergies),
+      restrictions: union(profile.diet.restrictions, h.restrictions),
+      dislikes: union(profile.diet.dislikes, h.dislikes),
+      neverRecommend: union(profile.diet.neverRecommend, h.neverRecommend),
+    },
+  };
+}
+
 /**
  * Deterministic recommendation scoring. Hard filters come from
  * checkEligibility; everything else nudges order and produces the
@@ -224,7 +271,7 @@ const PROTEIN_WORDS: Record<string, string[]> = {
  * milestone — it never replaces the hard filters.)
  */
 export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
-  const { profile } = ctx;
+  const profile = householdProfile(ctx.profile);
   const lines = ingredientLines(recipe);
   const eligibility = checkEligibility(
     { ingredientLines: lines, skillLevel: recipe.skillLevel, requiredEquipment: recipe.requiredEquipment },
@@ -236,7 +283,9 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
       equipment: profile.equipment,
     },
   );
-  const aboveSkill = recipe.skillLevel > profile.skillLevel;
+  // Desserts use the household member's dessert skill when they set one (spec 05).
+  const skill = recipe.course === "dessert" ? (profile.desserts?.skillLevel ?? profile.skillLevel) : profile.skillLevel;
+  const aboveSkill = recipe.skillLevel > skill;
   const coverage = pantryCoverage(recipe, ctx.pantry, ctx.today);
   const goals = profile.goals.ranked;
   const rating = ctx.ratings.get(recipe.id) ?? null;
@@ -303,7 +352,7 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
     reasons.push([8 * adventurousW, "A step up from everyday cooking"]);
   }
   const learnW = goalWeight(goals, "learn_to_cook");
-  if (learnW && recipe.skillLevel === profile.skillLevel) {
+  if (learnW && recipe.skillLevel === skill) {
     score += 5 * learnW;
     reasons.push([5 * learnW, "Builds skills right at your level"]);
   }
@@ -314,8 +363,8 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
   }
 
   // Skill fit.
-  if (!aboveSkill) score += recipe.skillLevel === profile.skillLevel ? 6 : recipe.skillLevel === profile.skillLevel - 1 ? 3 : 0;
-  else score -= 10 * (recipe.skillLevel - profile.skillLevel);
+  if (!aboveSkill) score += recipe.skillLevel === skill ? 6 : recipe.skillLevel === skill - 1 ? 3 : 0;
+  else score -= 10 * (recipe.skillLevel - skill);
 
   // Favourites and real ratings only.
   if (favorite) {
@@ -343,7 +392,14 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
     }
   }
 
-  // Soft dislikes.
+  // Learned taste: cuisines and proteins this household has rated well (or not).
+  if (ctx.taste && !mine && recipe.course !== "dessert") {
+    const t = tasteFit(recipe, ctx.taste);
+    score += t.points;
+    if (t.reason) reasons.push([t.points, t.reason]);
+  }
+
+    // Soft dislikes.
   const disliked = matchesAnyTerm(lines, profile.diet.dislikes);
   if (disliked.length > 0) {
     score -= 25;
@@ -354,10 +410,29 @@ export function rankRecipe(recipe: Recipe, ctx: RankingContext): RankedRecipe {
     cautions.push(`Made with your ${labelFor(equipment, a.use).toLowerCase()} instead of the ${labelFor(equipment, a.requires).toLowerCase()}`);
   }
 
+  // Seasons: a bounded nudge (never a filter, never above safety rules or what needs using up).
+  let inSeason: string[] = [];
+  const seasonal = ctx.seasonal;
+  if (seasonal && seasonalApplies(recipe, seasonal)) {
+    const fit = seasonalFit(recipe, seasonal);
+    inSeason = fit.produce;
+    const pts = Math.min(fit.produce.length, 3) * 5 + (fit.seasonTag ? 6 : 0);
+    if (pts > 0) {
+      score += pts;
+      const names = fit.produce.slice(0, 2).map((n) => n.toLowerCase().replace(" & yams", ""));
+      reasons.push([pts, names.length > 0 ? `In season now: ${names.join(" and ")}` : `A ${seasonal.season} favourite`]);
+    }
+    if (fit.holiday) {
+      score += 12;
+      reasons.push([12, `For ${fit.holiday.label} (${fit.holiday.approximate ? "around " : ""}${friendlyDate(fit.holiday.start)})`]);
+    }
+  }
+
   reasons.sort((a, b) => b[0] - a[0]);
   return {
     recipe,
     score: Math.round(score * 10) / 10,
+    inSeason,
     reasons: reasons.slice(0, 3).map(([, r]) => r),
     cautions,
     coverage,
@@ -379,6 +454,12 @@ export interface RecipeFilters {
   favoritesOnly?: boolean;
   /** Only recipes needing at most this many items you don't have. */
   maxMissing?: number | null;
+  /** Dinners by default; desserts are listed separately and never fill a dinner slot. */
+  course?: RecipeCourse | "any";
+  /** Desserts only: limit to these categories (empty = all). */
+  dessertCategories?: readonly string[];
+  /** Include dish ideas without full instructions (menus only). Retired recipes never appear. */
+  includeIdeas?: boolean;
 }
 
 export interface RankedList {
@@ -390,8 +471,18 @@ export interface RankedList {
 }
 
 export function rankRecipes(recipes: Recipe[], ctx: RankingContext, filters: RecipeFilters = {}): RankedList {
+  if (ctx.seasonal === undefined) ctx = { ...ctx, seasonal: seasonalContext(ctx.profile, ctx.today) };
+  if (ctx.taste === undefined) ctx = { ...ctx, taste: tasteProfile(recipes, ctx.myRatings) };
   const q = filters.query?.trim().toLowerCase() ?? "";
-  const ranked = recipes.map((r) => rankRecipe(r, ctx));
+  const course = filters.course ?? "main";
+  const categories = filters.dessertCategories ?? [];
+  const pool = recipes.filter(
+    (r) =>
+      (filters.includeIdeas ? libraryOf(r).status !== "retired" : isCookable(r)) &&
+      (course === "any" || (r.course ?? "main") === course) &&
+      (categories.length === 0 || r.course !== "dessert" || (r.dessertCategory !== null && categories.includes(r.dessertCategory))),
+  );
+  const ranked = pool.map((r) => rankRecipe(r, ctx));
   const hidden = ranked.filter((r) => !r.allowed);
   const dismissed = ranked.filter((r) => r.allowed && r.dismissed);
   const visible = ranked.filter(
@@ -440,4 +531,35 @@ export function groupByComponent<T extends { component: string | null }>(items: 
     else groups.push({ component: item.component, items: [item] });
   }
   return groups;
+}
+
+export interface SeasonalPicks {
+  meals: RankedRecipe[];
+  dessert: RankedRecipe | null;
+  /** Recipes for each opted-in holiday coming up (by holiday code). */
+  holidays: Array<{ code: string; label: string; when: string; recipes: RankedRecipe[] }>;
+}
+
+/**
+ * The "In season this week" picks: the best-ranked recipes that suit the
+ * season (they're already ranked with the seasonal nudge). Only recipes the
+ * person can make, nothing they dismissed.
+ */
+export function seasonalPicks(ranked: readonly RankedRecipe[], ctx: SeasonalContext, count = 3): SeasonalPicks {
+  const ok = ranked.filter((r) => r.allowed && !r.dismissed);
+  const fits = (r: RankedRecipe) => {
+    if (!seasonalApplies(r.recipe, ctx)) return false;
+    const f = seasonalFit(r.recipe, ctx);
+    return f.produce.length > 0 || f.seasonTag;
+  };
+  return {
+    meals: ctx.settings.meals ? ok.filter((r) => (r.recipe.course ?? "main") === "main" && fits(r)).slice(0, count) : [],
+    dessert: ctx.settings.desserts ? (ok.find((r) => r.recipe.course === "dessert" && fits(r)) ?? null) : null,
+    holidays: ctx.holidays.map((h) => ({
+      code: h.code,
+      label: h.label,
+      when: holidayWhen(h),
+      recipes: ok.filter((r) => r.recipe.tags.includes(h.code)).slice(0, count),
+    })),
+  };
 }

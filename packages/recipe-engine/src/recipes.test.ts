@@ -160,6 +160,17 @@ test("allergies, diet and missing equipment hide recipes; skill is opt-in", () =
   assert.ok(withStretch.some((r) => r.recipe.slug === "mushroom-thyme-risotto"));
 });
 
+test("shared household: another member's allergy hides recipes even when yours doesn't", () => {
+  const p = profile((x) => {
+    x.diet.allergies = [];
+    x.householdDiet = { allergies: ["peanut"], restrictions: [], dislikes: [], neverRecommend: ["mushrooms"], memberCount: 2 };
+  });
+  const visible = rankRecipes(testKitchenRecipes, ctx(p), { includeAboveSkill: true }).recipes.map((r) => r.recipe.slug);
+  assert.ok(!visible.includes("peanut-noodles-chicken-crunchy-vegetables"));
+  assert.ok(!visible.includes("mushroom-thyme-risotto"), "household never-recommend applies");
+  assert.deepEqual(p.diet.allergies, [], "your own profile is not changed");
+});
+
 test("use-soon ingredients and preferences lift recipes, with reasons", () => {
   const p = profile((x) => (x.diet.cuisines = ["italian"]));
   const ranked = rankRecipes(

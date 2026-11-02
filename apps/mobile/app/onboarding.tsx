@@ -50,10 +50,11 @@ const REVIEW = onboardingSteps.length;
 
 export default function OnboardingScreen() {
   const c = useThemeColors();
-  const { signedIn, profile: saved, saveProfile } = useApp();
+  const { signedIn, profile: saved, saveProfile, joinDraft } = useApp();
   const editing = saved !== null;
   const [profile, setProfileState] = useState<OnboardingProfile>(saved ?? defaultOnboardingProfile());
   const [index, setIndex] = useState(0);
+  const [joining, setJoining] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -62,6 +63,22 @@ export default function OnboardingScreen() {
   useEffect(() => {
     scroll.current?.scrollTo({ y: 0, animated: false });
   }, [index]);
+
+  // Joined a household before setting up: start from its shared answers, at "What you eat".
+  useEffect(() => {
+    if (editing) return;
+    let cancelled = false;
+    void joinDraft().then((draft) => {
+      if (cancelled || !draft) return;
+      setProfileState(draft);
+      setJoining(true);
+      setIndex(onboardingSteps.findIndex((s) => s.id === "diet"));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setProfile = useCallback((update: (p: OnboardingProfile) => OnboardingProfile) => {
     setProfileState(update);
@@ -147,6 +164,11 @@ export default function OnboardingScreen() {
           <Text accessibilityRole="header" className="text-[32px] font-bold leading-tight tracking-tight text-foreground">
             {isReview ? (editing ? "Your answers" : "Looks good?") : step!.title}
           </Text>
+          {joining && step?.id === "diet" ? (
+            <View className="mt-4">
+              <Notice>You&apos;ve joined a household, so its size, budget, equipment and store are already filled in. These next answers are just yours.</Notice>
+            </View>
+          ) : null}
           <Text className="mb-6 mt-2 text-[17px] text-muted">
             {isReview ? "Check everything over. You can change any of this later." : COPY[step!.id]}
           </Text>

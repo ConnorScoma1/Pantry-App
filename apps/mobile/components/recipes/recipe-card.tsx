@@ -15,6 +15,7 @@ import type { ComponentProps } from "react";
 import { useState } from "react";
 import { Image, Linking, Pressable, Text, View } from "react-native";
 import { useThemeColors } from "@/lib/theme";
+import { AuthenticityBadge, StatusBadge, statusLabel } from "./library-badges";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
@@ -130,8 +131,10 @@ export function RecipeCard({
   ranked,
   onToggleFavorite,
   onDismiss,
+  otherVersions = 0,
 }: {
   ranked: RankedRecipe;
+  otherVersions?: number;
   onToggleFavorite: () => void;
   /** "Not for us": hides the recipe from suggestions (undoable). */
   onDismiss?: () => void;
@@ -140,26 +143,44 @@ export function RecipeCard({
   const { recipe, coverage, reasons, cautions, favorite } = ranked;
   const have = coverage.owned.length;
   const total = coverage.requiredCount;
+  const status = statusLabel(recipe);
+  const idea = status.tone === "idea";
 
   return (
     <View className="flex-row overflow-hidden rounded-card bg-surface">
       <RecipeArt recipe={recipe} />
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel={`${recipe.title}, ${formatMinutes(recipe.totalMinutes)}`}
+        accessibilityLabel={idea ? `${recipe.title}, dish idea` : `${recipe.title}, ${formatMinutes(recipe.totalMinutes)}`}
         accessibilityHint="Opens the recipe"
         onPress={() => router.push(`/recipes/${recipe.slug}`)}
         className="flex-1 p-4 pr-12 active:opacity-80"
       >
         <Text className="text-[17px] font-semibold leading-snug text-foreground">{recipe.title}</Text>
         <View className="mt-1.5 flex-row flex-wrap items-center gap-x-2.5 gap-y-1">
-          <View className="flex-row items-center gap-1">
-            <Ionicons name="time-outline" size={14} color={c.muted} />
-            <Text className="text-[14px] text-muted">{formatMinutes(recipe.totalMinutes)}</Text>
-          </View>
+          {!idea ? (
+            <View className="flex-row items-center gap-1">
+              <Ionicons name="time-outline" size={14} color={c.muted} />
+              <Text className="text-[14px] text-muted">{formatMinutes(recipe.totalMinutes)}</Text>
+            </View>
+          ) : null}
           <SkillDots level={recipe.skillLevel} />
-          <Text className="text-[14px] text-muted">{ratingText(ranked)}</Text>
+          {!idea ? <Text className="text-[14px] text-muted">{ratingText(ranked)}</Text> : null}
+          {ranked.inSeason && ranked.inSeason.length > 0 ? (
+            <View className="flex-row items-center gap-1" accessibilityLabel={`In season: ${ranked.inSeason.join(", ")}`}>
+              <Ionicons name="leaf-outline" size={14} color={c.accent} />
+              <Text className="text-[14px] font-medium text-accent">In season</Text>
+            </View>
+          ) : null}
         </View>
+
+        {status.tone !== "neutral" || otherVersions > 0 || recipe.library?.authenticity ? (
+          <View className="mt-2 flex-row flex-wrap items-center gap-1.5">
+            {status.tone !== "neutral" ? <StatusBadge recipe={recipe} /> : null}
+            <AuthenticityBadge recipe={recipe} />
+            {otherVersions > 0 ? <Text className="text-[13px] font-medium text-muted">+{otherVersions} {otherVersions === 1 ? "version" : "versions"}</Text> : null}
+          </View>
+        ) : null}
 
         {total > 0 && have > 0 ? (
           <View className="mt-3">

@@ -14,6 +14,11 @@
   },
   "dependencies": {
     "@kitchen-pantry/shared-types": "*",
-    "@kitchen-pantry/grocery-pricing": "*"
+    "@kitchen-pantry/grocery-pricing": "*",
+    "@kitchen-pantry/recipe-engine": "*",
+    "@kitchen-pantry/inventory-engine": "*"
+  },
+  "devDependencies": {
+    "@kitchen-pantry/validation": "*"
   }
 }

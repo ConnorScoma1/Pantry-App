@@ -1,5 +1,6 @@
 import type {
   Cuisine,
+  DessertCategory,
   EquipmentCode,
   Recipe,
   RecipeIngredient,
@@ -13,6 +14,8 @@ import type {
  */
 
 import { TEST_KITCHEN_PHOTOS } from "./photos";
+import { dishKeyFor, inferCategories, inferFlavors, inferMethods } from "../library/facets";
+import type { RecipeLibraryInfo } from "@kitchen-pantry/shared-types";
 
 export const fToC = (f: number): number => Math.round((((f - 32) * 5) / 9) * 10) / 10;
 
@@ -56,9 +59,13 @@ export interface RecipeDef {
   prepMinutes: number;
   cookMinutes: number;
   servings: number;
+  /** Desserts only: their category, and hands-off chilling/setting/freezing time. */
+  dessert?: { category: DessertCategory; chillMinutes?: number };
   equipment: EquipmentCode[];
   tags?: string[];
   tips?: string[];
+  /** Library details beyond what's inferred (region, authenticity, occasions, storage…). */
+  library?: Partial<RecipeLibraryInfo>;
   /** Either a flat list, or named components for multi-part dishes. */
   ingredients: IngredientDef[] | Array<{ component: string; items: IngredientDef[] }>;
   steps: StepDef[] | Array<{ component: string; steps: StepDef[] }>;
@@ -107,7 +114,7 @@ export function defineRecipe(def: RecipeDef): Recipe {
     })),
   );
 
-  return {
+  const recipe: Recipe = {
     id: def.id,
     slug: def.slug,
     title: def.title,
@@ -116,8 +123,11 @@ export function defineRecipe(def: RecipeDef): Recipe {
     skillLevel: def.skillLevel,
     prepMinutes: def.prepMinutes,
     cookMinutes: def.cookMinutes,
-    totalMinutes: def.prepMinutes + def.cookMinutes,
+    totalMinutes: def.prepMinutes + def.cookMinutes + (def.dessert?.chillMinutes ?? 0),
     servings: def.servings,
+    course: def.dessert ? "dessert" : "main",
+    dessertCategory: def.dessert?.category ?? null,
+    chillMinutes: def.dessert?.chillMinutes ?? 0,
     requiredEquipment: def.equipment,
     tags: def.tags ?? [],
     tips: def.tips ?? [],
@@ -126,4 +136,22 @@ export function defineRecipe(def: RecipeDef): Recipe {
     ingredients,
     steps,
   };
+  const methods = def.library?.methods ?? inferMethods(recipe);
+  recipe.library = {
+    // Written for the app and checked automatically; a person still has to review them.
+    status: "pending_review",
+    categories: [...new Set([...(def.library?.categories ?? []), ...inferCategories(recipe, methods, def.library?.occasions ?? [])])],
+    methods,
+    flavors: def.library?.flavors ?? inferFlavors(recipe),
+    region: null,
+    authenticity: null,
+    dishKey: dishKeyFor(def.title),
+    variant: "classic",
+    occasions: [],
+    storage: null,
+    safetyNote: null,
+    license: "owned",
+    ...def.library,
+  };
+  return recipe;
 }

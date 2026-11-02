@@ -70,6 +70,21 @@ export function useRecipes() {
 
   const rank = useCallback((filters: RecipeFilters = {}) => rankRecipes(recipes, context, filters), [recipes, context]);
 
+  /** A recipe by slug: from the working set, else fetched (library recipes outside it, ideas, drafts). */
+  const findBySlug = useCallback(
+    async (slug: string): Promise<Recipe | null> => {
+      const known = recipes.find((r) => r.slug === slug);
+      if (known) return known;
+      const r = await repo.bySlug(slug);
+      if (!r.ok || !r.data) return null;
+      const found = r.data;
+      setRecipes((prev) => (prev.some((x) => x.id === found.id) ? prev : [...prev, found]));
+      return found;
+    },
+    [recipes, repo],
+  );
+  const remember = useCallback((list: Recipe[]) => setRecipes((prev) => [...prev, ...list.filter((r) => !prev.some((x) => x.id === r.id))]), []);
+
   const toggleFavorite = useCallback(
     async (recipeId: string): Promise<Result<null>> => {
       const on = !favorites.has(recipeId);
@@ -126,9 +141,12 @@ export function useRecipes() {
   );
 
   return {
+    repo,
     loading: loading || kitchen.loading,
     error,
     recipes,
+    findBySlug,
+    remember,
     context,
     rank,
     favorites,
@@ -139,5 +157,6 @@ export function useRecipes() {
     dismiss,
     undismiss,
     logEvent,
+    events,
   };
 }

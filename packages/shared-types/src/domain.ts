@@ -1,3 +1,4 @@
+import type { RecipeLibraryInfo } from "./library";
 import type {
   AllergenCode,
   BudgetInclude,
@@ -6,12 +7,18 @@ import type {
   CookingGoal,
   CountryCode,
   Cuisine,
+  DessertCategory,
+  DessertFrequency,
+  HolidayCode,
+  SeasonalRegionCode,
+  RecipeCourse,
   DietaryRestriction,
   DietStyle,
   EquipmentCode,
   GroceryDepartment,
   MealType,
   PantryCategory,
+  PlanningMode,
   PriceStatus,
   Protein,
   SkillLevel,
@@ -93,6 +100,47 @@ export interface OnboardingProfile {
   skillLevel: SkillLevel;
   equipment: EquipmentCode[];
   store: StoreSettings;
+  /** Optional dessert planning (spec 05). Frequency and categories are the household's; skill is personal. */
+  desserts: DessertSettings;
+  /** Seasonal cooking (spec 06): on by default, personal; the region override is the household's. */
+  seasonal: SeasonalSettings;
+  /**
+   * Everyone in the household combined (Supabase mode). `diet` is the
+   * signed-in person's own choices; planning uses both, so shared meals
+   * are safe for everyone. Absent in preview mode.
+   */
+  householdDiet?: HouseholdDiet;
+}
+
+export interface DessertSettings {
+  frequency: DessertFrequency;
+  /** Null = same as the regular cooking skill. */
+  skillLevel: SkillLevel | null;
+  /** Empty = any category. */
+  categories: DessertCategory[];
+}
+
+export interface SeasonalSettings {
+  /** "Enjoy seasonal recipes". Seasons nudge suggestions; they never limit them. */
+  enabled: boolean;
+  produce: boolean;
+  meals: boolean;
+  desserts: boolean;
+  /** Holiday/occasion recipes — only for the holidays picked in holidayOptIns. */
+  holidays: boolean;
+  /** Seasonal grocery deals: opt-in; uses live store sale prices only. */
+  deals: boolean;
+  holidayOptIns: HolidayCode[];
+  /** Household override; null = worked out from country and postal code. */
+  region: SeasonalRegionCode | null;
+}
+
+export interface HouseholdDiet {
+  allergies: AllergenCode[];
+  restrictions: DietaryRestriction[];
+  dislikes: string[];
+  neverRecommend: string[];
+  memberCount: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,6 +221,8 @@ export interface RecipeSourceInfo {
   kind: RecipeSourceKind;
   name: string;
   url: string | null;
+  /** Credit line the licence requires (e.g. CC BY-SA), shown on the recipe. */
+  attribution?: string;
 }
 
 export type RecipeImageLicense = "unsplash" | "pexels" | "cc0" | "cc-by" | "cc-by-sa" | "owned";
@@ -206,6 +256,11 @@ export interface Recipe {
   cookMinutes: number;
   totalMinutes: number;
   servings: number;
+  /** "dessert" recipes never fill a dinner slot. */
+  course: RecipeCourse;
+  dessertCategory: DessertCategory | null;
+  /** Hands-off chilling/setting time, already included in totalMinutes. */
+  chillMinutes: number;
   requiredEquipment: EquipmentCode[];
   tags: string[];
   tips: string[];
@@ -214,6 +269,8 @@ export interface Recipe {
   source: RecipeSourceInfo;
   ingredients: RecipeIngredient[];
   steps: RecipeStep[];
+  /** Library details (status, categories, versions…). Absent on older data: treat as not yet reviewed. */
+  library?: RecipeLibraryInfo;
 }
 
 /** Aggregate of real ratings. Absent when nobody has rated the recipe. */
@@ -237,7 +294,7 @@ export interface RecipeRating {
 }
 
 export type RecommendationEventType = "shown" | "opened" | "cooked" | "dismissed" | "undismissed";
-export type RecommendationSurface = "home" | "recipes" | "detail" | "plan";
+export type RecommendationSurface = "home" | "recipes" | "detail" | "plan" | "surprise";
 
 /** Append-only history of how the household responded to a recipe. */
 export interface RecommendationEvent {
@@ -245,6 +302,36 @@ export interface RecommendationEvent {
   event: RecommendationEventType;
   surface: RecommendationSurface;
   createdAt: IsoTimestamp;
+}
+
+export type MealPlanStatus = "draft" | "active" | "archived";
+export type PlanSource = "ai" | "rules" | "manual";
+
+export interface PlannedMeal {
+  id: Uuid;
+  date: IsoDate;
+  mealType: "dinner" | "dessert";
+  /** Null for a custom meal ("Leftovers", "Eating out"). */
+  recipeId: Uuid | null;
+  customTitle: string | null;
+  servings: number;
+  locked: boolean;
+  /** Why this meal is here — short, shown on the card. */
+  note: string | null;
+}
+
+export interface MealPlan {
+  id: Uuid;
+  weekStart: IsoDate;
+  status: MealPlanStatus;
+  mode: PlanningMode;
+  /** Set when the household confirms the week; never overwritten silently. */
+  confirmedAt: IsoTimestamp | null;
+  generatedBy: PlanSource;
+  /** Short explanation of the week from the planner (AI or rules). */
+  summary: string | null;
+  meals: PlannedMeal[];
+  updatedAt: IsoTimestamp;
 }
 
 export interface PriceQuote {
@@ -267,4 +354,156 @@ export interface GroceryListItem {
   price: PriceQuote;
   isChecked: boolean;
   isOwned: boolean;
+}
+
+/**
+ * A line on the household's shared shopping list. Who added or checked it
+ * is set by the database from the signed-in session, never by the client.
+ */
+export interface GroceryItem {
+  id: Uuid;
+  listId: Uuid;
+  name: string;
+  department: GroceryDepartment;
+  /** Free-text amount, e.g. "1½ lb" or "2 cans". */
+  amount: string | null;
+  note: string | null;
+  /** "plan" lines come from the week's meal plan and are replaced when it changes. */
+  source: "manual" | "plan";
+  /** Merge key for plan lines (ingredient name, lower-cased). */
+  key: string | null;
+  neededFor: string[];
+  /** Structured amount for package math (plan lines); null for typed items. */
+  quantity: Quantity | null;
+  checked: boolean;
+  addedBy: Uuid | null;
+  checkedBy: Uuid | null;
+  checkedAt: IsoTimestamp | null;
+  position: number;
+  createdAt: IsoTimestamp;
+  updatedAt: IsoTimestamp;
+}
+
+/** The store a household's grocery list is priced at (Supabase: households.pricing_*). */
+export interface PricingStore {
+  provider: "kroger";
+  storeId: string;
+  name: string;
+  address: string | null;
+  setAt: IsoTimestamp | null;
+}
+
+/**
+ * Weekly drafts (milestone 11): per household, off by default. `runDay` is
+ * an ISO weekday (1 = Monday … 7 = Sunday) in the household's time zone; the
+ * draft is for the week starting the following Monday.
+ */
+export interface WeeklyPlanningSettings {
+  enabled: boolean;
+  runDay: number;
+  runHour: number;
+  timeZone: string;
+  mode: PlanningMode;
+  /** Whose skill and tastes drafts are planned with (allergies and diets are everyone's). */
+  enabledByName: string | null;
+  enabledByYou: boolean;
+}
+
+export type PlanningJobStatus = "running" | "drafted" | "skipped" | "failed";
+
+export interface PlanningJob {
+  id: Uuid;
+  weekStart: IsoDate;
+  mode: PlanningMode;
+  status: PlanningJobStatus;
+  mealPlanId: Uuid | null;
+  message: string | null;
+  details: {
+    source?: PlanSource;
+    specialsUsed?: number;
+    storeName?: string | null;
+    useSoon?: string[];
+    unfilled?: number;
+    notes?: string[];
+  };
+  createdAt: IsoTimestamp;
+  finishedAt: IsoTimestamp | null;
+}
+
+export interface AppNotification {
+  id: Uuid;
+  kind: "plan_ready";
+  title: string;
+  body: string | null;
+  /** In-app path, e.g. /plan?week=2026-11-09 */
+  link: string | null;
+  readAt: IsoTimestamp | null;
+  createdAt: IsoTimestamp;
+}
+
+/** Per person, not per household. */
+export interface NotificationPreferences {
+  planReadyInApp: boolean;
+  planReadyPush: boolean;
+}
+
+/** Smart Savings (milestone 12): an item that left the kitchen, from the pantry log. */
+export interface PantryOutcome {
+  itemName: string;
+  reason: "consumed" | "discarded" | "expired";
+  /** What the household typed in when adding it; null when unknown (never estimated). */
+  pricePaidCents: number | null;
+  useBy: IsoDate | null;
+  at: IsoTimestamp;
+}
+
+/** A shop the household logged: what they actually spent. */
+export interface SpendingEntry {
+  id: Uuid;
+  spentOn: IsoDate;
+  amountCents: number;
+  storeName: string | null;
+  note: string | null;
+  /** The ordered Smart Cart this shop was for, if any. */
+  cartDraftId: Uuid | null;
+  createdAt: IsoTimestamp;
+}
+
+/** Shared household part 2: who's eating (milestone 15). */
+export interface AttendanceMember {
+  userId: Uuid;
+  name: string;
+  isYou: boolean;
+  /** Servings this person usually eats (1 = one serving). */
+  portion: number;
+}
+
+export interface AttendanceData {
+  members: AttendanceMember[];
+  /** Explicit answers; no answer means eating. */
+  answers: Array<{ day: IsoDate; userId: Uuid; eating: boolean }>;
+  guests: Array<{ day: IsoDate; guests: number }>;
+}
+
+export type ActivityKind =
+  | "pantry_added"
+  | "pantry_consumed"
+  | "pantry_discarded"
+  | "pantry_expired"
+  | "grocery_added"
+  | "grocery_checked"
+  | "rated"
+  | "cart_ordered"
+  | "shop_logged"
+  | "plan_confirmed"
+  | "plan_drafted";
+
+export interface ActivityEvent {
+  kind: ActivityKind;
+  /** "You", a member's name, "A former member", or null (the app itself / unknown). */
+  actorName: string | null;
+  isYou: boolean;
+  at: IsoTimestamp;
+  subject: string;
+  detail: string | null;
 }

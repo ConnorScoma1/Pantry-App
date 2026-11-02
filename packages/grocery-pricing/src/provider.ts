@@ -20,8 +20,15 @@ export interface RetailerProduct {
   externalProductId: string;
   name: string;
   brand: string | null;
-  packageSize: Quantity;
+  /** Null when the retailer's size text can't be read (never guessed). */
+  packageSize: Quantity | null;
+  /** The retailer's own size text, e.g. "5 oz" — shown to the shopper. */
+  sizeLabel?: string | null;
+  /** Priced per pound at the register (loose produce, deli). */
+  soldByWeight?: boolean;
   upc: string | null;
+  /** Retailer's page for the product, when the source provides one. */
+  pageUrl?: string | null;
 }
 
 export type Availability = "in_stock" | "limited" | "out_of_stock" | "unknown";
@@ -34,6 +41,8 @@ export interface PriceObservation {
   /** Promotional price if the provider reports one. */
   promoPriceCents: number | null;
   promoDescription: string | null;
+  /** Last day of the promotion (YYYY-MM-DD), only when the source states it. */
+  promoEndsOn?: string | null;
   /** Provider-reported unit price (cents per `unitPriceUnit`), when given. */
   unitPriceCents: number | null;
   unitPriceUnit: string | null;
@@ -51,18 +60,30 @@ export interface PricingProvider {
   readonly storeSpecific: boolean;
   searchProducts(query: ProductSearchQuery): Promise<RetailerProduct[]>;
   getPrices(storeId: string, externalProductIds: string[]): Promise<PriceObservation[]>;
+  /** Optional: search and price in one call when the retailer returns both together. */
+  searchPriced?(query: ProductSearchQuery): Promise<PricedProduct[]>;
 }
+
+export interface PricedProduct {
+  product: RetailerProduct;
+  /** Null when the store doesn't report a price for it. */
+  observation: PriceObservation | null;
+}
+
+export type PricingErrorKind = "not_configured" | "auth" | "rate_limited" | "unavailable" | "bad_response" | "bad_request";
 
 export class PricingProviderError extends Error {
   constructor(
     message: string,
     readonly provider: string,
     readonly retryable: boolean,
-    options?: { cause?: unknown },
+    options?: { cause?: unknown; kind?: PricingErrorKind },
   ) {
     super(message, options);
     this.name = "PricingProviderError";
+    this.kind = options?.kind ?? (retryable ? "unavailable" : "bad_response");
   }
+  readonly kind: PricingErrorKind;
 }
 
 export interface FreshnessPolicy {

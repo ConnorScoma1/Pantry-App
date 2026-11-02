@@ -7,7 +7,17 @@ import { Pressable, Text, View } from "react-native";
 import { Notice } from "@/components/controls";
 import { UrgencyBadge } from "@/components/kitchen/urgency-badge";
 import { RecipeCard } from "@/components/recipes/recipe-card";
+import { InSeasonCard } from "@/components/seasonal/in-season";
+import { SurpriseMe } from "@/components/recipes/surprise-me";
+import { PlanReadyCard } from "@/components/plan/weekly-drafts";
+import { SavingsSnapshot } from "@/components/savings-snapshot";
+import { TonightSection } from "@/components/household/who-is-eating";
+import { seasonalContext } from "@kitchen-pantry/recipe-engine";
 import { Body, Card, CardTitle, Eyebrow, PrimaryButton, Screen } from "@/components/ui";
+import { dayLabel } from "@/components/plan/meal-card";
+import { addDays, nightsLeft, startOfWeek } from "@kitchen-pantry/meal-planner";
+import { todayIso } from "@/lib/use-kitchen";
+import { useMealPlan } from "@/lib/use-meal-plan";
 import { useApp, useProfile } from "@/lib/app-state";
 import { useKitchen } from "@/lib/use-kitchen";
 import { useRecipes } from "@/lib/use-recipes";
@@ -25,6 +35,8 @@ export default function HomeScreen() {
   const kitchen = useKitchen();
   const recipes = useRecipes();
   const forYou = useMemo(() => recipes.rank().recipes.slice(0, 3), [recipes.rank]);
+  const seasonal = useMemo(() => seasonalContext(profile, kitchen.today), [profile, kitchen.today]);
+  const everything = useMemo(() => recipes.rank({ course: "any" }).recipes, [recipes.rank]);
   const useSoon = useMemo(() => summarizeKitchen(kitchen.items, kitchen.today).useSoon, [kitchen.items, kitchen.today]);
 
   const h = profile.household;
@@ -40,16 +52,12 @@ export default function HomeScreen() {
         <Notice tone="warning">Preview mode — Supabase isn&apos;t connected, so everything is saved on this device only.</Notice>
       ) : null}
 
-      <Card>
-        <Eyebrow>Dinners</Eyebrow>
-        <CardTitle>Nothing planned yet</CardTitle>
-        <Body>
-          We&apos;ll plan {dinners} dinner{dinners === 1 ? "" : "s"} for {h.cookingFor} {h.cookingFor === 1 ? "person" : "people"},
-          matched to your budget, skill level and what&apos;s already in your kitchen.
-        </Body>
-        <PrimaryButton label="Build my week" disabled />
-        <Text className="mt-2 text-center text-[14px] text-muted">Meal planning is coming soon.</Text>
-      </Card>
+      <PlanReadyCard />
+
+      <ThisWeekCard dinners={dinners} cookingFor={h.cookingFor} />
+
+      <TonightSection today={kitchen.today} titleFor={(id) => everything.find((r) => r.recipe.id === id)?.recipe.title ?? null} />
+      <SavingsSnapshot />
 
       <Card>
         <Eyebrow>Planning around</Eyebrow>
@@ -92,6 +100,9 @@ export default function HomeScreen() {
         </View>
       ) : null}
 
+      {!recipes.loading ? <SurpriseMe data={recipes} /> : null}
+      {seasonal && !recipes.loading ? <InSeasonCard seasonal={seasonal} ranked={everything} /> : null}
+
       <Card>
         <Eyebrow>Use it before you lose it</Eyebrow>
         {useSoon.length === 0 ? (
@@ -119,5 +130,68 @@ export default function HomeScreen() {
         </Pressable>
       </Card>
     </Screen>
+  );
+}
+
+/** This week's dinners (next week's late in the week), or a one-tap build. */
+function ThisWeekCard({ dinners, cookingFor }: { dinners: number; cookingFor: number }) {
+  const today = todayIso();
+  const thisWeek = startOfWeek(today);
+  const upcoming = nightsLeft(thisWeek, today) < 2;
+  const p = useMealPlan(upcoming ? addDays(thisWeek, 7) : thisWeek);
+  const label = upcoming ? "Next week" : "This week";
+  const meals = p.draft.meals;
+
+  if (meals.length === 0) {
+    return (
+      <Card>
+        <Eyebrow>{label}&apos;s dinners</Eyebrow>
+        <CardTitle>Nothing planned yet</CardTitle>
+        <Body>
+          We&apos;ll plan {dinners} dinner{dinners === 1 ? "" : "s"} for {cookingFor} {cookingFor === 1 ? "person" : "people"}, matched to
+          your skill level and what&apos;s already in your kitchen.
+        </Body>
+        <PrimaryButton
+          label={p.busy === "building" ? "Planning your week…" : "Build my week"}
+          disabled={p.loading || p.busy !== null || dinners === 0}
+          onPress={() => void p.build("balanced")}
+        />
+        <Pressable accessibilityRole="link" onPress={() => router.navigate("/plan")} className="mt-2 min-h-10 items-center justify-center">
+          <Text className="text-[15px] font-semibold text-accent">Choose how to plan</Text>
+        </Pressable>
+        {p.message ? <Text className="mt-1 text-center text-[14px] text-muted">{p.message.text}</Text> : null}
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <View className="flex-row items-center justify-between">
+        <Eyebrow>{label}&apos;s dinners</Eyebrow>
+        <Text className={`text-[13px] font-semibold ${p.draft.confirmedAt ? "text-accent" : "text-muted"}`}>{p.draft.confirmedAt ? "Confirmed" : "Draft"}</Text>
+      </View>
+      <View className="mt-2">
+        {meals.map((m, i) => {
+          const ranked = m.recipeId ? p.byId.get(m.recipeId) : undefined;
+          return (
+            <Pressable
+              key={m.date}
+              accessibilityRole={ranked ? "link" : undefined}
+              disabled={!ranked}
+              onPress={() => ranked && router.push(`/recipes/${ranked.recipe.slug}`)}
+              className={`flex-row items-baseline gap-3 py-2.5 ${i < meals.length - 1 ? "border-b border-border" : ""}`}
+            >
+              <Text className="w-10 text-[14px] font-semibold text-muted">{dayLabel(m.date).weekday}</Text>
+              <Text numberOfLines={1} className="flex-1 text-[16px] text-foreground">
+                {ranked?.recipe.title ?? m.customTitle ?? "Recipe unavailable"}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Pressable accessibilityRole="link" onPress={() => router.navigate("/plan")} className="mt-3 min-h-10 justify-center">
+        <Text className="text-[16px] font-semibold text-accent">Open meal plan →</Text>
+      </Pressable>
+    </Card>
   );
 }

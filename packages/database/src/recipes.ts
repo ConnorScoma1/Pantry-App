@@ -1,13 +1,14 @@
-import { testKitchenRecipes } from "@kitchen-pantry/recipe-engine";
+import { catalogRecipes, isCookable, libraryFacets, searchLibrary, type LibraryPage, type LibraryQuery } from "@kitchen-pantry/recipe-engine";
 import type {
   RatingSummary,
   Recipe,
   RecipeImage,
   RecipeImageLicense,
+  RecipeLibraryInfo,
   RecipeRating,
   RecommendationEvent,
 } from "@kitchen-pantry/shared-types";
-import { issuesToFieldErrors, recipeRatingInputSchema, recommendationEventInputSchema } from "@kitchen-pantry/validation";
+import { issuesToFieldErrors, libraryQuerySchema, recipeRatingInputSchema, recommendationEventInputSchema } from "@kitchen-pantry/validation";
 import { z } from "zod";
 import { dbFailure, type KeyValueStorage, type Result, type SupabaseLike } from "./client";
 
@@ -29,13 +30,41 @@ export interface RecipeRepository {
   events(): Promise<Result<RecommendationEvent[]>>;
   /** Append to the history (opened, cooked, "Not for us", undo). */
   logEvent(input: unknown): Promise<Result<RecommendationEvent>>;
+  /** Library search (spec 08 §9): filters run in the database; returns one page plus the total. */
+  search(query: unknown): Promise<Result<LibraryPage>>;
+  /** One recipe by its slug (for recipes outside the household's working set). */
+  bySlug(slug: string): Promise<Result<Recipe | null>>;
+  /** How many complete recipes and ideas the library has, by cuisine and category. */
+  facets(): Promise<Result<LibraryFacetCounts>>;
+  /** Preview mode only: keep an AI draft on this device (with Supabase the server saves it for the household). */
+  keepDraft?(recipe: Recipe): Promise<void>;
+}
+
+export interface LibraryFacetCounts {
+  complete: number;
+  ideas: number;
+  cuisines: Record<string, number>;
+  categories: Record<string, number>;
+}
+
+/** How many recipes `list()` loads to rank for the household (a rotating slice of the library, plus favourites). */
+export const WORKING_SET_SIZE = 400;
+
+/** ISO week, e.g. "2026-W44": the working set rotates weekly so the library keeps feeling new. */
+export function isoWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = Date.UTC(d.getUTCFullYear(), 0, 1);
+  const week = Math.ceil(((d.getTime() - yearStart) / 86_400_000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
 const idSchema = z.uuid();
 const LOAD_FAILED = "We couldn't load recipes. Please try again.";
 const SAVE_FAILED = "We couldn't save that. Please try again.";
 
-interface RecipeRow {
+export interface RecipeRow {
   id: string;
   slug: string;
   title: string;
@@ -46,6 +75,9 @@ interface RecipeRow {
   cook_minutes: number | null;
   total_minutes: number | null;
   servings: number;
+  course?: string | null;
+  dessert_category?: string | null;
+  chill_minutes?: number | null;
   required_equipment: Recipe["requiredEquipment"];
   tags: string[];
   tips: string[];
@@ -57,6 +89,19 @@ interface RecipeRow {
   image_license: RecipeImageLicense | null;
   image_is_representative: boolean | null;
   source_url: string | null;
+  status?: RecipeLibraryInfo["status"] | null;
+  categories?: string[] | null;
+  methods?: string[] | null;
+  flavors?: string[] | null;
+  occasions?: string[] | null;
+  region?: string | null;
+  authenticity?: RecipeLibraryInfo["authenticity"];
+  dish_key?: string | null;
+  variant?: RecipeLibraryInfo["variant"] | null;
+  storage_notes?: string | null;
+  safety_note?: string | null;
+  text_license?: string | null;
+  attribution?: string | null;
   recipe_sources: { kind: Recipe["source"]["kind"]; name: string; website: string | null } | null;
   recipe_ingredients: Array<{
     position: number;
@@ -77,8 +122,9 @@ interface RecipeRow {
   }>;
 }
 
-const RECIPE_SELECT =
-  "id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, source_url, " +
+export const RECIPE_SELECT =
+  "id, slug, title, description, cuisine, skill_level, prep_minutes, cook_minutes, total_minutes, servings, course, dessert_category, chill_minutes, required_equipment, tags, tips, image_url, image_alt, image_credit, image_credit_url, image_source_url, image_license, image_is_representative, source_url, " +
+  "status, categories, methods, flavors, occasions, region, authenticity, dish_key, variant, storage_notes, safety_note, text_license, attribution, " +
   "recipe_sources(kind, name, website), " +
   "recipe_ingredients(position, component, item, original_quantity, original_unit, preparation, is_optional), " +
   "recipe_instructions(position, component, body, timer_seconds, temperature_c, safe_internal_temp_c)";
@@ -100,10 +146,32 @@ function rowImage(row: RecipeRow): RecipeImage | null {
   };
 }
 
+const COURSES = new Set(["main", "side", "starter", "sauce", "breakfast", "dessert"]);
+
+function rowLibrary(row: RecipeRow): RecipeLibraryInfo | undefined {
+  if (!row.status) return undefined; // older database: worked out from the recipe instead
+  return {
+    status: row.status,
+    categories: (row.categories ?? []) as RecipeLibraryInfo["categories"],
+    methods: (row.methods ?? []) as RecipeLibraryInfo["methods"],
+    flavors: (row.flavors ?? []) as RecipeLibraryInfo["flavors"],
+    region: row.region ?? null,
+    authenticity: row.authenticity ?? null,
+    dishKey: row.dish_key ?? row.slug,
+    variant: row.variant ?? "classic",
+    occasions: row.occasions ?? [],
+    storage: row.storage_notes ?? null,
+    safetyNote: row.safety_note ?? null,
+    license: row.text_license ?? "unknown",
+  };
+}
+
 export function recipeRowToRecipe(row: RecipeRow): Recipe {
   const prep = row.prep_minutes ?? 0;
   const cook = row.cook_minutes ?? 0;
+  const library = rowLibrary(row);
   return {
+    ...(library ? { library } : {}),
     id: row.id,
     slug: row.slug,
     title: row.title,
@@ -112,8 +180,11 @@ export function recipeRowToRecipe(row: RecipeRow): Recipe {
     skillLevel: row.skill_level,
     prepMinutes: prep,
     cookMinutes: cook,
-    totalMinutes: row.total_minutes ?? prep + cook,
+    totalMinutes: row.total_minutes ?? prep + cook + (row.chill_minutes ?? 0),
     servings: row.servings,
+    course: (COURSES.has(row.course ?? "") ? row.course : "main") as Recipe["course"],
+    dessertCategory: row.course === "dessert" ? ((row.dessert_category ?? "plated") as Recipe["dessertCategory"]) : null,
+    chillMinutes: row.chill_minutes ?? 0,
     requiredEquipment: row.required_equipment ?? [],
     tags: row.tags ?? [],
     tips: row.tips ?? [],
@@ -122,6 +193,7 @@ export function recipeRowToRecipe(row: RecipeRow): Recipe {
       kind: row.recipe_sources?.kind ?? "editorial",
       name: row.recipe_sources?.name ?? "Kitchen Pantry",
       url: row.source_url ?? row.recipe_sources?.website ?? null,
+      ...(row.attribution ? { attribution: row.attribution } : {}),
     },
     ingredients: [...(row.recipe_ingredients ?? [])]
       .sort((a, b) => a.position - b.position)
@@ -147,7 +219,7 @@ export function recipeRowToRecipe(row: RecipeRow): Recipe {
   };
 }
 
-interface RatingRow {
+export interface RatingRow {
   recipe_id: string;
   overall: number;
   flavor: number | null;
@@ -161,7 +233,7 @@ interface RatingRow {
 
 const RATING_SELECT = "recipe_id, overall, flavor, difficulty, would_cook_again, actual_minutes, family_approval, notes, created_at";
 
-function ratingRowToRating(r: RatingRow): RecipeRating {
+export function ratingRowToRating(r: RatingRow): RecipeRating {
   return {
     recipeId: r.recipe_id,
     overall: r.overall,
@@ -179,14 +251,14 @@ function invalidRating(error: z.ZodError): Result<never> {
   return { ok: false, message: "Please check your rating.", fieldErrors: issuesToFieldErrors(error) };
 }
 
-interface EventRow {
+export interface EventRow {
   recipe_id: string;
   event: RecommendationEvent["event"];
   surface: RecommendationEvent["surface"];
   created_at: string;
 }
 const EVENT_SELECT = "recipe_id, event, surface, created_at";
-const eventRowToEvent = (r: EventRow): RecommendationEvent => ({
+export const eventRowToEvent = (r: EventRow): RecommendationEvent => ({
   recipeId: r.recipe_id,
   event: r.event,
   surface: r.surface,
@@ -195,11 +267,53 @@ const eventRowToEvent = (r: EventRow): RecommendationEvent => ({
 const MAX_EVENTS = 500;
 
 export function createSupabaseRecipeRepository(db: SupabaseLike): RecipeRepository {
+  /** Full rows for these ids (RLS applies), fetched in chunks so the URL stays short. */
+  async function rowsById(ids: string[]): Promise<Result<Recipe[]>> {
+    const out: Recipe[] = [];
+    const chunks: string[][] = [];
+    for (let i = 0; i < ids.length; i += 100) chunks.push(ids.slice(i, i + 100));
+    const results = await Promise.all(chunks.map((c) => db.from("recipes").select(RECIPE_SELECT).in("id", c)));
+    for (const r of results) {
+      if (r.error) return dbFailure("recipes", r.error, LOAD_FAILED);
+      out.push(...(r.data as RecipeRow[]).map(recipeRowToRecipe));
+    }
+    return { ok: true, data: out };
+  }
   return {
     async list() {
-      const { data, error } = await db.from("recipes").select(RECIPE_SELECT).order("title").limit(500);
-      if (error) return dbFailure("recipes list", error, LOAD_FAILED);
-      return { ok: true, data: (data as RecipeRow[]).map(recipeRowToRecipe) };
+      // A rotating slice of the library (changes each week) plus every favourite, ranked in the app.
+      const ids = await db.rpc("search_recipes", { query: { limit: WORKING_SET_SIZE, sort: "rotate", seed: `pool:${isoWeek(new Date())}` } });
+      if (ids.error) return dbFailure("recipes list", ids.error, LOAD_FAILED);
+      const favs = await db.from("user_favorites").select("recipe_id");
+      const wanted = [...new Set([...((ids.data ?? []) as Array<{ recipe_id: string }>).map((r) => r.recipe_id), ...((favs.data ?? []) as Array<{ recipe_id: string }>).map((r) => r.recipe_id)])];
+      const rows = await rowsById(wanted);
+      if (!rows.ok) return rows;
+      return { ok: true, data: rows.data.filter(isCookable).sort((a, b) => a.title.localeCompare(b.title)) };
+    },
+    async search(query) {
+      const parsed = libraryQuerySchema.safeParse(query ?? {});
+      if (!parsed.success) return { ok: false, message: "That search couldn't be run." };
+      const { data, error } = await db.rpc("search_recipes", { query: parsed.data });
+      if (error) return dbFailure("recipe search", error, LOAD_FAILED);
+      const hits = (data ?? []) as Array<{ recipe_id: string; total: number | string }>;
+      const rows = await rowsById(hits.map((h) => h.recipe_id));
+      if (!rows.ok) return rows;
+      const byId = new Map(rows.data.map((r) => [r.id, r]));
+      return { ok: true, data: { recipes: hits.map((h) => byId.get(h.recipe_id)).filter((r): r is Recipe => Boolean(r)), total: Number(hits[0]?.total ?? 0) } };
+    },
+    async bySlug(slug) {
+      if (!/^[a-z0-9-]{1,120}$/.test(slug)) return { ok: true, data: null };
+      // The public recipe wins if a household copy ever shares its slug.
+      const { data, error } = await db.from("recipes").select(RECIPE_SELECT).eq("slug", slug).order("visibility", { ascending: false }).limit(1);
+      if (error) return dbFailure("recipe", error, LOAD_FAILED);
+      const row = (data as RecipeRow[])[0];
+      return { ok: true, data: row ? recipeRowToRecipe(row) : null };
+    },
+    async facets() {
+      const { data, error } = await db.rpc("recipe_library_facets");
+      if (error) return dbFailure("library facets", error, LOAD_FAILED);
+      const f = (data ?? {}) as Partial<LibraryFacetCounts>;
+      return { ok: true, data: { complete: Number(f.complete ?? 0), ideas: Number(f.ideas ?? 0), cuisines: f.cuisines ?? {}, categories: f.categories ?? {} } };
     },
     async favorites() {
       const { data, error } = await db.from("user_favorites").select("recipe_id");
@@ -297,13 +411,16 @@ export function createSupabaseRecipeRepository(db: SupabaseLike): RecipeReposito
 export const LOCAL_FAVORITES_KEY = "kp-preview-favorites-v1";
 export const LOCAL_RATINGS_KEY = "kp-preview-ratings-v1";
 export const LOCAL_EVENTS_KEY = "kp-preview-recommendation-events-v1";
+export const LOCAL_DRAFTS_KEY = "kp-preview-recipe-drafts-v1";
 
 export function createLocalRecipeRepository(
   storage: KeyValueStorage,
   options: { recipes?: Recipe[]; now?: () => Date } = {},
 ): RecipeRepository {
-  const recipes = options.recipes ?? testKitchenRecipes;
+  const catalogue = options.recipes ?? catalogRecipes;
+  const drafts = async () => (await readJson<Recipe[]>(LOCAL_DRAFTS_KEY, [])).filter((r) => r && typeof r.id === "string" && Array.isArray(r.steps));
   const now = options.now ?? (() => new Date());
+  let eventWrites: Promise<void> = Promise.resolve();
 
   async function readJson<T>(key: string, fallback: T): Promise<T> {
     try {
@@ -324,7 +441,23 @@ export function createLocalRecipeRepository(
 
   return {
     async list() {
-      return { ok: true, data: recipes };
+      return { ok: true, data: [...catalogue, ...(await drafts())].filter(isCookable) };
+    },
+    async search(query) {
+      const parsed = libraryQuerySchema.safeParse(query ?? {});
+      if (!parsed.success) return { ok: false, message: "That search couldn't be run." };
+      return { ok: true, data: searchLibrary([...catalogue, ...(await drafts())], parsed.data as LibraryQuery) };
+    },
+    async bySlug(slug) {
+      return { ok: true, data: [...catalogue, ...(await drafts())].find((r) => r.slug === slug) ?? null };
+    },
+    async keepDraft(recipe) {
+      const all = await drafts();
+      await writeJson(LOCAL_DRAFTS_KEY, [recipe, ...all.filter((r) => r.id !== recipe.id)].slice(0, 50));
+    },
+    async facets() {
+      const f = libraryFacets(catalogue);
+      return { ok: true, data: { complete: f.complete, ideas: f.ideas, cuisines: Object.fromEntries(f.cuisines), categories: Object.fromEntries(f.categories) } };
     },
     async favorites() {
       return { ok: true, data: await readJson<string[]>(LOCAL_FAVORITES_KEY, []) };
@@ -361,9 +494,14 @@ export function createLocalRecipeRepository(
       const parsed = recommendationEventInputSchema.safeParse(input);
       if (!parsed.success) return { ok: false, message: "That recipe no longer exists." };
       const event: RecommendationEvent = { ...parsed.data, createdAt: now().toISOString() };
-      const all = await readJson<RecommendationEvent[]>(LOCAL_EVENTS_KEY, []);
-      // Keep the newest entries only, so on-device history can't grow without bound.
-      await writeJson(LOCAL_EVENTS_KEY, [...all, event].slice(-MAX_EVENTS));
+      // One write at a time, so events logged together aren't lost.
+      const write = eventWrites.then(async () => {
+        const all = await readJson<RecommendationEvent[]>(LOCAL_EVENTS_KEY, []);
+        // Keep the newest entries only, so on-device history can't grow without bound.
+        await writeJson(LOCAL_EVENTS_KEY, [...all, event].slice(-MAX_EVENTS));
+      });
+      eventWrites = write.catch(() => {});
+      await write;
       return { ok: true, data: event };
     },
   };

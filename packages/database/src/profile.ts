@@ -1,5 +1,17 @@
-import type { OnboardingProfile, SkillLevel } from "@kitchen-pantry/shared-types";
-import { issuesToFieldErrors, onboardingProfileSchema, skillStepSchema } from "@kitchen-pantry/validation";
+import type { DessertSettings, OnboardingProfile, SeasonalSettings, SkillLevel } from "@kitchen-pantry/shared-types";
+import {
+  budgetStepSchema,
+  dessertSettingsSchema,
+  dietStepSchema,
+  equipmentStepSchema,
+  householdDietSchema,
+  householdStepSchema,
+  issuesToFieldErrors,
+  onboardingProfileSchema,
+  seasonalSettingsSchema,
+  skillStepSchema,
+  storeStepSchema,
+} from "@kitchen-pantry/validation";
 import { dbFailure, type KeyValueStorage, type Result, type SupabaseLike } from "./client";
 import { parseStoredProfile, rpc } from "./rpc";
 
@@ -12,6 +24,10 @@ export interface ProfileStore {
   load(): Promise<Result<OnboardingProfile | null>>;
   save(profile: unknown): Promise<Result<OnboardingProfile>>;
   setSkillLevel(level: unknown): Promise<Result<SkillLevel>>;
+  /** Dessert frequency/categories (household) and dessert skill (personal). */
+  setDesserts(settings: unknown): Promise<Result<DessertSettings>>;
+  /** Seasonal cooking: personal toggles and holidays, plus the household region override. */
+  setSeasonal(settings: unknown): Promise<Result<SeasonalSettings>>;
   /** Preview only: forget everything on this device. */
   clear(): Promise<void>;
 }
@@ -34,7 +50,10 @@ export function createSupabaseProfileStore(db: SupabaseLike): ProfileStore {
       if (!valid.ok) return valid;
       const { error } = await db.rpc(rpc.saveOnboardingProfile, { profile: valid.data });
       if (error) return dbFailure("profile save", error, "We couldn't save your answers. Please try again.");
-      return valid;
+      // Read it back: the household's combined allergy list may have changed.
+      const fresh = await db.rpc(rpc.getOnboardingProfile);
+      const stored = fresh.error ? null : parseStoredProfile(fresh.data);
+      return stored ? { ok: true, data: stored } : valid;
     },
     async setSkillLevel(level) {
       const parsed = skillStepSchema.safeParse({ skillLevel: level });
@@ -42,6 +61,20 @@ export function createSupabaseProfileStore(db: SupabaseLike): ProfileStore {
       const { error } = await db.rpc(rpc.setSkillLevel, { level: parsed.data.skillLevel });
       if (error) return dbFailure("skill level", error, "Couldn't save your skill level. Please try again.");
       return { ok: true, data: parsed.data.skillLevel };
+    },
+    async setDesserts(settings) {
+      const parsed = dessertSettingsSchema.safeParse(settings);
+      if (!parsed.success) return { ok: false, message: "Check the dessert settings." };
+      const { error } = await db.rpc("save_dessert_preferences", { prefs: parsed.data });
+      if (error) return dbFailure("dessert settings", error, "Couldn't save your dessert settings. Please try again.");
+      return { ok: true, data: parsed.data as DessertSettings };
+    },
+    async setSeasonal(settings) {
+      const parsed = seasonalSettingsSchema.safeParse(settings);
+      if (!parsed.success) return { ok: false, message: "Check the seasonal settings." };
+      const { error } = await db.rpc("save_seasonal_preferences", { prefs: parsed.data });
+      if (error) return dbFailure("seasonal settings", error, "Couldn't save your seasonal settings. Please try again.");
+      return { ok: true, data: parsed.data as SeasonalSettings };
     },
     async clear() {
       // Nothing local to clear: Supabase data is removed from account settings.
@@ -84,12 +117,59 @@ export function createLocalProfileStore(storage: KeyValueStorage): ProfileStore 
       await write({ ...current, skillLevel: parsed.data.skillLevel });
       return { ok: true, data: parsed.data.skillLevel };
     },
+    async setDesserts(settings) {
+      const parsed = dessertSettingsSchema.safeParse(settings);
+      if (!parsed.success) return { ok: false, message: "Check the dessert settings." };
+      const current = await read();
+      if (!current) return { ok: false, message: "Finish setting up your kitchen first." };
+      await write({ ...current, desserts: parsed.data as DessertSettings });
+      return { ok: true, data: parsed.data as DessertSettings };
+    },
+    async setSeasonal(settings) {
+      const parsed = seasonalSettingsSchema.safeParse(settings);
+      if (!parsed.success) return { ok: false, message: "Check the seasonal settings." };
+      const current = await read();
+      if (!current) return { ok: false, message: "Finish setting up your kitchen first." };
+      await write({ ...current, seasonal: parsed.data as SeasonalSettings });
+      return { ok: true, data: parsed.data as SeasonalSettings };
+    },
     async clear() {
       try {
         await storage.removeItem(LOCAL_PROFILE_KEY);
       } catch {
         // ignore
       }
+    },
+  };
+}
+
+/**
+ * For someone who joined a household before onboarding: the household's
+ * shared answers (size, budget, diet style, equipment, store) on top of the
+ * defaults. Personal answers (allergies, skill, goals) start fresh. Each
+ * section is checked on its own so one odd value doesn't discard the rest.
+ */
+export function joinDraftProfile(value: unknown, defaults: OnboardingProfile): { profile: OnboardingProfile; memberCount: number } | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as Record<string, unknown>;
+  const hd = householdDietSchema.safeParse(v.householdDiet);
+  const memberCount = hd.success ? hd.data.memberCount : 1;
+  if (memberCount < 2) return null;
+  const household = householdStepSchema.safeParse(v.household);
+  const budget = budgetStepSchema.safeParse(v.budget);
+  const equipment = equipmentStepSchema.safeParse({ equipment: v.equipment });
+  const store = storeStepSchema.safeParse(v.store);
+  const style = dietStepSchema.shape.style.safeParse((v.diet as Record<string, unknown> | undefined)?.style);
+  return {
+    memberCount,
+    profile: {
+      ...defaults,
+      household: household.success ? household.data : defaults.household,
+      budget: budget.success ? budget.data : defaults.budget,
+      equipment: equipment.success ? equipment.data.equipment : defaults.equipment,
+      store: store.success ? store.data : defaults.store,
+      diet: { ...defaults.diet, style: style.success ? style.data : defaults.diet.style },
+      householdDiet: hd.success ? hd.data : undefined,
     },
   };
 }

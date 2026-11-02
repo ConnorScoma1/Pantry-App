@@ -1,11 +1,11 @@
-import { cuisines, equipment } from "@kitchen-pantry/shared-types";
+import { dessertCategories, equipment, recipeCourses, worldCuisines } from "@kitchen-pantry/shared-types";
 import { z } from "zod";
 
 /**
  * A complete recipe. Every recipe — catalogue, user-submitted or (later)
  * AI-generated — must pass this before it is stored or shown.
  */
-const cuisineSchema = z.enum(cuisines.map((c) => c.code) as [string, ...string[]]);
+const cuisineSchema = z.enum(worldCuisines.map((c) => c.code) as [string, ...string[]]);
 const equipmentSchema = z.enum(equipment.map((e) => e.code) as [string, ...string[]]);
 const slug = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Use lowercase words separated by hyphens");
 
@@ -65,6 +65,9 @@ export const recipeSchema = z
     cookMinutes: z.number().int().min(0).max(2880),
     totalMinutes: z.number().int().min(1).max(4320),
     servings: z.number().int().min(1).max(50),
+    course: z.enum(recipeCourses.map((c) => c.code) as [string, ...string[]]),
+    dessertCategory: z.enum(dessertCategories.map((c) => c.code) as [string, ...string[]]).nullable(),
+    chillMinutes: z.number().int().min(0).max(2880),
     requiredEquipment: z.array(equipmentSchema).min(1),
     tags: z.array(z.string().regex(/^[a-z0-9-]+$/)).max(20),
     tips: z.array(z.string().min(5).max(400)).max(12),
@@ -78,8 +81,11 @@ export const recipeSchema = z
     steps: z.array(recipeStepSchema).min(1).max(40),
   })
   .superRefine((r, ctx) => {
-    if (r.totalMinutes !== r.prepMinutes + r.cookMinutes) {
-      ctx.addIssue({ code: "custom", path: ["totalMinutes"], message: "Total time must equal prep + cook" });
+    if (r.totalMinutes !== r.prepMinutes + r.cookMinutes + r.chillMinutes) {
+      ctx.addIssue({ code: "custom", path: ["totalMinutes"], message: "Total time must equal prep + cook + chill" });
+    }
+    if ((r.course === "dessert") !== (r.dessertCategory !== null)) {
+      ctx.addIssue({ code: "custom", path: ["dessertCategory"], message: "Desserts (and only desserts) need a dessert category" });
     }
     const unique = (xs: number[]) => new Set(xs).size === xs.length;
     if (!unique(r.ingredients.map((i) => i.position))) {
@@ -106,6 +112,6 @@ export type RecipeRatingInput = z.output<typeof recipeRatingInputSchema>;
 export const recommendationEventInputSchema = z.object({
   recipeId: z.uuid(),
   event: z.enum(["shown", "opened", "cooked", "dismissed", "undismissed"]),
-  surface: z.enum(["home", "recipes", "detail", "plan"]),
+  surface: z.enum(["home", "recipes", "detail", "plan", "surprise"]),
 });
 export type RecommendationEventInput = z.infer<typeof recommendationEventInputSchema>;

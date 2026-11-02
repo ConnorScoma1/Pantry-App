@@ -51,7 +51,7 @@ export function checkEquipment(
   return { ok: missing.length === 0, adaptations, missing };
 }
 
-const DIET_EXCLUDED_TERMS: Record<DietStyle, string[]> = {
+export const DIET_EXCLUDED_TERMS: Record<DietStyle, string[]> = {
   omnivore: [],
   pescatarian: ["chicken", "beef", "pork", "bacon", "ham", "sausage", "turkey", "lamb", "veal", "duck", "prosciutto", "pancetta", "chorizo", "salami", "pepperoni", "gelatin", "lard"],
   vegetarian: [],
@@ -165,4 +165,26 @@ export function recommendationLabel(
   if (sourceKind === "ai_generated") return "ai_suggestion";
   if (sourceKind === "user_submitted") return "your_recipe";
   return "editorial";
+}
+
+/**
+ * Screen a store product by its name (Specials). Text only, so it errs on
+ * the side of hiding: "chicken-style nuggets" is hidden for vegetarians.
+ * It can't read ingredient labels, so it never says a product is safe.
+ */
+export function screenProduct(
+  name: string,
+  household: Pick<HouseholdConstraints, "allergies" | "dietStyle" | "neverRecommend">,
+): string[] {
+  const reasons: string[] = [];
+  const allergen = screenAllergens([name], household.allergies);
+  if (allergen.conflicts.length > 0) {
+    reasons.push(`May contain ${[...new Set(allergen.conflicts.map((c) => labelFor(allergens, c.allergen).toLowerCase()))].join(", ")}`);
+  }
+  if (matchesAnyTerm([name], DIET_EXCLUDED_TERMS[household.dietStyle]).length > 0) {
+    reasons.push(`Not ${labelFor(dietStyles, household.dietStyle).toLowerCase()}`);
+  }
+  const never = matchesAnyTerm([name], household.neverRecommend);
+  if (never.length > 0) reasons.push(`You asked us to skip ${never.join(", ")}`);
+  return reasons;
 }

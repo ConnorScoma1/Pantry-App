@@ -22,7 +22,10 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local > packages/database/src/database.types.ts"
+    "db:types": "supabase gen types typescript --local > packages/database/src/database.types.ts",
+    "test:sql": "bash scripts/test-sql.sh",
+    "recipes:import": "tsx packages/recipe-engine/scripts/import-recipes.ts",
+    "recipes:draft": "tsx packages/ai/scripts/draft-library.ts"
   },
   "devDependencies": {
     "@types/node": "^22.15.0",

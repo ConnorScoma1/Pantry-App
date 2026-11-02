@@ -2,7 +2,7 @@
 
 import { createSupabaseShoppingRepository, type Result, type ShoppingRepository } from "@kitchen-pantry/database";
 import type { ActiveTrip, SavedShopping } from "@kitchen-pantry/shopping-optimizer";
-import { adviseShopping, compareShopping, shoppingStatus, type CompareResult, type ShoppingAdviceResult, type ShoppingStatus } from "@/lib/shopping/server";
+import { adviseShopping, compareShopping, saveTripVerified, shoppingStatus, type CompareResult, type ShoppingAdviceResult, type ShoppingStatus } from "@/lib/shopping/server";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -56,7 +56,7 @@ export async function activeTripAction(): Promise<Result<ActiveTrip | null>> {
   return repo((r) => r.activeTrip());
 }
 export async function saveTripAction(input: unknown): Promise<Result<{ id: string }>> {
-  return repo((r) => r.saveTrip(input));
+  return repo((r) => saveTripVerified(input, r));
 }
 export async function endTripAction(id: unknown, status: unknown): Promise<Result<null>> {
   if (typeof id !== "string" || (status !== "done" && status !== "cancelled")) return { ok: false, message: "That trip isn't valid." };

@@ -15,6 +15,7 @@ import { onboardingProfileSchema } from "@kitchen-pantry/validation";
 export const rpc = {
   saveOnboardingProfile: "save_onboarding_profile",
   getOnboardingProfile: "get_onboarding_profile",
+  getHouseholdOnboardingDraft: "get_household_onboarding_draft",
   setSkillLevel: "set_skill_level",
   resetLearnedPreferences: "reset_learned_preferences",
   recipeRatingSummary: "recipe_rating_summary",

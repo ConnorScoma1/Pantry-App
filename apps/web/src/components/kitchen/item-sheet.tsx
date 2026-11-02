@@ -45,10 +45,16 @@ export function ItemSheet({
   onClose,
   onSave,
   onRemove,
+  prefill = null,
+  note = null,
 }: {
   open: boolean;
   /** null = adding a new item */
   item: PantryItem | null;
+  /** Starting values for a new item (e.g. from a scanned barcode). */
+  prefill?: Partial<PantryItemInput> | null;
+  /** A line shown at the top (e.g. where the details came from). */
+  note?: string | null;
   today: string;
   repository: KitchenRepository;
   onClose: () => void;
@@ -70,7 +76,7 @@ export function ItemSheet({
 
   useEffect(() => {
     if (!open) return;
-    const initial = item ? toInput(item) : emptyPantryItemInput();
+    const initial = item ? toInput(item) : { ...emptyPantryItemInput(), ...(prefill ?? {}) };
     setForm(initial);
     setQtyText(initial.quantity === null ? "" : String(initial.quantity));
     setPriceText(initial.pricePaidCents === null ? "" : (initial.pricePaidCents / 100).toFixed(2));
@@ -78,8 +84,8 @@ export function ItemSheet({
     setErrors({});
     setFormError(null);
     setSuggestions([]);
-    setManual(item !== null);
-  }, [open, item]);
+    setManual(item !== null || Boolean(prefill?.category));
+  }, [open, item, prefill]);
 
   const set = (patch: Partial<PantryItemInput>) => {
     setForm((f) => ({ ...f, ...patch }));
@@ -156,6 +162,7 @@ export function ItemSheet({
       open={open}
       onClose={onClose}
       title={item ? "Edit item" : "Add to your kitchen"}
+      description={note ?? undefined}
       footer={
         <div className="space-y-2">
           {formError ? (

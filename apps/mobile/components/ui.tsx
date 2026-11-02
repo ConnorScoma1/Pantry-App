@@ -1,15 +1,42 @@
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useThemeColors } from "@/lib/theme";
 
 /** Scrollable page with the large title used across the app. */
-export function Screen({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+export function Screen({
+  title,
+  subtitle,
+  children,
+  showProfile = true,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+  /** The avatar that opens Profile (it isn't a tab, so phones keep five tabs). */
+  showProfile?: boolean;
+}) {
+  const c = useThemeColors();
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-background">
       <ScrollView contentContainerClassName="px-4 pb-10 pt-4" contentInsetAdjustmentBehavior="automatic">
-        <Text accessibilityRole="header" className="text-[34px] font-bold tracking-tight text-foreground">
-          {title}
-        </Text>
+        <View className="flex-row items-start justify-between gap-3">
+          <Text accessibilityRole="header" className="flex-1 text-[34px] font-bold tracking-tight text-foreground">
+            {title}
+          </Text>
+          {showProfile ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Profile"
+              onPress={() => router.push("/profile")}
+              className="size-11 items-center justify-center rounded-full active:opacity-70"
+            >
+              <Ionicons name="person-circle-outline" size={30} color={c.muted} />
+            </Pressable>
+          ) : null}
+        </View>
         {subtitle ? <Text className="mt-1 text-[17px] leading-6 text-muted">{subtitle}</Text> : null}
         <View className="mt-6 gap-4">{children}</View>
       </ScrollView>

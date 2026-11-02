@@ -2,6 +2,7 @@
 
 import { createSupabaseKitchenRepository, type KitchenRepository, type Result } from "@kitchen-pantry/database";
 import type { IngredientOption, PantryItem } from "@kitchen-pantry/shared-types";
+import { lookupBarcode, type BarcodeLookup } from "@/lib/kitchen/import-server";
 import { asSupabaseLike } from "@/lib/supabase/adapter";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -31,8 +32,28 @@ export async function listPantryItemsAction(): Promise<Result<PantryItem[]>> {
   return run((repo) => repo.list());
 }
 
-export async function addPantryItemAction(input: unknown): Promise<Result<PantryItem>> {
-  return run((repo) => repo.add(input));
+export async function addPantryItemAction(input: unknown, origin?: unknown): Promise<Result<PantryItem>> {
+  return run((repo) => repo.add(input, origin));
+}
+
+export async function addPantryItemsAction(inputs: unknown, origin?: unknown): Promise<Result<PantryItem[]>> {
+  return run((repo) => repo.addMany(inputs, origin));
+}
+
+/** Who's asking, for per-person limits ("preview" without accounts). */
+async function who(): Promise<string | null> {
+  if (!isSupabaseConfigured) return "preview";
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  return user?.id ?? null;
+}
+
+export async function lookupBarcodeAction(code: unknown, format?: unknown): Promise<Result<BarcodeLookup>> {
+  const id = await who();
+  if (!id) return { ok: false, message: "Your session expired. Please sign in again." };
+  return lookupBarcode(code, id, format);
 }
 
 export async function updatePantryItemAction(id: unknown, input: unknown): Promise<Result<PantryItem>> {

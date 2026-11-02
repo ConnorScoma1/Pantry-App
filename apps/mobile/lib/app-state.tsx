@@ -1,22 +1,63 @@
 import {
+  createLocalGroceryRepository,
+  createPreviewHouseholdRepository,
+  createSupabaseGroceryRepository,
+  createSupabaseHouseholdRepository,
+  createSupabaseStoreRepository,
+  createSupabaseCartRepository,
+  createLocalCartRepository,
+  createLocalWeeklyPlanningRepository,
+  createLocalSavingsRepository,
+  createLocalHouseholdLifeRepository,
+  createSupabaseHouseholdLifeRepository,
+  type HouseholdLifeRepository,
+  createSupabaseSavingsRepository,
+  type SavingsRepository,
+  createSupabaseWeeklyPlanningRepository,
+  type WeeklyPlanningRepository,
+  type CartRepository,
+  createLocalStoreRepository,
+  LOCAL_STORE_KEY,
+  type StoreRepository,
+  joinDraftProfile,
+  LOCAL_GROCERY_KEY,
+  rpc,
+  type GroceryRepository,
+  type HouseholdRepository,
+  type RealtimeClientLike,
   createLocalKitchenRepository,
+  createLocalMealPlanRepository,
   createLocalProfileStore,
   createLocalRecipeRepository,
   createSupabaseKitchenRepository,
+  createSupabaseMealPlanRepository,
   createSupabaseProfileStore,
   createSupabaseRecipeRepository,
+  createLocalMenuRepository,
+  createSupabaseMenuRepository,
+  LOCAL_DRAFTS_KEY,
+  LOCAL_MENUS_KEY,
+  LOCAL_SHOPPING_KEY,
+  LOCAL_TRIP_KEY,
+  createLocalShoppingRepository,
+  createSupabaseShoppingRepository,
+  type ShoppingRepository,
+  type MenuRepository,
   LOCAL_EVENTS_KEY,
   LOCAL_FAVORITES_KEY,
+  LOCAL_MEAL_PLANS_KEY,
   LOCAL_PANTRY_KEY,
   LOCAL_RATINGS_KEY,
   type KitchenRepository,
+  type MealPlanRepository,
   type ProfileStore,
   type RecipeRepository,
   type Result,
 } from "@kitchen-pantry/database";
-import type { OnboardingProfile, SkillLevel } from "@kitchen-pantry/shared-types";
-import { signInSchema, signUpSchema, issuesToFieldErrors } from "@kitchen-pantry/validation";
+import type { DessertSettings, OnboardingProfile, SeasonalSettings, SkillLevel } from "@kitchen-pantry/shared-types";
+import { defaultOnboardingProfile, signInSchema, signUpSchema, issuesToFieldErrors } from "@kitchen-pantry/validation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { unregisterPush } from "./push";
 import { deviceStorage } from "./storage";
 import { asSupabaseLike, supabase } from "./supabase";
 
@@ -31,11 +72,37 @@ interface AppState {
   profile: OnboardingProfile | null;
   kitchen: KitchenRepository;
   recipes: RecipeRepository;
+  menus: MenuRepository;
+  /** One Store vs. Best Deals: this person's settings and the household's chosen trip. */
+  shopping: ShoppingRepository;
+  mealPlans: MealPlanRepository;
+  households: HouseholdRepository;
+  grocery: GroceryRepository;
+  /** The household's store for live prices. */
+  stores: StoreRepository;
+  /** Smart Cart drafts (shared with the household in Supabase mode). */
+  carts: CartRepository;
+  /** Weekly drafts settings (household), notices and notification choices (this person). */
+  weekly: WeeklyPlanningRepository;
+  /** Smart Savings: pantry log, logged shops and sent carts (household). */
+  savings: SavingsRepository;
+  /** Who's eating, portions and the activity feed. */
+  life: HouseholdLifeRepository;
+  /** Supabase Realtime for the live grocery list; null in preview mode. */
+  realtime: RealtimeClientLike | null;
+  /** Re-read the profile (after joining, leaving or switching households). */
+  refreshProfile(): Promise<void>;
+  /** Joined a household before onboarding: its shared answers, for the questionnaire. */
+  joinDraft(): Promise<OnboardingProfile | null>;
+  /** Access token for calling the Kitchen Pantry server (AI planning); null in preview mode. */
+  accessToken(): Promise<string | null>;
   signIn(email: string, password: string): Promise<Result<null>>;
   signUp(email: string, password: string): Promise<Result<{ needsConfirmation: boolean }>>;
   signOut(): Promise<void>;
   saveProfile(profile: OnboardingProfile): Promise<Result<OnboardingProfile>>;
   setSkillLevel(level: SkillLevel): Promise<Result<SkillLevel>>;
+  setDesserts(settings: DessertSettings): Promise<Result<DessertSettings>>;
+  setSeasonal(settings: SeasonalSettings): Promise<Result<SeasonalSettings>>;
   clearPreview(): Promise<void>;
 }
 
@@ -47,6 +114,33 @@ const remoteKitchen = supabase ? createSupabaseKitchenRepository(asSupabaseLike(
 const remoteProfiles = supabase ? createSupabaseProfileStore(asSupabaseLike(supabase)) : null;
 const localRecipes = createLocalRecipeRepository(deviceStorage);
 const remoteRecipes = supabase ? createSupabaseRecipeRepository(asSupabaseLike(supabase)) : null;
+const localMealPlans = createLocalMealPlanRepository(deviceStorage);
+const remoteMealPlans = supabase ? createSupabaseMealPlanRepository(asSupabaseLike(supabase)) : null;
+const households: HouseholdRepository = supabase ? createSupabaseHouseholdRepository(asSupabaseLike(supabase)) : createPreviewHouseholdRepository();
+const grocery: GroceryRepository = supabase ? createSupabaseGroceryRepository(asSupabaseLike(supabase)) : createLocalGroceryRepository(deviceStorage);
+const realtime = supabase ? (supabase as unknown as RealtimeClientLike) : null;
+const stores: StoreRepository = supabase ? createSupabaseStoreRepository(asSupabaseLike(supabase)) : createLocalStoreRepository(deviceStorage);
+const carts: CartRepository = supabase ? createSupabaseCartRepository(asSupabaseLike(supabase)) : createLocalCartRepository(deviceStorage);
+const weekly: WeeklyPlanningRepository = supabase
+  ? createSupabaseWeeklyPlanningRepository(asSupabaseLike(supabase), async () => (await supabase!.auth.getSession()).data.session?.user.id ?? null)
+  : createLocalWeeklyPlanningRepository(deviceStorage);
+const savings: SavingsRepository = supabase ? createSupabaseSavingsRepository(asSupabaseLike(supabase)) : createLocalSavingsRepository(deviceStorage);
+const menus: MenuRepository = supabase ? createSupabaseMenuRepository(asSupabaseLike(supabase)) : createLocalMenuRepository(deviceStorage);
+const shopping: ShoppingRepository = supabase ? createSupabaseShoppingRepository(asSupabaseLike(supabase)) : createLocalShoppingRepository(deviceStorage);
+const life: HouseholdLifeRepository = supabase ? createSupabaseHouseholdLifeRepository(asSupabaseLike(supabase)) : createLocalHouseholdLifeRepository(deviceStorage);
+
+async function joinDraft(): Promise<OnboardingProfile | null> {
+  if (!supabase) return null;
+  const { data, error } = await asSupabaseLike(supabase).rpc(rpc.getHouseholdOnboardingDraft);
+  if (error) return null;
+  return joinDraftProfile(data, defaultOnboardingProfile())?.profile ?? null;
+}
+
+async function accessToken(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
 
 /**
  * Session, profile and data stores for the whole app. Screens read from
@@ -57,6 +151,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const profiles: ProfileStore = remoteProfiles ?? localProfiles;
   const kitchen: KitchenRepository = remoteKitchen ?? localKitchen;
   const recipes: RecipeRepository = remoteRecipes ?? localRecipes;
+  const mealPlans: MealPlanRepository = remoteMealPlans ?? localMealPlans;
 
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
@@ -123,6 +218,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // This phone stops receiving this person's notices.
+    await unregisterPush(weekly).catch(() => undefined);
     await supabase?.auth.signOut();
   }, []);
 
@@ -146,12 +243,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [profiles, profile],
   );
 
+  const setDesserts = useCallback(
+    async (settings: DessertSettings) => {
+      const previous = profile;
+      if (profile) setProfile({ ...profile, desserts: settings }); // optimistic
+      const result = await profiles.setDesserts(settings);
+      if (!result.ok) setProfile(previous);
+      return result;
+    },
+    [profiles, profile],
+  );
+
+  const setSeasonal = useCallback(
+    async (settings: SeasonalSettings) => {
+      const previous = profile;
+      if (profile) setProfile({ ...profile, seasonal: settings }); // optimistic
+      const result = await profiles.setSeasonal(settings);
+      if (!result.ok) setProfile(previous);
+      return result;
+    },
+    [profiles, profile],
+  );
+
   const clearPreview = useCallback(async () => {
     await localProfiles.clear();
     await deviceStorage.removeItem(LOCAL_PANTRY_KEY);
     await deviceStorage.removeItem(LOCAL_FAVORITES_KEY);
     await deviceStorage.removeItem(LOCAL_RATINGS_KEY);
     await deviceStorage.removeItem(LOCAL_EVENTS_KEY);
+    await deviceStorage.removeItem(LOCAL_MEAL_PLANS_KEY);
+    await deviceStorage.removeItem(LOCAL_GROCERY_KEY);
+    await deviceStorage.removeItem(LOCAL_STORE_KEY);
+    await deviceStorage.removeItem(LOCAL_MENUS_KEY);
+    await deviceStorage.removeItem(LOCAL_SHOPPING_KEY);
+    await deviceStorage.removeItem(LOCAL_TRIP_KEY);
+    await deviceStorage.removeItem(LOCAL_DRAFTS_KEY);
     setProfile(null);
   }, []);
 
@@ -164,14 +290,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
       profile,
       kitchen,
       recipes,
+      menus,
+      shopping,
+      mealPlans,
+      households,
+      grocery,
+      stores,
+      carts,
+      weekly,
+      savings,
+      life,
+      realtime,
+      refreshProfile: loadProfile,
+      joinDraft,
+      accessToken,
       signIn,
       signUp,
       signOut,
       saveProfile,
       setSkillLevel,
+      setDesserts,
+      setSeasonal,
       clearPreview,
     }),
-    [mode, loading, email, signedIn, profile, kitchen, recipes, signIn, signUp, signOut, saveProfile, setSkillLevel, clearPreview],
+    [mode, loading, email, signedIn, profile, kitchen, recipes, mealPlans, loadProfile, signIn, signUp, signOut, saveProfile, setSkillLevel, setDesserts, setSeasonal, clearPreview],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

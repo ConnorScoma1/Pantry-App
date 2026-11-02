@@ -4,6 +4,8 @@ import type { RecipeImage } from "@kitchen-pantry/shared-types";
  * Photos for the Test Kitchen recipes.
  *
  * Every photo here was checked on its own Unsplash page on 2026-11-01 (licence, photographer and image)
+ * (dessert photos: page title, tags and licence line; two are close cousins — a lemon tart for the
+ * lemon bars and a loaf cake for the gingerbread — which is what "Similar dish" means)
  * and viewed to confirm it shows the right kind of dish. Each is
  * "Free to use under the Unsplash License" (https://unsplash.com/license):
  * free for commercial use, no permission needed. We credit the photographer
@@ -141,6 +143,69 @@ export const TEST_KITCHEN_PHOTOS: Record<string, RecipeImage> = {
     "Cream sauce being poured over chicken with vegetables",
     "joe boshra",
     "joestudios",
+  ),
+  "apple-oat-crisp": unsplash(
+    "photo-1696629958314-3d1cf2cbce69",
+    "a-casserole-dish-filled-with-food-on-a-counter-q0TnVPELBnI",
+    "Apple crisp in a glass baking dish on a counter",
+    "Jessica Johnston",
+    "jdjohnston",
+  ),
+  "no-churn-vanilla-ice-cream": unsplash(
+    "photo-1568903880699-b53f3e0c2b96",
+    "white-ice-creams-IL3ORP0YOAo",
+    "Two scoops of white ice cream in a bowl",
+    "Vendela Larsson",
+    "vendelal",
+  ),
+  "gingerbread-snack-cake": unsplash(
+    "photo-1768216604497-ecbf03ab5fa0",
+    "frosted-loaf-cake-with-nuts-and-star-anise-BygEl7uekRg",
+    "Frosted gingerbread loaf cake topped with nuts and star anise",
+    "Ksenia Yakovleva",
+    "ksyfffka07",
+  ),
+  "brown-butter-chocolate-chip-cookies": unsplash(
+    "photo-1634188023615-7e08901193b6",
+    "a-close-up-of-four-chocolate-chip-cookies-4Mh3AjljekQ",
+    "Close-up of four chocolate chip cookies",
+    "Girl with red hat",
+    "girlwithredhat",
+  ),
+  "lemon-shortbread-bars": unsplash(
+    "photo-1774119729324-a43894d5649c",
+    "a-rectangular-lemon-tart-topped-with-meringue-and-lime-4wx_N9ebs-E",
+    "A rectangular lemon tart topped with meringue and lime",
+    "Max Griss",
+    "grissphoto",
+  ),
+  "strawberry-buttermilk-shortcakes": unsplash(
+    "photo-1783471523755-637074ae4d19",
+    "dessert-with-yellow-cake-whipped-cream-and-fresh-strawberries-rSYiP7ICrMo",
+    "Strawberry shortcake with yellow cake, whipped cream and fresh strawberries",
+    "David Trinks",
+    "dtrinksrph",
+  ),
+  "dark-chocolate-pots-de-creme": unsplash(
+    "photo-1673551494277-92204546b504",
+    "two-bowls-of-chocolate-pudding-with-raspberries-on-the-side-YxjIO0LmDO0",
+    "Two small bowls of chocolate pudding with raspberries on the side",
+    "American Heritage Chocolate",
+    "americanheritagechocolate",
+  ),
+  "vanilla-cream-puffs": unsplash(
+    "photo-1786918467116-045c0f772b1f",
+    "cream-puffs-on-parchment-paper--20DSoQreM4",
+    "A group of golden brown cream puffs arranged on parchment paper",
+    "Culinarissimo",
+    "culinarissimo",
+  ),
+  "raspberry-mousse-entremets": unsplash(
+    "photo-1761637604698-0f9e9d3278ee",
+    "a-small-pink-cake-topped-with-raspberry-and-red-glaze--wOczGwXJOk",
+    "A small pink mousse cake topped with a raspberry and red glaze",
+    "Christian Agbede",
+    "chriscreations__",
   ),
 };
 

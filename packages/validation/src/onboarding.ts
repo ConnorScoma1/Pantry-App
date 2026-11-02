@@ -5,7 +5,11 @@ import {
   budgetPriorities,
   cookingGoals,
   countries,
-  cuisines,
+  worldCuisines,
+  dessertCategories,
+  dessertFrequencies,
+  holidays,
+  seasonalRegions,
   dietaryRestrictions,
   dietStyles,
   equipment,
@@ -23,7 +27,8 @@ function codes<T extends readonly { code: string }[]>(catalog: T) {
 export const countrySchema = codes(countries);
 export const mealTypeSchema = codes(mealTypes);
 export const allergenSchema = codes(allergens);
-export const cuisineSchema = codes(cuisines);
+// Any library cuisine can be a favourite; onboarding offers the shorter `cuisines` list.
+export const cuisineSchema = codes(worldCuisines);
 export const proteinSchema = codes(proteins);
 export const equipmentSchema = codes(equipment);
 export const cookingGoalSchema = codes(cookingGoals);
@@ -119,6 +124,44 @@ export const dietStepSchema = z.object({
   }),
 });
 
+export const householdDietSchema = z.object({
+  allergies: z.array(allergenSchema),
+  restrictions: z.array(codes(dietaryRestrictions)),
+  dislikes: z.array(z.string()),
+  neverRecommend: z.array(z.string()),
+  memberCount: z.number().int().min(1),
+});
+
+/** Desserts: optional. Defaults to once a week; "never" switches automatic desserts off. */
+export const dessertSettingsSchema = z.object({
+  frequency: codes(dessertFrequencies),
+  skillLevel: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]).nullable(),
+  categories: z.array(codes(dessertCategories)).max(6),
+});
+export const defaultDessertSettings = () => ({ frequency: "weekly" as const, skillLevel: null, categories: [] });
+
+/** Seasonal cooking: on by default with sensible picks; deals and holidays are opt-in. */
+export const seasonalSettingsSchema = z.object({
+  enabled: z.boolean(),
+  produce: z.boolean(),
+  meals: z.boolean(),
+  desserts: z.boolean(),
+  holidays: z.boolean(),
+  deals: z.boolean(),
+  holidayOptIns: z.array(codes(holidays)).max(30),
+  region: codes(seasonalRegions).nullable(),
+});
+export const defaultSeasonalSettings = () => ({
+  enabled: true,
+  produce: true,
+  meals: true,
+  desserts: true,
+  holidays: true,
+  deals: false,
+  holidayOptIns: [],
+  region: null,
+});
+
 export const skillStepSchema = z.object({
   skillLevel: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
 });
@@ -140,6 +183,11 @@ export const onboardingProfileSchema = z.object({
   skillLevel: skillStepSchema.shape.skillLevel,
   equipment: equipmentStepSchema.shape.equipment,
   store: storeStepSchema,
+  // Older saved profiles have no dessert answers: they get the default (once a week).
+  desserts: dessertSettingsSchema.default(defaultDessertSettings).catch(defaultDessertSettings),
+  seasonal: seasonalSettingsSchema.default(defaultSeasonalSettings).catch(defaultSeasonalSettings),
+  // Read-only, from the database. Never blocks loading a profile if it's off.
+  householdDiet: householdDietSchema.optional().catch(undefined),
 });
 
 export type OnboardingProfileInput = z.input<typeof onboardingProfileSchema>;
@@ -223,6 +271,8 @@ export function defaultOnboardingProfile(): OnboardingProfile {
     skillLevel: 2,
     equipment: ["stove", "oven", "microwave"],
     store: { usualRetailer: null, storeLocationId: null },
+    desserts: defaultDessertSettings(),
+    seasonal: defaultSeasonalSettings(),
   };
 }
 

@@ -4,11 +4,12 @@ import {
   searchLocalIngredients,
   STAPLES,
 } from "@kitchen-pantry/inventory-engine";
-import type { IngredientOption, PantryItem, RemovalReason } from "@kitchen-pantry/shared-types";
+import type { IngredientOption, PantryItem, PantryOutcome, RemovalReason } from "@kitchen-pantry/shared-types";
 import {
   issuesToFieldErrors,
   pantryItemIdSchema,
   pantryItemInputSchema,
+  pantryOriginSchema,
   removalReasonSchema,
   type PantryItemInput,
 } from "@kitchen-pantry/validation";
@@ -22,7 +23,10 @@ import { dbFailure, type KeyValueStorage, type Result, type SupabaseLike } from 
  */
 export interface KitchenRepository {
   list(): Promise<Result<PantryItem[]>>;
-  add(input: unknown): Promise<Result<PantryItem>>;
+  /** `origin` records where it came from (barcode scan or receipt); manual by default. */
+  add(input: unknown, origin?: unknown): Promise<Result<PantryItem>>;
+  /** Several items at once (a reviewed receipt); all or nothing. */
+  addMany(inputs: unknown, origin?: unknown): Promise<Result<PantryItem[]>>;
   update(id: unknown, input: unknown): Promise<Result<PantryItem>>;
   remove(id: unknown, reason: unknown): Promise<Result<null>>;
   /** Add staples by name (from the staples checklist). */
@@ -34,6 +38,14 @@ const SAVE_FAILED = "Something went wrong saving your kitchen. Please try again.
 const GONE = "That item no longer exists.";
 const stapleNamesSchema = z.array(z.string().trim().min(1).max(120)).min(1).max(100);
 const searchSchema = z.string().trim().min(1).max(60);
+const manySchema = z.array(z.unknown()).min(1).max(80);
+
+/** Validated origin; manual when none is given, null when it's invalid. */
+function originOf(origin: unknown): { source: "manual" | "barcode" | "receipt"; barcode: string | null } | null {
+  if (origin === undefined || origin === null) return { source: "manual", barcode: null };
+  const o = pantryOriginSchema.safeParse(origin);
+  return o.success ? o.data : null;
+}
 
 export const PANTRY_COLUMNS =
   "id, ingredient_id, name, category, quantity, unit, storage_location, purchased_on, use_by, opened_on, estimated_remaining_pct, price_paid_cents, is_staple, created_at, updated_at";
@@ -120,16 +132,32 @@ export function createSupabaseKitchenRepository(db: SupabaseLike): KitchenReposi
       return { ok: true, data: (data as PantryRow[]).map(pantryRowToItem) };
     },
 
-    async add(input) {
+    async add(input, origin) {
       const parsed = pantryItemInputSchema.safeParse(input);
       if (!parsed.success) return invalid(parsed.error);
+      const o = originOf(origin);
+      if (!o) return { ok: false, message: "That barcode isn't valid." };
       const { data, error } = await db
         .from("pantry_items")
-        .insert({ ...pantryInputToRow(parsed.data), source: "manual" })
+        .insert({ ...pantryInputToRow(parsed.data), source: o.source, barcode: o.barcode })
         .select(PANTRY_COLUMNS)
         .single();
       if (error) return dbFailure("pantry add", error, SAVE_FAILED);
       return { ok: true, data: pantryRowToItem(data as PantryRow) };
+    },
+
+    async addMany(inputs, origin) {
+      const list = manySchema.safeParse(inputs);
+      if (!list.success) return { ok: false, message: "Choose between 1 and 80 items." };
+      const parsed = list.data.map((i) => pantryItemInputSchema.safeParse(i));
+      const bad = parsed.findIndex((p) => !p.success);
+      if (bad >= 0) return { ok: false, message: `Item ${bad + 1}: ${(parsed[bad] as { error: z.ZodError }).error.issues[0]?.message ?? "check it"}` };
+      const o = originOf(origin);
+      if (!o || o.barcode) return { ok: false, message: "Those items can't be added together." };
+      const rows = parsed.map((p) => ({ ...pantryInputToRow((p as { data: PantryItemInput }).data), source: o.source, barcode: null }));
+      const { data, error } = await db.from("pantry_items").insert(rows).select(PANTRY_COLUMNS);
+      if (error) return dbFailure("pantry add many", error, SAVE_FAILED);
+      return { ok: true, data: (data as PantryRow[]).map(pantryRowToItem) };
     },
 
     async update(id, input) {
@@ -233,6 +261,19 @@ export function randomUuid(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/** Preview mode's pantry log (removals only), newest first. */
+export const LOCAL_PANTRY_LOG_KEY = "kp-preview-pantry-log-v1";
+
+async function appendLocalPantryLog(storage: KeyValueStorage, entry: PantryOutcome): Promise<void> {
+  try {
+    const raw = await storage.getItem(LOCAL_PANTRY_LOG_KEY);
+    const list = raw ? (JSON.parse(raw) as PantryOutcome[]) : [];
+    await storage.setItem(LOCAL_PANTRY_LOG_KEY, JSON.stringify([entry, ...(Array.isArray(list) ? list : [])].slice(0, 1000)));
+  } catch {
+    // Storage unavailable: the item is still removed.
+  }
+}
+
 export function createLocalKitchenRepository(
   storage: KeyValueStorage,
   options: { now?: () => Date; newId?: () => string } = {},
@@ -283,12 +324,24 @@ export function createLocalKitchenRepository(
     async list() {
       return { ok: true, data: await load() };
     },
-    async add(input) {
+    async add(input, origin) {
       const parsed = pantryItemInputSchema.safeParse(input);
       if (!parsed.success) return invalid(parsed.error);
+      if (!originOf(origin)) return { ok: false, message: "That barcode isn't valid." };
       const item = fromInput(parsed.data);
       await save([...(await load()), item]);
       return { ok: true, data: item };
+    },
+    async addMany(inputs, origin) {
+      const list = manySchema.safeParse(inputs);
+      if (!list.success) return { ok: false, message: "Choose between 1 and 80 items." };
+      const parsed = list.data.map((i) => pantryItemInputSchema.safeParse(i));
+      const bad = parsed.findIndex((p) => !p.success);
+      if (bad >= 0) return { ok: false, message: `Item ${bad + 1}: ${(parsed[bad] as { error: z.ZodError }).error.issues[0]?.message ?? "check it"}` };
+      if (!originOf(origin)) return { ok: false, message: "Those items can't be added together." };
+      const added = parsed.map((p) => fromInput((p as { data: PantryItemInput }).data));
+      await save([...(await load()), ...added]);
+      return { ok: true, data: added };
     },
     async update(id, input) {
       const parsed = pantryItemInputSchema.safeParse(input);
@@ -301,8 +354,13 @@ export function createLocalKitchenRepository(
       return { ok: true, data: updated };
     },
     async remove(id, reason) {
-      if (!removalReasonSchema.safeParse(reason).success) return { ok: false, message: GONE };
-      await save((await load()).filter((i) => i.id !== id));
+      const why = removalReasonSchema.safeParse(reason);
+      if (!why.success) return { ok: false, message: GONE };
+      const items = await load();
+      const gone = items.find((i) => i.id === id);
+      await save(items.filter((i) => i.id !== id));
+      // Same as the database's pantry log: what left, why, and what was paid (for Savings).
+      if (gone) await appendLocalPantryLog(storage, { itemName: gone.name, reason: why.data, pricePaidCents: gone.pricePaidCents, useBy: gone.useBy, at: now().toISOString() });
       return { ok: true, data: null };
     },
     async addStaples(names) {

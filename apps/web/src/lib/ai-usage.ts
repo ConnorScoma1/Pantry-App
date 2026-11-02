@@ -9,7 +9,7 @@ import type { SupabaseLike } from "@kitchen-pantry/database";
  * the database counts and reserves under a per-household lock
  * (reserve_ai_request). Anything unexpected fails closed (no AI).
  */
-export type AiFeature = "meal_plan" | "cooking_help" | "recipe_draft" | "shopping_advice";
+export type AiFeature = "meal_plan" | "cooking_help" | "recipe_draft" | "shopping_advice" | "receipt_import";
 export type AiOutcome = "ok" | "fallback" | "cached" | "unused";
 
 /** A reserved slot's id, or null when the allowance is used up (or can't be checked). */

@@ -2,6 +2,10 @@
 
 import { createLocalMealPlanRepository, CONFIRMED_PLAN, type MealPlanRepository, type Result } from "@kitchen-pantry/database";
 import {
+  cheaperSwaps,
+  cheaperWeekToPrice,
+  recipeCostInput,
+  type CheaperSwap,
   applyDessertPicks,
   applyPicks,
   cookTheSpecialsTerms,
@@ -19,8 +23,8 @@ import {
   type PlannedPick,
 } from "@kitchen-pantry/meal-planner";
 import type { RankedRecipe } from "@kitchen-pantry/recipe-engine";
-import { specialsResultSchema, type Special } from "@kitchen-pantry/grocery-pricing";
-import { pricingStatusAction, specialsAction } from "@/app/(app)/grocery/actions";
+import { recipeCostsResultSchema, specialsResultSchema, type RecipeCost, type Special } from "@kitchen-pantry/grocery-pricing";
+import { pricingStatusAction, recipeCostsAction, specialsAction } from "@/app/(app)/grocery/actions";
 import { loadSavedStore } from "@/lib/pricing/use-pricing";
 import { useActiveTrip } from "@/lib/shopping/use-shopping";
 import type { MealPlan, PlanningMode, PlanSource, Recipe } from "@kitchen-pantry/shared-types";
@@ -65,7 +69,7 @@ export function useMealPlan(weekStart: string) {
 
   const [plan, setPlan] = useState<MealPlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<null | "building" | "saving">(null);
+  const [busy, setBusy] = useState<null | "building" | "saving" | "pricing">(null);
   const [message, setMessage] = useState<PlanMessage | null>(null);
   const [ai, setAi] = useState<{ enabled: boolean; remaining: number | null }>({ enabled: false, remaining: null });
   const seedRef = useRef(1);
@@ -309,6 +313,50 @@ export function useMealPlan(weekStart: string) {
     [candidates, draft, profile],
   );
 
+  /**
+   * "Is there a cheaper week?" (spec 03 §6): price the planned dinners and a
+   * few likely-cheaper alternatives at the household's store, then suggest
+   * swaps that save money without lower-rated or unsuitable recipes.
+   */
+  const [cheaper, setCheaper] = useState<{ swaps: CheaperSwap[]; storeName: string; checkedAt: string | null; notice: string | null } | null>(null);
+  const findCheaper = useCallback(async () => {
+    setBusy("pricing");
+    const done = (v: typeof cheaper) => {
+      setCheaper(v);
+      setBusy(null);
+    };
+    const [status, store] = await Promise.all([pricingStatusAction(), loadSavedStore(dataMode)]);
+    if (!status.enabled) return done({ swaps: [], storeName: "", checkedAt: null, notice: "Store prices aren't connected, so swaps can't be priced." });
+    if (!store.ok || !store.data) return done({ swaps: [], storeName: "", checkedAt: null, notice: "Choose your store on the Grocery List first." });
+    const meals = draft.meals.map((m) => ({ date: m.date, recipeId: m.recipeId, servings: m.servings, locked: m.locked || Boolean(m.customTitle) }));
+    const todo = cheaperWeekToPrice(meals, candidates);
+    const recipeOf = (id: string) => byId.get(id)?.recipe;
+    const costs = new Map<string, RecipeCost>();
+    let checkedAt: string | null = null;
+    for (const ids of [todo.planned, todo.alternatives]) {
+      const recipes = ids.map(recipeOf).filter((r): r is Recipe => Boolean(r)).map(recipeCostInput);
+      if (recipes.length === 0) continue;
+      const r = await recipeCostsAction({ storeId: store.data.storeId, recipes });
+      if (!r.ok) return done({ swaps: [], storeName: store.data.name, checkedAt: null, notice: r.message });
+      const parsed = recipeCostsResultSchema.safeParse(r.data);
+      if (!parsed.success) return done({ swaps: [], storeName: store.data.name, checkedAt: null, notice: "Prices came back in an unexpected shape." });
+      for (const c of parsed.data.costs) {
+        costs.set(c.id, c as RecipeCost);
+        if (c.observedAt && (!checkedAt || c.observedAt < checkedAt)) checkedAt = c.observedAt;
+      }
+    }
+    const favourites = new Set([...recipesData.myRatings.values()].filter((x) => x.overall >= 4).map((x) => x.recipeId));
+    const swaps = cheaperSwaps(meals, byId, candidates, costs, { favourites });
+    const shares = [...costs.values()].map((c) => c.pricedCount / Math.max(1, c.pricedCount + c.unpriced.length));
+    const avg = shares.length ? shares.reduce((a, b) => a + b, 0) / shares.length : 0;
+    const notice = swaps.length
+      ? null
+      : avg < 0.7
+        ? `Not enough of these recipes could be priced at ${store.data.name} to compare them fairly — about ${Math.round(avg * 100)}% of their ingredients matched a store package. Nothing is guessed, so no swaps are suggested.`
+        : "No cheaper swaps that are just as good for you this week.";
+    done({ swaps, storeName: store.data.name, checkedAt, notice });
+  }, [byId, candidates, dataMode, draft.meals, recipesData.myRatings]);
+
   const plannedRanked = useMemo(
     () => draft.meals.map((m) => (m.recipeId ? byId.get(m.recipeId) : undefined)).filter((r): r is RankedRecipe => Boolean(r)),
     [draft.meals, byId],
@@ -332,6 +380,9 @@ export function useMealPlan(weekStart: string) {
     recipesData,
     build,
     proposeSwap,
+    cheaper,
+    findCheaper,
+    clearCheaper: () => setCheaper(null),
     /** Save an edited week. Pass `overwriteConfirmed` only after the person agreed. */
     save,
     confirm: () => save(confirmPlan(draft), true),

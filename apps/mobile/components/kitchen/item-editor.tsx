@@ -53,9 +53,15 @@ export function ItemEditor({
   onClose,
   onSave,
   onRemove,
+  prefill = null,
+  note = null,
 }: {
   visible: boolean;
   item: PantryItem | null;
+  /** Starting values for a new item (e.g. from a scanned barcode). */
+  prefill?: Partial<PantryItemInput> | null;
+  /** Shown under the title (e.g. where the details came from). */
+  note?: string | null;
   today: string;
   repository: KitchenRepository;
   onClose: () => void;
@@ -75,7 +81,7 @@ export function ItemEditor({
 
   useEffect(() => {
     if (!visible) return;
-    const initial = item ? toInput(item) : emptyPantryItemInput();
+    const initial = item ? toInput(item) : { ...emptyPantryItemInput(), ...(prefill ?? {}) };
     setForm(initial);
     setQty(initial.quantity === null ? "" : String(initial.quantity));
     setPrice(initial.pricePaidCents === null ? "" : (initial.pricePaidCents / 100).toFixed(2));
@@ -83,8 +89,8 @@ export function ItemEditor({
     setFormError(null);
     setSuggestions([]);
     setMore(Boolean(item && (item.purchasedOn || item.openedOn || item.pricePaidCents !== null)));
-    setManual(item !== null);
-  }, [visible, item]);
+    setManual(item !== null || Boolean(prefill?.category));
+  }, [visible, item, prefill]);
 
   const set = (patch: Partial<PantryItemInput>) => {
     setForm((f) => ({ ...f, ...patch }));
@@ -144,6 +150,7 @@ export function ItemEditor({
     <Sheet
       visible={visible}
       title={item ? "Edit item" : "Add to your kitchen"}
+      description={note ?? undefined}
       onClose={onClose}
       footer={
         <>

@@ -16,7 +16,8 @@ import {
   type PlanDraft,
 } from "@kitchen-pantry/meal-planner";
 import { planningModes, type MealPlan, type PlanningMode } from "@kitchen-pantry/shared-types";
-import { CalendarCheck, ChevronDown, History, ShoppingBasket, Sparkles, TriangleAlert } from "lucide-react";
+import { CalendarCheck, ChevronDown, History, PiggyBank, ShoppingBasket, Sparkles, TriangleAlert } from "lucide-react";
+import { formatCents } from "@kitchen-pantry/grocery-pricing";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useState } from "react";
@@ -346,6 +347,66 @@ function WeekPlanner({ weekStart, onWeeklySettings }: { weekStart: string; onWee
             ))}
           </ul>
           <p className="mt-3 text-[13px] text-muted">Dinners only. The Grocery List adds amounts, desserts and store prices, with what you already have taken off.</p>
+        </Card>
+      ) : null}
+
+      {/* Cheaper week (spec 03 §6) */}
+      {p.draft.meals.some((m) => m.recipeId && !m.locked && !m.customTitle) ? (
+        <Card>
+          <div className="flex items-center gap-2.5">
+            <PiggyBank className="size-5 text-muted" aria-hidden />
+            <h2 className="text-[17px] font-semibold">Is there a cheaper week?</h2>
+          </div>
+          {!p.cheaper ? (
+            <>
+              <p className="mt-2 text-[15px] text-muted">
+                We&apos;ll price this week&apos;s dinners and some alternatives at your store, and suggest swaps that cost less — only recipes that suit your household and are just as
+                well matched to you. Locked nights and favourites stay.
+              </p>
+              <Button variant="secondary" className="mt-3" disabled={busy} onClick={() => void p.findCheaper()}>
+                {p.busy === "pricing" ? "Checking prices…" : "Look for cheaper swaps"}
+              </Button>
+            </>
+          ) : (
+            <>
+              {p.cheaper.swaps.length ? (
+                <ul className="mt-3 space-y-2">
+                  {p.cheaper.swaps.map((sw) => (
+                    <li key={sw.date} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-background px-4 py-3">
+                      <span className="min-w-0 text-[15px]">
+                        <span className="block font-semibold">{dayLabel(sw.date, "long").weekday}</span>
+                        <span className="block text-muted">
+                          {sw.from.recipe.title} ({formatCents(sw.fromPerServingCents)}/serving) → <span className="text-foreground">{sw.to.recipe.title}</span> ({formatCents(sw.toPerServingCents)}/serving)
+                        </span>
+                        <span className="block font-semibold text-success">
+                          {sw.confidence === "estimate" ? `Estimated saving about ${formatCents(sw.savingCents)} this week` : `Saves ${sw.confidence === "at_least" ? "at least " : ""}${formatCents(sw.savingCents)} this week`}
+                        </span>
+                        {sw.confidence === "estimate" ? <span className="block text-[13px] text-muted">Estimate: couldn&apos;t price {sw.toUnpriced.slice(0, 3).join(", ")}{sw.toUnpriced.length > 3 ? "…" : ""} in the new recipe.</span> : null}
+                      </span>
+                      <Button
+                        variant="secondary"
+                        disabled={busy}
+                        onClick={async () => {
+                          await edit(replaceMeal(p.draft, sw.date, { recipeId: sw.to.recipe.id, note: `Cheaper at ${p.cheaper!.storeName}` }, servings));
+                          p.clearCheaper();
+                        }}
+                      >
+                        Swap
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {p.cheaper.notice ? <p className="mt-2 text-[15px] text-muted">{p.cheaper.notice}</p> : null}
+              <p className="mt-3 text-[13px] text-muted">
+                {p.cheaper.storeName ? `Prices from ${p.cheaper.storeName}${p.cheaper.checkedAt ? `, checked ${new Date(p.cheaper.checkedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}, for the amounts each recipe uses; salt, oil and spices aren't counted. ` : ""}
+                &ldquo;At least&rdquo; means part of the current meal couldn&apos;t be priced, so the real saving is bigger; estimates are marked and need most of both recipes priced. For the whole basket across stores, use <Link href="/grocery/compare" className="underline">Compare stores</Link>.
+              </p>
+              <Button variant="ghost" className="mt-1 -ml-3" onClick={p.clearCheaper}>
+                Done
+              </Button>
+            </>
+          )}
         </Card>
       ) : null}
 

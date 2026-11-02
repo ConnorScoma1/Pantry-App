@@ -1,20 +1,32 @@
-import { skillLevels } from "@kitchen-pantry/shared-types";
+import { dessertCategories, dessertFrequencies, dessertSkillLevels, skillLevels, type DessertSettings, type SeasonalSettings, type SkillLevel } from "@kitchen-pantry/shared-types";
 import { brand } from "@kitchen-pantry/ui-tokens";
 import Constants from "expo-constants";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, View } from "react-native";
-import { Button, ChoiceCard, Notice } from "@/components/controls";
+import { Alert, Text, View } from "react-native";
+import { Button, Chip, ChipRow, ChoiceCard, Notice } from "@/components/controls";
+import { SeasonalSettingsCard } from "@/components/seasonal/seasonal-settings";
 import { Body, Card, CardTitle, Eyebrow, Screen } from "@/components/ui";
+import { todayIso } from "@/lib/use-kitchen";
 import { useApp, useProfile } from "@/lib/app-state";
 
 export default function ProfileScreen() {
-  const { mode, email, setSkillLevel, signOut, clearPreview } = useApp();
+  const { mode, email, setSkillLevel, setDesserts, setSeasonal, signOut, clearPreview } = useApp();
   const profile = useProfile();
   const [message, setMessage] = useState<string | null>(null);
+  const changeDesserts = async (patch: Partial<DessertSettings>) => {
+    setMessage(null);
+    const r = await setDesserts({ ...profile.desserts, ...patch });
+    if (!r.ok) setMessage(r.message);
+  };
+  const changeSeasonal = async (next: SeasonalSettings) => {
+    setMessage(null);
+    const r = await setSeasonal(next);
+    if (!r.ok) setMessage(r.message);
+  };
 
   return (
-    <Screen title="Profile">
+    <Screen title="Profile" showProfile={false}>
       {message ? <Notice tone="error">{message}</Notice> : null}
 
       <Card>
@@ -51,6 +63,61 @@ export default function ProfileScreen() {
               }}
             />
           ))}
+        </View>
+      </Card>
+
+      <Card>
+        <Eyebrow>Desserts</Eyebrow>
+        <Body>Optional. Never planned every day; &quot;Add dessert&quot; on the Meal Plan always works.</Body>
+        <Text className="mb-2 mt-4 text-[15px] font-semibold text-foreground">How often to plan one automatically</Text>
+        <ChipRow>
+          {dessertFrequencies.map((f) => (
+            <Chip key={f.code} label={f.label} selected={profile.desserts.frequency === f.code} onPress={() => void changeDesserts({ frequency: f.code })} />
+          ))}
+        </ChipRow>
+        <Text className="mb-2 mt-4 text-[15px] font-semibold text-foreground">Dessert skill</Text>
+        <ChipRow>
+          <Chip label={`Same as cooking (${profile.skillLevel})`} selected={profile.desserts.skillLevel === null} onPress={() => void changeDesserts({ skillLevel: null })} />
+          {dessertSkillLevels.map((s) => (
+            <Chip key={s.level} label={`${s.level} · ${s.label}`} selected={profile.desserts.skillLevel === s.level} onPress={() => void changeDesserts({ skillLevel: s.level as SkillLevel })} />
+          ))}
+        </ChipRow>
+        <Text className="mb-2 mt-4 text-[15px] font-semibold text-foreground">Kinds you like (none = any)</Text>
+        <ChipRow>
+          {dessertCategories.map((cat) => (
+            <Chip
+              key={cat.code}
+              label={cat.label}
+              selected={profile.desserts.categories.includes(cat.code)}
+              onPress={() =>
+                void changeDesserts({
+                  categories: profile.desserts.categories.includes(cat.code)
+                    ? profile.desserts.categories.filter((x) => x !== cat.code)
+                    : [...profile.desserts.categories, cat.code],
+                })
+              }
+            />
+          ))}
+        </ChipRow>
+      </Card>
+
+      <SeasonalSettingsCard profile={profile} today={todayIso()} onChange={(next) => void changeSeasonal(next)} />
+
+      <Card>
+        <Eyebrow>Household</Eyebrow>
+        {profile.householdDiet && profile.householdDiet.memberCount > 1 ? (
+          <Body>
+            Shared with {profile.householdDiet.memberCount - 1} other{profile.householdDiet.memberCount === 2 ? "" : "s"}. Your allergies and diet stay
+            yours; plans avoid everyone&apos;s.
+          </Body>
+        ) : null}
+        <View className="mt-3">
+          <Button
+            variant="secondary"
+            icon="people-outline"
+            label={mode === "supabase" ? "People, invites and sharing" : "Sharing with your household"}
+            onPress={() => router.push("/household")}
+          />
         </View>
       </Card>
 

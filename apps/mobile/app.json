@@ -18,7 +18,25 @@
       "bundler": "metro",
       "output": "single"
     },
-    "plugins": ["expo-router"],
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Kitchen Pantry uses the camera to scan product barcodes and photograph grocery receipts.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Kitchen Pantry reads a receipt photo you choose to add the groceries to your kitchen. The photo isn't kept.",
+          "cameraPermission": "Kitchen Pantry uses the camera to photograph grocery receipts.",
+          "microphonePermission": false
+        }
+      ]
+    ],
     "experiments": {
       "typedRoutes": false
     }

@@ -13,7 +13,12 @@
     "test": "tsx --test --test-reporter=spec \"src/**/*.test.ts\""
   },
   "dependencies": {
+    "@kitchen-pantry/inventory-engine": "*",
+    "@kitchen-pantry/meal-planner": "*",
+    "@kitchen-pantry/recipe-engine": "*",
     "@kitchen-pantry/shared-types": "*",
+    "@kitchen-pantry/shopping-optimizer": "*",
+    "@kitchen-pantry/validation": "*",
     "zod": "^4.6.0"
   }
 }

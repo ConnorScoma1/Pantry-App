@@ -1,10 +1,11 @@
 "use client";
 
 import type { PantryItem, RemovalReason } from "@kitchen-pantry/shared-types";
-import type { PantryItemInput } from "@kitchen-pantry/validation";
+import type { PantryItemInput, PantryOrigin } from "@kitchen-pantry/validation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   addPantryItemAction,
+  addPantryItemsAction,
   addStaplesAction,
   listPantryItemsAction,
   removePantryItemAction,
@@ -17,7 +18,8 @@ import type { KitchenRepository, Result } from "./types";
 
 const supabaseKitchenRepository: KitchenRepository = {
   list: () => listPantryItemsAction(),
-  add: (input) => addPantryItemAction(input),
+  add: (input, origin) => addPantryItemAction(input, origin),
+  addMany: (inputs, origin) => addPantryItemsAction(inputs, origin),
   update: (id, input) => updatePantryItemAction(id, input),
   remove: (id, reason) => removePantryItemAction(id, reason),
   addStaples: (names) => addStaplesAction(names),
@@ -35,7 +37,8 @@ export interface KitchenState {
   error: string | null;
   today: string;
   repository: KitchenRepository;
-  add: (input: PantryItemInput) => Promise<Result<PantryItem>>;
+  add: (input: PantryItemInput, origin?: PantryOrigin) => Promise<Result<PantryItem>>;
+  addMany: (inputs: PantryItemInput[], origin: PantryOrigin) => Promise<Result<PantryItem[]>>;
   update: (id: string, input: PantryItemInput) => Promise<Result<PantryItem>>;
   remove: (id: string, reason: RemovalReason) => Promise<Result<null>>;
   addStaples: (names: string[]) => Promise<Result<PantryItem[]>>;
@@ -67,9 +70,18 @@ export function useKitchen(): KitchenState {
   }, [reload]);
 
   const add = useCallback(
-    async (input: PantryItemInput) => {
-      const result = await repository.add(input);
+    async (input: PantryItemInput, origin?: PantryOrigin) => {
+      const result = await repository.add(input, origin);
       if (result.ok) setItems((prev) => [...prev, result.data]);
+      return result;
+    },
+    [repository],
+  );
+
+  const addMany = useCallback(
+    async (inputs: PantryItemInput[], origin: PantryOrigin) => {
+      const result = await repository.addMany(inputs, origin);
+      if (result.ok) setItems((prev) => [...prev, ...result.data]);
       return result;
     },
     [repository],
@@ -104,7 +116,7 @@ export function useKitchen(): KitchenState {
   );
 
   return useMemo(
-    () => ({ items, loading, error, today, repository, add, update, remove, addStaples, reload }),
-    [items, loading, error, today, repository, add, update, remove, addStaples, reload],
+    () => ({ items, loading, error, today, repository, add, addMany, update, remove, addStaples, reload }),
+    [items, loading, error, today, repository, add, addMany, update, remove, addStaples, reload],
   );
 }

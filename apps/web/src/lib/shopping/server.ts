@@ -1,7 +1,7 @@
 import "server-only";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { AiRequestError, explainComparison, readAiConfig } from "@kitchen-pantry/ai";
-import type { Result, SupabaseLike } from "@kitchen-pantry/database";
+import type { Result, ShoppingRepository, SupabaseLike } from "@kitchen-pantry/database";
 import type { KrogerStore } from "@kitchen-pantry/grocery-pricing";
 import {
   buildAdviceFacts,
@@ -9,6 +9,7 @@ import {
   MapboxRoutingProvider,
   RoutingError,
   runComparison,
+  saveTripSchema,
   SAMPLE_STORES,
   SampleRoutingProvider,
   SampleStoresPricingProvider,
@@ -31,7 +32,9 @@ import { allowPricingCall, livePricing, pricingStatus, verifyStore } from "@/lib
  * a client can't hand it made-up numbers to "explain".
  */
 const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN ?? "";
-const adviceSecret = process.env.SHOPPING_ADVICE_SECRET || randomBytes(32).toString("hex");
+// In production the secret must be set (and shared by every server instance); without it the advisor is off.
+const configuredSecret = (process.env.SHOPPING_ADVICE_SECRET ?? "").length >= 32 ? process.env.SHOPPING_ADVICE_SECRET! : null;
+const adviceSecret = configuredSecret ?? (process.env.NODE_ENV === "production" ? null : randomBytes(32).toString("hex"));
 const ADVICE_TTL_MS = 30 * 60_000;
 const ADVICE_FEATURE = "shopping_advice";
 
@@ -46,7 +49,7 @@ export function shoppingStatus(): ShoppingStatus {
   return {
     livePrices: pricingStatus().enabled,
     routing: mapboxToken ? "mapbox" : null,
-    advisor: Boolean(ai && (ai.dailyAdviceLimit ?? 10) > 0),
+    advisor: Boolean(ai && (ai.dailyAdviceLimit ?? 10) > 0 && adviceSecret),
   };
 }
 
@@ -102,7 +105,8 @@ export async function compareShopping(raw: unknown, who: string): Promise<Result
   if (!live) return { ok: false, message: "Store prices aren't connected yet, so only the practice comparison is available. Add Kroger API keys on the server (see the README)." };
   const ids = [...new Set(req.storeIds)];
   if (ids.length === 0) return { ok: false, message: "Choose at least two stores to compare." };
-  if (!allowPricingCall(`compare:${who}`)) return { ok: false, message: "Stores were compared a lot this hour. Try again a little later." };
+  // Counts against the person's hourly price checks: one per store for every 40 items.
+  if (!allowPricingCall(who, ids.length * Math.ceil(req.items.length / 40))) return { ok: false, message: "Prices were checked a lot this hour. Try again a little later." };
 
   // Look every store up with Kroger — never trust a client's store details or coordinates.
   const stores: ShoppingStore[] = [];
@@ -146,20 +150,42 @@ export async function compareShopping(raw: unknown, who: string): Promise<Result
   return { ok: true, data: { ...r, adviceToken: signFacts(who, buildAdviceFacts(r, names, req.settings)), routingNote: routingNote ?? r.travelError } };
 }
 
+/**
+ * Save the trip a member chose, with each store's name and address read
+ * again from Kroger — never the client's text — so the household's shared
+ * list can't be labelled with made-up store details.
+ */
+export async function saveTripVerified(raw: unknown, repo: ShoppingRepository): Promise<Result<{ id: string }>> {
+  const parsed = saveTripSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "That trip isn't valid." };
+  if (parsed.data.isSample || parsed.data.stops.some((s) => !s.storeKey.startsWith("kroger:")))
+    return { ok: false, message: "Practice comparisons can't organise your real list. Compare real stores first." };
+  const stops = [];
+  for (const s of parsed.data.stops) {
+    const v = await verifyStore(s.storeKey.slice(7));
+    if (!v.ok) return { ok: false, message: "One of those stores couldn't be checked with Kroger. Compare again." };
+    const store = toShoppingStore(v.data);
+    stops.push({ ...s, name: store.name.slice(0, 160), address: store.address?.slice(0, 240) ?? null });
+  }
+  return repo.saveTrip({ ...parsed.data, stops });
+}
+
 // ---------------------------------------------------------------------------
 // Signed facts for the advisor
 // ---------------------------------------------------------------------------
 function sign(body: string): string {
-  return createHmac("sha256", adviceSecret).update(body).digest("base64url");
+  return createHmac("sha256", adviceSecret!).update(body).digest("base64url");
 }
 
 function signFacts(who: string, facts: AdviceFacts): string | null {
+  if (!adviceSecret) return null;
   const body = Buffer.from(JSON.stringify({ u: who, t: Date.now(), f: facts })).toString("base64url");
   if (body.length > 60_000) return null;
   return `${body}.${sign(body)}`;
 }
 
 export function readFacts(token: unknown, who: string, now = Date.now()): AdviceFacts | null {
+  if (!adviceSecret) return null;
   if (typeof token !== "string" || token.length > 70_000) return null;
   const [body, mac] = token.split(".");
   if (!body || !mac) return null;

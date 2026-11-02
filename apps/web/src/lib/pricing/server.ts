@@ -3,6 +3,7 @@ import {
   createMemoryCache,
   KrogerClient,
   KrogerPricingProvider,
+  KROGER_LOCATION_ID,
   priceBasket,
   PricingProviderError,
   pricingRequestSchema,
@@ -41,6 +42,7 @@ function kroger(): KrogerClient | null {
 
 const searchCache = createMemoryCache(cacheMinutes * 60_000);
 const storeCache = new Map<string, { at: number; stores: KrogerStore[] }>();
+const storeById = new Map<string, { at: number; store: KrogerStore | null }>();
 const usage = new Map<string, number[]>();
 
 export interface PricingStatus {
@@ -65,14 +67,14 @@ function friendly(error: unknown): string {
   return "Couldn't load prices. Please try again.";
 }
 
-/** Simple per-user guard so one person can't use up the shared daily quota. */
-function allow(key: string, now = Date.now()): boolean {
+/** Simple per-user guard so one person can't use up the shared daily quota. `cost` = how many checks this counts as. */
+function allow(key: string, now = Date.now(), cost = 1): boolean {
   const recent = (usage.get(key) ?? []).filter((t) => now - t < 3_600_000);
-  if (recent.length >= hourlyLimit) {
+  if (recent.length + cost > hourlyLimit) {
     usage.set(key, recent);
     return false;
   }
-  recent.push(now);
+  for (let i = 0; i < cost; i++) recent.push(now);
   usage.set(key, recent);
   return true;
 }
@@ -83,9 +85,13 @@ export function livePricing(): { provider: KrogerPricingProvider; cache: typeof 
   return k ? { provider: new KrogerPricingProvider(k), cache: searchCache } : null;
 }
 
-/** The same hourly guard, for other server features that use the Kroger quota. */
-export function allowPricingCall(key: string): boolean {
-  return allow(key);
+/**
+ * The same hourly guard for other features that use the Kroger quota. A
+ * comparison of several stores counts once per store, against the same
+ * bucket as the grocery list's own price checks.
+ */
+export function allowPricingCall(who: string, cost = 1): boolean {
+  return allow(`price:${who}`, Date.now(), Math.max(1, Math.ceil(cost)));
 }
 
 export async function findStores(postalCode: unknown, who: string): Promise<Result<KrogerStore[]>> {
@@ -110,12 +116,18 @@ export async function verifyStore(locationId: unknown): Promise<Result<KrogerSto
   const k = kroger();
   if (!k) return { ok: false, message: NOT_CONFIGURED };
   const id = String(locationId ?? "");
+  if (!KROGER_LOCATION_ID.test(id)) return { ok: false, message: "That store id isn't valid." };
   for (const { stores } of storeCache.values()) {
     const s = stores.find((x) => x.locationId === id);
     if (s) return { ok: true, data: s };
   }
+  const hit = storeById.get(id);
+  if (hit && Date.now() - hit.at < 24 * 3_600_000) return hit.store ? { ok: true, data: hit.store } : { ok: false, message: "Kroger doesn't know that store." };
   try {
     const store = await k.getStore(id);
+    // Unknown ids are remembered too, so made-up ids can't be used to make repeated Kroger calls.
+    if (storeById.size > 5_000) storeById.delete(storeById.keys().next().value!);
+    storeById.set(id, { at: Date.now(), store });
     return store ? { ok: true, data: store } : { ok: false, message: "Kroger doesn't know that store." };
   } catch (error) {
     return { ok: false, message: friendly(error) };

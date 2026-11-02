@@ -1,0 +1,60 @@
+{
+  "source": { "name": "Example Partner (sample)", "kind": "partner", "url": "https://partner.example", "license": "licensed:example-partner" },
+  "recipes": [
+    {
+      "externalId": "ep-1001",
+      "title": "Turkish Red Lentil Soup (Mercimek Çorbası)",
+      "description": "A silky red lentil soup with cumin, paprika butter and lemon.",
+      "cuisine": "turkish",
+      "authenticity": "traditional",
+      "course": "main",
+      "skillLevel": 1,
+      "prepMinutes": 10,
+      "cookMinutes": 35,
+      "servings": 4,
+      "equipment": ["stove", "blender"],
+      "ingredients": [
+        { "quantity": "1 1/2", "unit": "cups", "item": "red lentils", "preparation": "rinsed" },
+        { "quantity": 1, "unit": null, "item": "onion", "preparation": "chopped" },
+        { "quantity": 6, "unit": "cups", "item": "vegetable stock" },
+        { "quantity": 1, "unit": "tsp", "item": "ground cumin" },
+        { "quantity": 2, "unit": "tbsp", "item": "butter" },
+        { "quantity": 1, "unit": "tsp", "item": "Aleppo pepper" }
+      ],
+      "steps": [
+        { "body": "Soften the onion in a little of the butter, then add the lentils, cumin and stock.", "minutes": 5 },
+        { "body": "Simmer until the lentils collapse, about 25 minutes, then blend until smooth.", "minutes": 25 },
+        { "body": "Melt the rest of the butter with the Aleppo pepper and drizzle over each bowl with a squeeze of lemon." }
+      ]
+    },
+    {
+      "externalId": "ep-1002",
+      "title": "Undercooked Chicken (rejected on purpose)",
+      "cuisine": "american",
+      "skillLevel": 1,
+      "prepMinutes": 5,
+      "cookMinutes": 10,
+      "ingredients": [{ "quantity": 1, "unit": "lb", "item": "chicken breasts" }, { "quantity": 1, "unit": "tbsp", "item": "oil" }],
+      "steps": [{ "body": "Sear the chicken until golden.", "safeF": 140 }, { "body": "Rest and slice." }]
+    },
+    {
+      "externalId": "ep-1003",
+      "title": "Easy Pad Thai (a duplicate on purpose)",
+      "cuisine": "thai",
+      "skillLevel": 2,
+      "prepMinutes": 30,
+      "cookMinutes": 10,
+      "ingredients": [
+        { "quantity": 3, "unit": "tbsp", "item": "tamarind concentrate" },
+        { "quantity": 3, "unit": "tbsp", "item": "fish sauce" },
+        { "quantity": 3, "unit": "tbsp", "item": "palm sugar" },
+        { "quantity": 8, "unit": "oz", "item": "dried flat rice noodles" },
+        { "quantity": 12, "unit": "oz", "item": "large shrimp" },
+        { "quantity": 4, "unit": "oz", "item": "firm tofu" },
+        { "quantity": 2, "unit": null, "item": "eggs" },
+        { "quantity": 2, "unit": "cup", "item": "bean sprouts" }
+      ],
+      "steps": [{ "body": "Soak the noodles until bendy.", "minutes": 25 }, { "body": "Stir-fry the shrimp until opaque, then the rest.", "safeF": 145 }]
+    }
+  ]
+}

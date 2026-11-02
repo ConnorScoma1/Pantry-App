@@ -7,13 +7,14 @@ import { useThemeColors } from "@/lib/theme";
 
 type IconName = ComponentProps<typeof Ionicons>["name"];
 
-/** Same five destinations, in the same order, as the web app. */
-const tabs: Array<{ name: string; title: string; icon: IconName; activeIcon: IconName }> = [
+/** Same five tabs, in the same order, as the web app on phones. Profile opens from the avatar at the top of each screen. */
+const tabs: Array<{ name: string; title: string; icon: IconName; activeIcon: IconName; hidden?: boolean }> = [
   { name: "index", title: "Home", icon: "home-outline", activeIcon: "home" },
   { name: "kitchen", title: "Kitchen", icon: "file-tray-stacked-outline", activeIcon: "file-tray-stacked" },
   { name: "plan", title: "Plan", icon: "calendar-outline", activeIcon: "calendar" },
+  { name: "specials", title: "Specials", icon: "pricetag-outline", activeIcon: "pricetag" },
   { name: "grocery", title: "Grocery", icon: "cart-outline", activeIcon: "cart" },
-  { name: "profile", title: "Profile", icon: "person-circle-outline", activeIcon: "person-circle" },
+  { name: "profile", title: "Profile", icon: "person-circle-outline", activeIcon: "person-circle", hidden: true },
 ];
 
 export default function TabsLayout() {
@@ -47,6 +48,7 @@ export default function TabsLayout() {
           name={tab.name}
           options={{
             title: tab.title,
+            ...(tab.hidden ? { href: null } : {}),
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons name={focused ? tab.activeIcon : tab.icon} color={color} size={size} />
             ),

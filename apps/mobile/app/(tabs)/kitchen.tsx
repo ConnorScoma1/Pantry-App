@@ -4,6 +4,7 @@ import { storageLocations, type PantryItem, type StorageLocation } from "@kitche
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { Button, Notice } from "@/components/controls";
+import { router } from "expo-router";
 import { ItemEditor } from "@/components/kitchen/item-editor";
 import { ItemRow } from "@/components/kitchen/item-row";
 import { StaplesSheet } from "@/components/kitchen/staples-sheet";
@@ -51,6 +52,14 @@ export default function KitchenScreen() {
           </View>
           <View className="flex-1">
             <Button variant="secondary" icon="checkbox-outline" label="Mark staples" onPress={() => setStaples(true)} />
+          </View>
+        </View>
+        <View className="mt-2 flex-row gap-2">
+          <View className="flex-1">
+            <Button variant="secondary" icon="barcode-outline" label="Barcode" onPress={() => router.push("/scan")} />
+          </View>
+          <View className="flex-1">
+            <Button variant="secondary" icon="receipt-outline" label="Receipt" onPress={() => router.push("/receipt")} />
           </View>
         </View>
       </Card>

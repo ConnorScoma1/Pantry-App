@@ -1,6 +1,6 @@
 import type { Result } from "@kitchen-pantry/database";
 import type { PantryItem, RemovalReason } from "@kitchen-pantry/shared-types";
-import type { PantryItemInput } from "@kitchen-pantry/validation";
+import type { PantryItemInput, PantryOrigin } from "@kitchen-pantry/validation";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { useApp } from "./app-state";
@@ -36,9 +36,18 @@ export function useKitchen() {
   );
 
   const add = useCallback(
-    async (input: PantryItemInput): Promise<Result<PantryItem>> => {
-      const r = await kitchen.add(input);
+    async (input: PantryItemInput, origin?: PantryOrigin): Promise<Result<PantryItem>> => {
+      const r = await kitchen.add(input, origin);
       if (r.ok) setItems((prev) => [...prev, r.data]);
+      return r;
+    },
+    [kitchen],
+  );
+
+  const addMany = useCallback(
+    async (inputs: PantryItemInput[], origin: PantryOrigin): Promise<Result<PantryItem[]>> => {
+      const r = await kitchen.addMany(inputs, origin);
+      if (r.ok) setItems((prev) => [...prev, ...r.data]);
       return r;
     },
     [kitchen],
@@ -72,5 +81,5 @@ export function useKitchen() {
     [kitchen],
   );
 
-  return { items, loading, error, today, repository: kitchen, reload, add, update, remove, addStaples };
+  return { items, loading, error, today, repository: kitchen, reload, add, addMany, update, remove, addStaples };
 }

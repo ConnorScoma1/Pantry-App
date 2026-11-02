@@ -4,9 +4,11 @@ import {
   formatMinutes,
   formatTemperature,
   groupByComponent,
+  isChefRecipe,
+  isCookable,
   rankRecipe,
 } from "@kitchen-pantry/recipe-engine";
-import { allergens, cuisines, equipment, labelFor, skillLevels } from "@kitchen-pantry/shared-types";
+import { allergens, equipment, labelFor, skillLevels, worldCuisines, type Recipe } from "@kitchen-pantry/shared-types";
 import { router, useLocalSearchParams } from "expo-router";
 import type { ComponentProps, ReactNode } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -14,7 +16,10 @@ import { ActivityIndicator, Linking, Pressable, Text, View } from "react-native"
 import { Button, Notice } from "@/components/controls";
 import { PushedPage } from "@/components/recipes/page";
 import { RateSheet } from "@/components/recipes/rate-sheet";
+import { CookingMode } from "@/components/recipes/cooking-mode";
 import { PhotoCredit, RecipeArt, ratingText, SkillDots } from "@/components/recipes/recipe-card";
+import { AuthenticityBadge, SafetyNote, sourceText, StatusBadge, StorageNote } from "@/components/recipes/library-badges";
+import { IdeaPanel, VersionsPanel } from "@/components/recipes/versions-panel";
 import { useRecipes } from "@/lib/use-recipes";
 import { useThemeColors } from "@/lib/theme";
 
@@ -41,10 +46,25 @@ function StepChip({ icon, tone = "plain", children }: { icon: ComponentProps<typ
 function RecipeDetail({ slug }: { slug: string }) {
   const c = useThemeColors();
   const data = useRecipes();
-  const recipe = data.recipes.find((r) => r.slug === slug) ?? null;
+  const known = data.recipes.find((r) => r.slug === slug) ?? null;
+  const [fetched, setFetched] = useState<{ slug: string; recipe: Recipe | null } | null>(null);
+  const { findBySlug } = data;
+  useEffect(() => {
+    if (data.loading || known || fetched?.slug === slug) return;
+    let cancelled = false;
+    void findBySlug(slug).then((r) => {
+      if (!cancelled) setFetched({ slug, recipe: r });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [data.loading, known, fetched, slug, findBySlug]);
+  const recipe = known ?? (fetched?.slug === slug ? fetched.recipe : null);
+  const looking = !known && fetched?.slug !== slug;
   const ranked = useMemo(() => (recipe ? rankRecipe(recipe, data.context) : null), [recipe, data.context]);
   const [servings, setServings] = useState<number | null>(null);
   const [rating, setRating] = useState(false);
+  const [cooking, setCooking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   // Record that the recipe was opened (once per visit) for repeat-avoidance later.
@@ -56,7 +76,7 @@ function RecipeDetail({ slug }: { slug: string }) {
     void logEvent(recipe.id, "opened", "detail");
   }, [recipe, logEvent]);
 
-  if (data.loading) {
+  if (data.loading || (looking && !recipe)) {
     return (
       <View className="items-center py-16">
         <ActivityIndicator color={c.muted} accessibilityLabel="Loading recipe" />
@@ -80,6 +100,7 @@ function RecipeDetail({ slug }: { slug: string }) {
   const mine = data.myRatings.get(recipe.id);
   const { conflicts, warnings } = ranked.eligibility.allergens;
   const skillLabel = skillLevels.find((s) => s.level === recipe.skillLevel)?.label;
+  const cookable = isCookable(recipe);
 
   return (
     <View>
@@ -87,12 +108,16 @@ function RecipeDetail({ slug }: { slug: string }) {
       <PhotoCredit recipe={recipe} />
 
       <Text className="mt-5 text-[13px] font-semibold uppercase tracking-widest text-muted">
-        {recipe.cuisine ? labelFor(cuisines, recipe.cuisine) : "Recipe"}
+        {recipe.cuisine ? labelFor(worldCuisines, recipe.cuisine) : "Recipe"}
       </Text>
       <Text accessibilityRole="header" className="mt-1 text-[30px] font-bold leading-tight tracking-tight text-foreground">
         {recipe.title}
       </Text>
-      <Text className="mt-2 text-[17px] leading-6 text-muted">{recipe.description}</Text>
+      <View className="mt-2 flex-row flex-wrap gap-1.5">
+        <StatusBadge recipe={recipe} />
+        <AuthenticityBadge recipe={recipe} />
+      </View>
+      {recipe.description ? <Text className="mt-2 text-[17px] leading-6 text-muted">{recipe.description}</Text> : null}
 
       <View className="mt-4 gap-2">
         <View className="flex-row items-center gap-2">
@@ -100,7 +125,8 @@ function RecipeDetail({ slug }: { slug: string }) {
           <Text className="text-[15px] text-foreground">
             {formatMinutes(recipe.totalMinutes)}{" "}
             <Text className="text-muted">
-              ({recipe.prepMinutes} prep · {formatMinutes(recipe.cookMinutes)} cook)
+              ({recipe.prepMinutes} prep{recipe.cookMinutes > 0 ? ` · ${formatMinutes(recipe.cookMinutes)} cook` : ""}
+                  {recipe.chillMinutes > 0 ? ` · ${formatMinutes(recipe.chillMinutes)} ${recipe.dessertCategory === "frozen" ? "freezing" : "chilling"}` : ""})
             </Text>
           </Text>
         </View>
@@ -115,7 +141,10 @@ function RecipeDetail({ slug }: { slug: string }) {
         </View>
       </View>
 
-      <View className="mt-5 flex-row gap-2">
+      {cookable ? (
+        <Button className="mt-5" size="lg" icon={isChefRecipe(recipe) ? "restaurant-outline" : "flame-outline"} label={isChefRecipe(recipe) ? "Cook in Chef mode" : "Start cooking"} onPress={() => setCooking(true)} />
+      ) : null}
+      <View className="mt-2 flex-row gap-2">
         <Button
           className="flex-1"
           variant={ranked.favorite ? "secondary" : "primary"}
@@ -123,13 +152,15 @@ function RecipeDetail({ slug }: { slug: string }) {
           label={ranked.favorite ? "Saved" : "Save"}
           onPress={() => void data.toggleFavorite(recipe.id)}
         />
-        <Button
-          className="flex-1"
-          variant="secondary"
-          icon="star-outline"
-          label={mine ? "Rate again" : "I cooked this"}
-          onPress={() => setRating(true)}
-        />
+        {cookable ? (
+          <Button
+            className="flex-1"
+            variant="secondary"
+            icon="star-outline"
+            label={mine ? "Rate again" : "I cooked this"}
+            onPress={() => setRating(true)}
+          />
+        ) : null}
       </View>
       {ranked.allowed ? (
         <Button
@@ -196,6 +227,13 @@ function RecipeDetail({ slug }: { slug: string }) {
         </View>
       ) : null}
 
+      <View className="mt-4">
+        <SafetyNote recipe={recipe} />
+      </View>
+      {!cookable ? <IdeaPanel recipe={recipe} data={data} /> : null}
+
+      {cookable ? (
+      <>
       {/* Ingredients */}
       <View className="mt-8 flex-row items-center justify-between gap-3">
         <Text accessibilityRole="header" className="text-2xl font-bold tracking-tight text-foreground">
@@ -265,7 +303,7 @@ function RecipeDetail({ slug }: { slug: string }) {
         ))}
       </View>
       <Text className="mt-3 text-[14px] text-muted">
-        Equipment: {recipe.requiredEquipment.map((e) => labelFor(equipment, e)).join(", ")}
+        {recipe.requiredEquipment.length ? `Equipment: ${recipe.requiredEquipment.map((e) => labelFor(equipment, e)).join(", ")}` : "No special equipment needed."}
       </Text>
 
       {/* Method */}
@@ -314,17 +352,37 @@ function RecipeDetail({ slug }: { slug: string }) {
         </View>
       ) : null}
 
+      <View className="mt-6">
+        <StorageNote recipe={recipe} />
+      </View>
+      </>
+      ) : null}
+
+      {cookable ? <VersionsPanel recipe={recipe} data={data} /> : null}
+
       <Text className="mt-10 border-t border-border pt-4 text-[14px] leading-5 text-muted">
-        {recipe.source.kind === "original" ? "Original recipe by " : "Source: "}
+        {sourceText(recipe)}
         {recipe.source.url ? (
           <Text accessibilityRole="link" className="underline" onPress={() => void Linking.openURL(recipe.source.url!)}>
-            {recipe.source.name}
+            {" "}Visit the source.
           </Text>
-        ) : (
-          recipe.source.name
-        )}
-        . Food-safety temperatures follow USDA guidance. Always check product labels for allergens.
+        ) : null}{" "}
+        Food-safety temperatures follow USDA guidance. Always check product labels for allergens.
       </Text>
+
+      {cooking ? (
+        <CookingMode
+          visible
+          recipe={recipe}
+          initialServings={serves}
+          onClose={() => setCooking(false)}
+          onDone={() => {
+            void logEvent(recipe.id, "cooked", "detail");
+            setCooking(false);
+            setRating(true);
+          }}
+        />
+      ) : null}
 
       <RateSheet
         visible={rating}

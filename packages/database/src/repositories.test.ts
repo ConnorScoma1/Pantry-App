@@ -11,6 +11,9 @@ import {
   createSupabaseKitchenRepository,
   createSupabaseProfileStore,
   randomUuid,
+  createLocalMealPlanRepository,
+  createSupabaseMealPlanRepository,
+  CONFIRMED_PLAN,
   type PantryRow,
 } from "./index";
 
@@ -31,7 +34,7 @@ function fakeDb(responses: Record<string, DbResponse[]>) {
       const call: Call = { target: table, ops: [] };
       calls.push(call);
       const builder: Record<string, unknown> = {};
-      for (const op of ["select", "insert", "update", "upsert", "delete", "eq", "in", "order", "limit", "single", "maybeSingle"]) {
+      for (const op of ["select", "insert", "update", "upsert", "delete", "eq", "in", "lt", "order", "limit", "single", "maybeSingle"]) {
         builder[op] = (...args: unknown[]) => {
           call.ops.push([op, args]);
           return builder;
@@ -188,12 +191,43 @@ test("profile stores validate before saving", async () => {
   await local.clear();
   assert.deepEqual(await local.load(), { ok: true, data: null });
 
-  const { db, calls } = fakeDb({ "rpc:get_onboarding_profile": [{ data: profile, error: null }] });
+  const stored = { ...profile, householdDiet: { allergies: ["peanut"], restrictions: [], dislikes: [], neverRecommend: [], memberCount: 2 } };
+  const { db, calls } = fakeDb({
+    "rpc:get_onboarding_profile": [
+      { data: stored, error: null },
+      { data: profile, error: null },
+    ],
+  });
   const remote = createSupabaseProfileStore(db);
-  assert.ok((await remote.save(profile)).ok);
+  const saved = await remote.save(profile);
+  assert.ok(saved.ok);
   assert.equal(calls[0]!.target, "rpc:save_onboarding_profile");
+  assert.deepEqual(saved.data.householdDiet?.allergies, ["peanut"], "save reads back the household's combined list");
   const remoteLoaded = await remote.load();
   assert.ok(remoteLoaded.ok && remoteLoaded.data?.household.postalCode === "53132");
+});
+
+test("seasonal settings: on by default, saved personally, region validated", async () => {
+  const profile = defaultOnboardingProfile();
+  profile.household.postalCode = "53132";
+  profile.goals.ranked = ["save_money"];
+  assert.equal(profile.seasonal.enabled, true);
+  assert.deepEqual(profile.seasonal.holidayOptIns, [], "no holidays assumed");
+  assert.equal(profile.seasonal.deals, false, "deals are opt-in");
+
+  const local = createLocalProfileStore(memoryStorage());
+  assert.ok(!(await local.setSeasonal({ ...profile.seasonal, enabled: false })).ok, "needs a profile first");
+  assert.ok((await local.save(profile)).ok);
+  const next = { ...profile.seasonal, holidayOptIns: ["diwali"], region: "south-temperate" };
+  assert.ok((await local.setSeasonal(next)).ok);
+  const loaded = await local.load();
+  assert.ok(loaded.ok && loaded.data?.seasonal.region === "south-temperate" && loaded.data.seasonal.holidayOptIns[0] === "diwali");
+  assert.ok(!(await local.setSeasonal({ ...next, region: "mars" })).ok);
+  assert.ok(!(await local.setSeasonal({ ...next, holidayOptIns: ["festivus"] })).ok);
+
+  const { db, calls } = fakeDb({ "rpc:save_seasonal_preferences": [{ data: null, error: null }] });
+  assert.ok((await createSupabaseProfileStore(db).setSeasonal(next)).ok);
+  assert.equal(calls[0]!.target, "rpc:save_seasonal_preferences");
 });
 
 test("randomUuid produces RFC 4122 v4 ids", () => {
@@ -204,6 +238,7 @@ const CHILI = "7e570000-0000-4000-8000-000000000005";
 
 test("supabase recipes: nested rows map to sorted recipes with numeric fields", async () => {
   const { db, calls } = fakeDb({
+    "rpc:search_recipes": [{ data: [{ recipe_id: CHILI, rank: 0, total: 1 }], error: null }],
     recipes: [
       {
         data: [
@@ -231,7 +266,12 @@ test("supabase recipes: nested rows map to sorted recipes with numeric fields", 
   assert.equal(r.ingredients[0]!.quantity, 1.25);
   assert.equal(r.steps[0]!.safeInternalTempC, 73.9);
   assert.equal(r.source.kind, "original");
-  assert.match(String(calls[0]!.ops[0]![1][0]), /recipe_ingredients\(/);
+  const pool = calls[0]!.ops[0]![1][0] as { query: Record<string, unknown> };
+  assert.equal(pool.query.sort, "rotate");
+  assert.match(String(pool.query.seed), /^pool:\d{4}-W\d{2}$/, "the working set rotates weekly");
+  const select = calls.find((c) => c.target === "recipes")!;
+  assert.match(String(select.ops[0]![1][0]), /recipe_ingredients\(/);
+  assert.deepEqual(select.ops.find(([op]) => op === "in")![1], ["id", [CHILI]]);
 });
 
 test("supabase favourites upsert/delete and rating insert", async () => {
@@ -290,4 +330,84 @@ test("recommendation events: local history is newest-first and capped", async ()
   for (let i = 0; i < 520; i++) await repo.logEvent({ recipeId: CHILI, event: "opened", surface: "home" });
   const capped = await repo.events();
   assert.ok(capped.ok && capped.data.length === 500);
+});
+
+const PLAN_INPUT = {
+  weekStart: "2026-11-09",
+  mode: "budget_first",
+  generatedBy: "ai",
+  summary: "A thrifty week.",
+  confirmedAt: null,
+  meals: [
+    { date: "2026-11-11", recipeId: CHILI, customTitle: null, servings: 4, locked: false, note: "Chili night" },
+    { date: "2026-11-09", recipeId: null, customTitle: "Leftovers", servings: 2, locked: true, note: null },
+  ],
+};
+
+test("meal plans: validation rejects bad weeks before touching the database", async () => {
+  const { db, calls } = fakeDb({});
+  const repo = createSupabaseMealPlanRepository(db);
+  const bad = [
+    { ...PLAN_INPUT, weekStart: "2026-11-10" },
+    { ...PLAN_INPUT, meals: [{ ...PLAN_INPUT.meals[0], date: "2026-11-20" }] },
+    { ...PLAN_INPUT, meals: [PLAN_INPUT.meals[0], { ...PLAN_INPUT.meals[0], date: "2026-11-12" }] },
+    { ...PLAN_INPUT, meals: [PLAN_INPUT.meals[0], { ...PLAN_INPUT.meals[1], date: "2026-11-11" }] },
+    { ...PLAN_INPUT, meals: [{ ...PLAN_INPUT.meals[0], recipeId: null, customTitle: null }] },
+    { ...PLAN_INPUT, meals: [{ ...PLAN_INPUT.meals[0], servings: 0 }] },
+  ];
+  for (const b of bad) assert.equal((await repo.save(b)).ok, false, JSON.stringify(b.meals));
+  assert.equal(calls.length, 0);
+});
+
+test("meal plans: supabase save calls the RPC, then returns the fresh week", async () => {
+  const { db, calls } = fakeDb({
+    "rpc:save_meal_plan": [{ data: "plan-1", error: null }],
+    meal_plans: [
+      {
+        data: {
+          id: "plan-1", week_start: "2026-11-09", status: "draft", planning_mode: "budget_first", generated_by: "ai",
+          summary: "A thrifty week.", confirmed_at: null, updated_at: "2026-11-01T12:00:00Z",
+          planned_meals: [
+            { id: "m2", planned_date: "2026-11-11", recipe_id: CHILI, custom_title: null, servings: 4, is_locked: false, note: "Chili night", position: 0 },
+            { id: "m1", planned_date: "2026-11-09", recipe_id: null, custom_title: "Leftovers", servings: 2, is_locked: true, note: null, position: 1 },
+          ],
+        },
+        error: null,
+      },
+    ],
+  });
+  const saved = await createSupabaseMealPlanRepository(db).save(PLAN_INPUT);
+  assert.ok(saved.ok);
+  assert.deepEqual(saved.data.meals.map((m) => m.date), ["2026-11-09", "2026-11-11"], "sorted by day");
+  assert.equal(saved.data.meals[0]!.customTitle, "Leftovers");
+  const rpc = calls[0]!.ops[0]![1][0] as { plan: { meals: unknown[] }; overwrite_confirmed: boolean };
+  assert.equal(rpc.overwrite_confirmed, false);
+  assert.equal(rpc.plan.meals.length, 2);
+});
+
+test("meal plans: a confirmed week reports a clear, typed error", async () => {
+  const { db } = fakeDb({
+    "rpc:save_meal_plan": [{ data: null, error: { code: "P0001", message: "This week is confirmed. Confirm the overwrite to change it.", hint: "confirmed_plan" } as never }],
+  });
+  const res = await createSupabaseMealPlanRepository(db).save(PLAN_INPUT);
+  assert.ok(!res.ok);
+  assert.equal((res as { code?: string }).code, CONFIRMED_PLAN);
+});
+
+test("meal plans: local repository saves, guards confirmed weeks, and lists earlier weeks", async () => {
+  const repo = createLocalMealPlanRepository(memoryStorage(), { now: () => new Date("2026-11-01T12:00:00Z") });
+  assert.deepEqual(await repo.getWeek("2026-11-09"), { ok: true, data: null });
+  const first = await repo.save(PLAN_INPUT);
+  assert.ok(first.ok && first.data.status === "draft" && first.data.meals[0]!.date === "2026-11-09");
+  const confirmed = await repo.save({ ...PLAN_INPUT, confirmedAt: "2026-11-08T18:00:00Z" });
+  assert.ok(confirmed.ok && confirmed.data.status === "active" && confirmed.data.id === first.data.id);
+  const blocked = await repo.save({ ...PLAN_INPUT, meals: [] });
+  assert.ok(!blocked.ok && (blocked as { code?: string }).code === CONFIRMED_PLAN);
+  const forced = await repo.save({ ...PLAN_INPUT, meals: [] }, { overwriteConfirmed: true });
+  assert.ok(forced.ok && forced.data.meals.length === 0);
+  await repo.save({ ...PLAN_INPUT, weekStart: "2026-11-02", meals: [] });
+  await repo.save({ ...PLAN_INPUT, weekStart: "2026-10-26", meals: [] });
+  const prev = await repo.previous("2026-11-09");
+  assert.ok(prev.ok);
+  assert.deepEqual(prev.data.map((p) => p.weekStart), ["2026-11-02", "2026-10-26"]);
 });

@@ -16,6 +16,7 @@ import {
   mealTypes,
   proteins,
   skillLevels,
+  dessertFrequencies,
   type OnboardingProfile,
 } from "@kitchen-pantry/shared-types";
 import type { OnboardingStepId } from "@kitchen-pantry/validation";
@@ -252,6 +253,14 @@ export function GoalsStep({ profile, setProfile, errors }: StepProps) {
           </View>
         </Section>
       ) : null}
+      <Section title="Seasons" description="Optional — fine-tune it any time in Profile.">
+        <Toggle
+          label="Enjoy seasonal recipes"
+          description="A gentle nudge toward what's in season where you live. Nothing is ever left out."
+          value={profile.seasonal.enabled}
+          onChange={(enabled) => setProfile((p) => ({ ...p, seasonal: { ...p.seasonal, enabled } }))}
+        />
+      </Section>
     </View>
   );
 }
@@ -294,10 +303,21 @@ export function DietStep({ profile, setProfile, errors }: StepProps) {
   const has = (list: string[], v: string) => list.some((x) => x.toLowerCase() === v.toLowerCase());
   const custom = d.dislikes.filter((x) => !commonDislikes.some((c) => c.toLowerCase() === x.toLowerCase()));
   const num = (v: string) => (v.replace(/\D/g, "") ? Number.parseInt(v.replace(/\D/g, ""), 10) : null);
+  const shared = profile.householdDiet && profile.householdDiet.memberCount > 1 ? profile.householdDiet : null;
+  const othersAvoid = shared ? shared.allergies.filter((a) => !d.allergies.includes(a)) : [];
 
   return (
     <View className="gap-4">
-      <Section title="Allergies" description="Treated as strict exclusions — including hidden sources like whey, tahini or soy sauce.">
+      <Section title={shared ? "Your allergies" : "Allergies"} description="Treated as strict exclusions — including hidden sources like whey, tahini or soy sauce.">
+        {shared ? (
+          <View className="mb-4">
+            <Notice>
+              {othersAvoid.length > 0
+                ? `Meal plans already avoid ${othersAvoid.map((code) => allergens.find((a) => a.code === code)?.label ?? code).join(", ")} for others in your household. Just pick your own.`
+                : "Just pick your own — meal plans avoid everyone's allergies in your household."}
+            </Notice>
+          </View>
+        ) : null}
         <ChipRow>
           {allergens.map((a) => (
             <Chip key={a.code} label={a.label} selected={d.allergies.includes(a.code)} onPress={() => set({ allergies: toggle(d.allergies, a.code) })} />
@@ -394,6 +414,7 @@ export function DietStep({ profile, setProfile, errors }: StepProps) {
 
 export function SkillStep({ profile, setProfile }: StepProps) {
   return (
+    <View className="gap-4">
     <Section title="How comfortable are you in the kitchen?" description="You can change this any time from your profile.">
       <View className="gap-2.5" accessibilityRole="radiogroup">
         {skillLevels.map((s) => (
@@ -412,6 +433,19 @@ export function SkillStep({ profile, setProfile }: StepProps) {
         ))}
       </View>
     </Section>
+    <Section title="Desserts" description="Optional. We'll never plan one every day, and you can add one any time.">
+      <ChipRow>
+        {dessertFrequencies.map((f) => (
+          <Chip
+            key={f.code}
+            label={f.label}
+            selected={profile.desserts.frequency === f.code}
+            onPress={() => setProfile((p) => ({ ...p, desserts: { ...p.desserts, frequency: f.code } }))}
+          />
+        ))}
+      </ChipRow>
+    </Section>
+    </View>
   );
 }
 
@@ -474,9 +508,9 @@ export function ReviewStep({ profile, onEdit }: { profile: OnboardingProfile; on
   const rows: Array<[OnboardingStepId, string, string]> = [
     ["household", "Household", `Cooking for ${h.cookingFor} · ${list(h.mealsIncluded.map((m) => labelFor(mealTypes, m)))} · ${h.postalCode}`],
     ["budget", "Budget", b.amountCents === null ? "No strict budget" : `$${(b.amountCents / 100).toFixed(b.amountCents % 100 ? 2 : 0)} ${labelFor(budgetPeriods, b.period)} · ${labelFor(budgetPriorities, b.priority)}`],
-    ["goals", "Goals", list(profile.goals.ranked.map((g, i) => `${i + 1}. ${labelFor(cookingGoals, g)}`))],
+    ["goals", "Goals", `${list(profile.goals.ranked.map((g, i) => `${i + 1}. ${labelFor(cookingGoals, g)}`))} · Seasonal recipes ${profile.seasonal.enabled ? "on" : "off"}`],
     ["diet", "What you eat", `${labelFor(dietStyles, d.style)} · Allergies: ${list(d.allergies.map((a) => labelFor(allergens, a)))}`],
-    ["skill", "Skill", `Level ${profile.skillLevel} · ${skillLevels.find((s) => s.level === profile.skillLevel)?.label}`],
+    ["skill", "Skill", `Level ${profile.skillLevel} · ${skillLevels.find((s) => s.level === profile.skillLevel)?.label} · Desserts: ${labelFor(dessertFrequencies, profile.desserts.frequency)}`],
     ["equipment", "Kitchen", list(profile.equipment.map((e) => labelFor(equipment, e)))],
     ["store", "Store", store ?? "Not chosen"],
   ];

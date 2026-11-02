@@ -1,3 +1,4 @@
+import type { WorldCuisine } from "./library";
 /**
  * Canonical option catalogs shared by web, mobile, validation and the
  * database seed. Codes are stable identifiers stored in Postgres — never
@@ -147,7 +148,23 @@ export const cuisines = [
   { code: "southern", label: "Southern / BBQ" },
   { code: "caribbean", label: "Caribbean" },
 ] as const;
-export type Cuisine = (typeof cuisines)[number]["code"];
+/** Any recipe cuisine (the full world list in library.ts); `cuisines` above is the shorter list for favourites. */
+export type Cuisine = WorldCuisine;
+
+/** How the week planner weighs recipes (spec 02 §3). */
+export const planningModes = [
+  { code: "balanced", label: "Balanced", description: "A mix of price, quality, nutrition and variety.", available: true },
+  { code: "budget_first", label: "Budget First", description: "Fewer things to buy and ingredients shared across meals.", available: true },
+  { code: "chefs_choice", label: "Chef's Choice", description: "Your best-rated, most interesting dishes at your skill level.", available: true },
+  { code: "use_what_i_have", label: "Use What I Have", description: "Builds the week around what's already in your kitchen.", available: true },
+  {
+    code: "cook_the_specials",
+    label: "Cook the Specials",
+    description: "Builds the week around what's on sale at your store — real store prices only.",
+    available: true,
+  },
+] as const;
+export type PlanningMode = (typeof planningModes)[number]["code"];
 
 export const proteins = [
   { code: "chicken", label: "Chicken" },
@@ -323,3 +340,100 @@ export function labelFor<T extends { code: string; label: string }>(
 ): string {
   return catalog.find((item) => item.code === code)?.label ?? code;
 }
+
+/** How often the planner adds a dessert on its own (spec 05). Never daily. */
+export const dessertFrequencies = [
+  { code: "never", label: "Never automatically", short: "Off", perWeek: 0 },
+  { code: "weekly", label: "Once a week", short: "Weekly", perWeek: 1 },
+  { code: "twice_weekly", label: "Twice a week", short: "Twice", perWeek: 2 },
+  { code: "weekends", label: "Weekends only", short: "Weekends", perWeek: 2 },
+  { code: "occasions", label: "Special occasions only", short: "Occasions", perWeek: 0 },
+] as const;
+export type DessertFrequency = (typeof dessertFrequencies)[number]["code"];
+
+export const dessertCategories = [
+  { code: "cookies", label: "Cookies & bars" },
+  { code: "cakes", label: "Cakes" },
+  { code: "pastries", label: "Pastries & pies" },
+  { code: "frozen", label: "Frozen desserts" },
+  { code: "plated", label: "Plated desserts" },
+  { code: "fruit", label: "Fruit desserts" },
+] as const;
+export type DessertCategory = (typeof dessertCategories)[number]["code"];
+
+/** Dessert difficulty runs from beginner to professional pastry (separate from cooking skill). */
+export const dessertSkillLevels = [
+  { level: 1, label: "Beginner", summary: "Stir, scoop and bake — no special technique." },
+  { level: 2, label: "Home baker", summary: "Creaming butter, rolling dough, simple fillings." },
+  { level: 3, label: "Confident baker", summary: "Custards, layer cakes, tempering eggs." },
+  { level: 4, label: "Advanced pastry", summary: "Laminated and choux doughs, pastry cream, piping." },
+  { level: 5, label: "Professional pastry", summary: "Entremets, tempered chocolate, sugar work." },
+] as const;
+
+/** Only "main" recipes fill a dinner in a meal plan; the rest are for menus and browsing. */
+export const recipeCourses = [
+  { code: "main", label: "Main" },
+  { code: "side", label: "Side" },
+  { code: "starter", label: "Starter" },
+  { code: "sauce", label: "Sauce or condiment" },
+  { code: "breakfast", label: "Breakfast" },
+  { code: "dessert", label: "Dessert" },
+] as const;
+export type RecipeCourse = (typeof recipeCourses)[number]["code"];
+
+export const seasons = [
+  { code: "spring", label: "Spring" },
+  { code: "summer", label: "Summer" },
+  { code: "fall", label: "Fall" },
+  { code: "winter", label: "Winter" },
+] as const;
+export type Season = (typeof seasons)[number]["code"];
+
+/** Household override for where seasons are worked out (null = from country + postal code). */
+export const seasonalRegions = [
+  { code: "north-cold", label: "Northern Hemisphere, cold winters", hemisphere: "north", climate: "cold" },
+  { code: "north-temperate", label: "Northern Hemisphere, temperate", hemisphere: "north", climate: "temperate" },
+  { code: "north-warm", label: "Northern Hemisphere, warm / subtropical", hemisphere: "north", climate: "warm" },
+  { code: "south-temperate", label: "Southern Hemisphere, temperate", hemisphere: "south", climate: "temperate" },
+  { code: "south-warm", label: "Southern Hemisphere, warm / subtropical", hemisphere: "south", climate: "warm" },
+] as const;
+export type SeasonalRegionCode = (typeof seasonalRegions)[number]["code"];
+
+/**
+ * Holidays and occasions a household can opt in to (none by default — we
+ * never assume which ones a household celebrates). Dates live in
+ * @kitchen-pantry/recipe-engine (seasonal/holidays.ts).
+ */
+export const holidays = [
+  { code: "new-year", label: "New Year's Day" },
+  { code: "lunar-new-year", label: "Lunar New Year" },
+  { code: "valentines", label: "Valentine's Day" },
+  { code: "easter", label: "Easter" },
+  { code: "passover", label: "Passover" },
+  { code: "eid-al-fitr", label: "Eid al-Fitr" },
+  { code: "eid-al-adha", label: "Eid al-Adha" },
+  { code: "mothers-day", label: "Mother's Day" },
+  { code: "fathers-day", label: "Father's Day" },
+  { code: "canada-day", label: "Canada Day" },
+  { code: "july-4th", label: "Independence Day (US)" },
+  { code: "rosh-hashanah", label: "Rosh Hashanah" },
+  { code: "diwali", label: "Diwali" },
+  { code: "halloween", label: "Halloween" },
+  { code: "thanksgiving-ca", label: "Thanksgiving (Canada)" },
+  { code: "thanksgiving", label: "Thanksgiving (US)" },
+  { code: "hanukkah", label: "Hanukkah" },
+  { code: "christmas", label: "Christmas" },
+] as const;
+export type HolidayCode = (typeof holidays)[number]["code"];
+
+/** Surprise Me (spec 02 §5): what kind of fresh idea the household asks for. */
+export const surpriseKinds = [
+  { code: "never_cooked", label: "Something I've never cooked", short: "Never cooked" },
+  { code: "popular", label: "Popular and highly rated", short: "Highly rated" },
+  { code: "restaurant", label: "Restaurant quality", short: "Restaurant quality" },
+  { code: "under_5", label: "Under $5 a serving", short: "Under $5" },
+  { code: "use_what_i_have", label: "Uses what I have", short: "Uses what I have" },
+  { code: "specials", label: "Inspired by this week's specials", short: "On sale" },
+  { code: "new_cuisine", label: "A cuisine I haven't had lately", short: "New cuisine" },
+] as const;
+export type SurpriseKind = (typeof surpriseKinds)[number]["code"];
