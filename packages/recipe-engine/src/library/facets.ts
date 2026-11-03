@@ -7,8 +7,8 @@ import {
   type RecipeCategory,
   type RecipeLibraryInfo,
 } from "@kitchen-pantry/shared-types";
-import { screenAllergens } from "../allergens";
-import { DIET_EXCLUDED_TERMS } from "../eligibility";
+import { matchesAnyTerm, screenAllergens } from "../allergens";
+import { DIET_EXCLUDED_TERMS, withoutMeatLookalikes } from "../eligibility";
 import { ingredientLines, recipeProteins } from "../recipes";
 import { slugify } from "./ids";
 
@@ -66,7 +66,9 @@ export function recipeFacets(recipe: Pick<Recipe, "ingredients">): RecipeFacets 
   const allergens = [...new Set(screened.conflicts.map((c) => c.allergen))].sort() as AllergenCode[];
   const proteins = recipeProteins(recipe as Recipe);
   const required = recipe.ingredients.filter((i) => !i.optional).map((i) => [i.item, i.preparation].filter(Boolean).join(", "));
-  const hits = (terms: readonly string[]) => required.some((line) => terms.some((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`, "i").test(line)));
+  const meatText = required.map(withoutMeatLookalikes);
+  // Whole words (with plurals), as the diet filter matches: "ham" isn't "hamburger buns".
+  const hits = (terms: readonly string[]) => matchesAnyTerm(meatText, terms).length > 0;
   const dietTags: string[] = [];
   const requiredScreen = screenAllergens(required, ALL_ALLERGENS);
   const requiredAllergens = new Set(requiredScreen.conflicts.map((c) => c.allergen));
@@ -81,7 +83,9 @@ export function recipeFacets(recipe: Pick<Recipe, "ingredients">): RecipeFacets 
   if (vegetarian) dietTags.push("vegetarian");
   if (vegetarian && !hits(DIET_EXCLUDED_TERMS.vegan) && !requiredAllergens.has("milk") && !requiredAllergens.has("egg")) dietTags.push("vegan");
   if (!requiredAllergens.has("gluten") && !requiredAllergens.has("wheat") && !glutenWarning) dietTags.push("gluten_free");
-  if (!requiredAllergens.has("milk")) dietTags.push("dairy_free");
+  // Chocolate very often contains milk (or shares its lines), so it withholds "dairy-free".
+  const chocolateMilk = requiredScreen.warnings.some((w) => w.allergen === "milk" && /chocolate/i.test(w.ingredient));
+  if (!requiredAllergens.has("milk") && !chocolateMilk) dietTags.push("dairy_free");
   const core = [...new Set(recipe.ingredients.filter((i) => !i.optional).map((i) => coreIngredient(i.item)).filter((c) => c && !STAPLE_CORE.has(c)))];
   return { allergens, proteins, dietTags, core, fingerprint: [...core].sort().join("|") };
 }

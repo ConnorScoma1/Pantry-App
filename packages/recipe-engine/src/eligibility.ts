@@ -58,7 +58,19 @@ export const MEAT_TERMS = [
   "prosciutto", "pancetta", "guanciale", "chorizo", "salami", "pepperoni", "pastrami", "hot dog", "bratwurst", "kielbasa", "andouille",
   "steak", "ribeye", "rib eye", "sirloin", "tenderloin", "brisket", "short rib", "short ribs", "flank", "skirt steak", "chuck", "oxtail", "spare ribs", "pork belly",
   "ground meat", "meatball", "meatballs", "liver", "bone marrow", "bone broth", "gelatin", "lard", "suet", "tallow", "schmaltz",
+  "goat", "tripe", "offal", "sweetbread", "pheasant", "boar", "elk", "jerky", "chicharron", "chicharrón", "pork rind", "carne seca", "cecina", "snail", "escargot",
+  "char siu", "cha siu", "lap cheong", "lardon", "lardons", "speck", "bresaola", "mortadella", "coppa", "nduja", "foie gras", "carnitas", "barbacoa", "lechon", "marshmallow",
 ];
+
+/**
+ * Dairy from goats (goat cheese, goat's milk…) and fish or vegetable "steaks"
+ * aren't meat. Lines are passed through this before the meat terms are matched.
+ */
+export function withoutMeatLookalikes(line: string): string {
+  return line
+    .replace(/\bgoat(?:'s|s)?\s+(?:cheese|milk|butter|yogh?urt|feta|curds?|kefir|labneh)\b/gi, "dairy")
+    .replace(/\b(salmon|tuna|swordfish|fish|halibut|cod|kingfish|catfish|mahi[- ]?mahi|cauliflower|cabbage|tofu|mushroom|portobello|celeriac|eggplant|seitan)\s+steaks?\b/gi, "$1 slab");
+}
 const PORK_TERMS = ["pork", "bacon", "ham", "prosciutto", "pancetta", "guanciale", "chorizo", "salami", "pepperoni", "lard", "pork belly", "spare ribs", "gelatin", "hot dog", "bratwurst", "kielbasa", "andouille"];
 const ALCOHOL_TERMS = ["wine", "beer", "rum", "vodka", "whiskey", "whisky", "bourbon", "brandy", "cognac", "sherry", "sake", "mirin", "liqueur", "vermouth", "tequila", "gin", "stout", "ale", "marsala", "shaoxing"];
 
@@ -101,7 +113,7 @@ DIET_EXCLUDED_TERMS.vegan = [...DIET_EXCLUDED_TERMS.vegetarian, "honey", "gelati
 export function dietConflicts(lines: string[], dietStyle: DietStyle, restrictions: readonly DietaryRestriction[] = []): string[] {
   const reasons: string[] = [];
   const conflictsOf = (codes: AllergenCode[]) => [...new Set(screenAllergens(lines, codes).conflicts.map((c) => c.matchedTerm))];
-  const style = [...matchesAnyTerm(lines, DIET_EXCLUDED_TERMS[dietStyle])];
+  const style = [...matchesAnyTerm(lines.map(withoutMeatLookalikes), DIET_EXCLUDED_TERMS[dietStyle])];
   if (dietStyle === "vegetarian" || dietStyle === "vegan") style.push(...conflictsOf(["fish", "shellfish"]));
   if (dietStyle === "vegan") style.push(...conflictsOf(["milk", "egg"]));
   if (style.length > 0) reasons.push(`Not ${labelFor(dietStyles, dietStyle).toLowerCase()}: ${[...new Set(style)].slice(0, 4).join(", ")}`);
@@ -120,7 +132,7 @@ export function dietConflicts(lines: string[], dietStyle: DietStyle, restriction
     if (r.has("halal")) hits.push(...matchesAnyTerm(lines.map((l) => l.replace(/\b(rice |red |white )?(wine|sherry|champagne|malt) vinegar\b/gi, "vinegar")), ALCOHOL_TERMS));
     if (r.has("kosher")) {
       hits.push(...conflictsOf(["shellfish"]));
-      if (matchesAnyTerm(lines, MEAT_TERMS.filter((t) => !["gelatin", "bone broth"].includes(t))).length && conflictsOf(["milk"]).length) hits.push("meat with dairy");
+      if (matchesAnyTerm(lines.map(withoutMeatLookalikes), MEAT_TERMS.filter((t) => !["gelatin", "bone broth"].includes(t))).length && conflictsOf(["milk"]).length) hits.push("meat with dairy");
     }
     if (hits.length) reasons.push(`Not ${r.has("halal") ? "halal" : "kosher"}: ${[...new Set(hits)].slice(0, 3).join(", ")}`);
   }

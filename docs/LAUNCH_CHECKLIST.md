@@ -73,9 +73,9 @@ Status as of 2 November 2026. The prices are the providers' published prices as 
 - [ ] Use `https://your-site/delete-account` as Google Play's account-deletion link.
 
 ## 9. Recipes
-- [ ] Have a person cook and review the 203 library recipes (all "Not yet reviewed"), and mark them reviewed or tested.
+- [ ] Have a person cook and review the 476 library recipes (all "Not yet reviewed"), and mark them reviewed or tested.
 - [ ] Decide how to grow the library beyond your own recipes (licence quotes in `docs/RECIPE_LIBRARY.md` §4 💲).
-- [ ] 58 recipes have no photo yet (145 of 203 do). Add your own photos for these, and replace "Similar dish" photos with your own over time.
+- [ ] 137 recipes have no photo yet (339 of 476 do). Add your own photos for these, and replace "Similar dish" photos with your own over time.
 
 ## 10. Optional features (each needs its own keys)
 - [ ] Kroger prices and Smart Cart: Kroger developer account (free), `KROGER_CLIENT_ID` / `KROGER_CLIENT_SECRET`.

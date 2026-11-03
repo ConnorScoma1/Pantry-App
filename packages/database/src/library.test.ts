@@ -79,10 +79,11 @@ test("local library: search, ideas on request, facets and slugs", async () => {
   assert.ok(list.ok && list.data.length >= 70 && list.data.every((r) => r.library?.status !== "idea"));
   const thai = await repo.search({ cuisines: ["thai"], limit: 50 });
   assert.ok(thai.ok && thai.data.total >= 4 && thai.data.recipes.every((r) => r.cuisine === "thai"));
+  // Every dish idea now has a full recipe; asking for ideas returns only ideas (none today).
   const ideas = await repo.search({ statuses: ["idea"], cuisines: ["mexican"], limit: 50 });
-  assert.ok(ideas.ok && ideas.data.recipes.some((r) => r.title === "Mole Poblano"));
+  assert.ok(ideas.ok && ideas.data.recipes.every((r) => r.library?.status === "idea"));
   const facets = await repo.facets();
-  assert.ok(facets.ok && facets.data.ideas >= 150 && facets.data.complete >= 200 && (facets.data.cuisines.thai ?? 0) >= 4);
+  assert.ok(facets.ok && facets.data.complete >= 400 && (facets.data.cuisines.thai ?? 0) >= 4);
   const slug = list.ok ? list.data[0]!.slug : "";
   const found = await repo.bySlug(slug);
   assert.ok(found.ok && found.data?.slug === slug);

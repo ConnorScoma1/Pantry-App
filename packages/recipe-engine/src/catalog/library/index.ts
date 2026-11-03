@@ -11,6 +11,17 @@ import { americasRecipes } from "./americas";
 import { europeRecipes } from "./europe";
 import { africaMiddleEastRecipes } from "./africa-middle-east";
 import { asiaRecipes } from "./asia";
+import { moreDishes1 } from "./more-dishes-1";
+import { moreDishes2 } from "./more-dishes-2";
+import { moreDishes3 } from "./more-dishes-3";
+import { moreDishes4 } from "./more-dishes-4";
+import { moreDishes5 } from "./more-dishes-5";
+import { moreDishes6 } from "./more-dishes-6";
+import { moreDishes7 } from "./more-dishes-7";
+import { comfortClassics } from "./comfort-classics";
+import { takeoutFavorites } from "./takeout-favorites";
+import { soupsSaladsSides } from "./soups-salads-sides";
+import { breakfastBaking } from "./breakfast-baking";
 
 /**
  * The library's first collection: original Test Kitchen recipes written in
@@ -29,6 +40,17 @@ export const LIBRARY_COLLECTION_INPUTS: readonly LibraryRecipeInput[] = [
   ...europeRecipes,
   ...africaMiddleEastRecipes,
   ...asiaRecipes,
+  ...moreDishes1,
+  ...moreDishes2,
+  ...moreDishes3,
+  ...moreDishes4,
+  ...moreDishes5,
+  ...moreDishes6,
+  ...moreDishes7,
+  ...comfortClassics,
+  ...takeoutFavorites,
+  ...soupsSaladsSides,
+  ...breakfastBaking,
   ...dishIdeas,
 ];
 

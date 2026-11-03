@@ -17,7 +17,7 @@ import {
 import { matchesAnyTerm } from "./allergens";
 import { tasteFit, tasteProfile, type TasteProfile } from "./taste";
 import { friendlyDate, holidayWhen, seasonalApplies, seasonalContext, seasonalFit, type SeasonalContext } from "./seasonal";
-import { checkEligibility, recommendationLabel, type EligibilityResult, type RecommendationLabel } from "./eligibility";
+import { checkEligibility, recommendationLabel, withoutMeatLookalikes, type EligibilityResult, type RecommendationLabel } from "./eligibility";
 import { isCookable, libraryOf } from "./library/facets";
 
 // ---------------------------------------------------------------------------
@@ -215,7 +215,7 @@ export interface RankedRecipe {
 export function recipeProteins(recipe: Recipe): string[] {
   const text = recipe.ingredients
     .filter((i) => !i.optional && !/\b(broth|stock|bouillon)\b/i.test(i.item))
-    .map((i) => i.item.toLowerCase())
+    .map((i) => withoutMeatLookalikes(i.item.toLowerCase()))
     .join(" | ");
   return Object.entries(PROTEIN_WORDS)
     .filter(([, words]) => words.some((w) => new RegExp(`\\b${w}`).test(text)))
@@ -231,15 +231,19 @@ function goalWeight(goals: readonly CookingGoal[], goal: CookingGoal): number {
 
 const PROTEIN_WORDS: Record<string, string[]> = {
   chicken: ["chicken"],
-  beef: ["beef", "steak", "short rib", "ribeye", "rib eye", "sirloin", "brisket", "chuck", "flank", "oxtail"],
-  pork: ["pork", "bacon", "ham", "sausage", "chorizo", "pancetta", "prosciutto", "guanciale"],
+  beef: ["beef", "steak", "short rib", "ribeye", "rib eye", "sirloin", "brisket", "chuck", "flank", "oxtail", "picanha", "skirt"],
+  veal: ["veal"],
+  goat: ["goat(?!'?s? (?:cheese|milk|butter|yogh?urt|feta|curd))", "mutton"],
+  duck: ["duck(?! egg)"],
+  rabbit: ["rabbit"],
+  pork: ["pork", "bacon", "ham(?!burger|achi)", "sausage", "chorizo", "pancetta", "prosciutto", "guanciale"],
   turkey: ["turkey"],
   lamb: ["lamb"],
-  fish: ["salmon", "cod", "tuna", "fish", "trout", "halibut"],
-  shellfish: ["shrimp", "scallop", "crab", "lobster", "mussel", "clam"],
+  fish: ["salmon", "cod", "tuna", "fish", "trout", "halibut", "snapper", "sea bass", "branzino", "tilapia", "catfish", "mackerel", "sardine", "anchov", "haddock", "pollock", "swordfish", "mahi", "sole", "flounder", "bacalhau", "bacalao", "hake", "herring"],
+  shellfish: ["shrimp", "prawn", "scallop", "crab", "lobster", "mussel", "clam", "oyster(?! (?:mushroom|sauce))", "squid", "calamari", "octopus", "crawfish", "crayfish", "langoustine"],
   eggs: ["egg"],
   tofu: ["tofu", "tempeh"],
-  beans: ["bean", "chickpea", "lentil"],
+  beans: ["(?<!green |long |string |snap |runner |french |wax |yard-long |yardlong |vanilla |coffee |jelly |cocoa )bean(?!s? sprout|s? paste|s? sauce|s? curd| thread)", "chickpea", "lentil"],
 };
 
 const union = <T>(a: readonly T[], b: readonly T[] | undefined): T[] => (b?.length ? [...new Set([...a, ...b])] : [...a]);

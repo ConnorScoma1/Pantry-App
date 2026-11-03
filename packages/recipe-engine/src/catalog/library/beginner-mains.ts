@@ -1,5 +1,5 @@
 import type { LibraryRecipeInput } from "../../library/import";
-import { i, s } from "./helpers";
+import { i, pexelsPhoto, s, unsplashPhoto } from "./helpers";
 
 /**
  * Kitchen Pantry Test Kitchen — beginner dinners (skill 1).
@@ -18,25 +18,6 @@ import { i, s } from "./helpers";
  * and enchiladas have none yet: the closest free photos showed meat or
  * cheese, which would mislead on a vegan recipe.
  */
-const unsplashPhoto = (photoId: string, pageSlug: string, alt: string, creditName: string, username: string) => ({
-  url: `https://images.unsplash.com/${photoId}`,
-  alt,
-  license: "unsplash" as const,
-  creditName,
-  creditUrl: `https://unsplash.com/@${username}`,
-  sourceUrl: `https://unsplash.com/photos/${pageSlug}`,
-  representative: true,
-});
-const pexelsPhoto = (url: string, pageSlug: string, alt: string, creditName: string, username: string) => ({
-  url,
-  alt,
-  license: "pexels" as const,
-  creditName,
-  creditUrl: `https://www.pexels.com/@${username}/`,
-  sourceUrl: `https://www.pexels.com/photo/${pageSlug}/`,
-  representative: true,
-});
-
 export const beginnerMains: LibraryRecipeInput[] = [
   {
     externalId: "sheet-pan-chicken-fajitas",
@@ -351,6 +332,7 @@ export const beginnerMains: LibraryRecipeInput[] = [
     cuisine: "chinese",
     authenticity: "adapted",
     dishKey: "beef-and-broccoli",
+    variant: "simplified",
     skillLevel: 1,
     prepMinutes: 15,
     cookMinutes: 12,

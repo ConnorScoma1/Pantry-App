@@ -37,7 +37,7 @@ for (const input of inputs) {
   const rec: any = r.recipe;
   const warn = r.warnings.filter((w) => w.field !== "image").map((w) => `${w.field}: ${w.message}`);
   console.log(
-    `✔ ${rec.title} | course ${rec.course} | allergens [${r.recipe.facets.allergens.join(", ")}] | diet [${r.recipe.facets.dietTags.join(", ")}] | ${rec.totalMinutes ?? ""}min` +
+    `✔ ${rec.title} | course ${rec.course} | allergens [${r.recipe.facets.allergens.join(", ")}] | diet [${r.recipe.facets.dietTags.join(", ")}] | proteins [${r.recipe.facets.proteins.join(", ")}] | ${rec.totalMinutes ?? ""}min` +
       (warn.length ? `\n    ⚠ ${warn.join("\n    ⚠ ")}` : ""),
   );
 }

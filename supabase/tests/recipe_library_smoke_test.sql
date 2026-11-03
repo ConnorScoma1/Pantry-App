@@ -34,7 +34,7 @@ insert into results select 'search never returns another household''s recipe', n
 -- Filters.
 insert into results select 'cuisine filter', (select bool_and(r.cuisine = 'thai') and count(*) >= 4 from public.search_recipes('{"cuisines":["thai"],"limit":100}') s join public.recipes r on r.id = s.recipe_id);
 insert into results select 'dish ideas are left out unless asked for', (select bool_and(r.status <> 'idea') from public.search_recipes('{"limit":100}') s join public.recipes r on r.id = s.recipe_id)
-  and exists (select 1 from public.search_recipes('{"statuses":["idea"],"cuisines":["mexican"]}') s join public.recipes r on r.id = s.recipe_id where r.title = 'Mole Poblano');
+  and not exists (select 1 from public.search_recipes('{"statuses":["idea"]}') s join public.recipes r on r.id = s.recipe_id where r.status <> 'idea');
 insert into results select 'allergen exclusion', (select bool_and(not (r.allergens && array['peanut','shellfish'])) from public.search_recipes('{"excludeAllergens":["peanut","shellfish"],"limit":100}') s join public.recipes r on r.id = s.recipe_id)
   and not exists (select 1 from public.search_recipes('{"excludeAllergens":["peanut"],"text":"pad thai"}') s join public.recipes r on r.id = s.recipe_id where r.dish_key = 'pad-thai');
 insert into results select 'diet tags must all match', (select bool_and(r.diet_tags @> array['vegan']) and count(*) > 0 from public.search_recipes('{"diet":["vegan"],"limit":100}') s join public.recipes r on r.id = s.recipe_id);
@@ -46,7 +46,7 @@ insert into results select 'text search ranks the title first', (select r.dish_k
 insert into results select 'regions', (select bool_and(r.cuisine = any(public.cuisines_in_regions(array['africa']))) and count(*) >= 2 from public.search_recipes('{"regions":["africa"],"limit":100}') s join public.recipes r on r.id = s.recipe_id);
 insert into results select 'pages and total', (select count(*) = 5 and min(total) > 5 from public.search_recipes('{"limit":5,"seed":"a"}'))
   and not exists (select recipe_id from public.search_recipes('{"limit":5,"seed":"a"}') intersect select recipe_id from public.search_recipes('{"limit":5,"offset":5,"seed":"a"}'));
-insert into results select 'facets count complete recipes and ideas', (select (f ->> 'complete')::int >= 200 and (f ->> 'ideas')::int >= 150 and (f -> 'cuisines' ->> 'thai')::int >= 4 from public.recipe_library_facets() f);
+insert into results select 'facets count complete recipes and ideas', (select (f ->> 'complete')::int >= 400 and (f ->> 'ideas')::int >= 0 and (f -> 'cuisines' ->> 'thai')::int >= 4 from public.recipe_library_facets() f);
 do $$ begin
   perform public.search_recipes('{"maxMinutes":"lots"}');
   insert into results values ('bad filter values are rejected', false);

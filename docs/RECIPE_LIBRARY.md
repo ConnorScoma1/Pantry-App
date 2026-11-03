@@ -105,6 +105,10 @@ Photos: 145 of the 203 recipes have a credited "Similar dish" photo (Unsplash or
 
 While writing these, the allergen screen gained named cheeses (Pecorino, Gruyère, provolone…), custards and egg sauces, less common fish and shrimp pastes, more wheat foods (udon, orzo, gnocchi, Shaoxing wine, bread loaves) and bouillon as a hidden source; "butter lettuce", "butter beans", "bean curd" and "oyster mushrooms" are no longer misread. "Gluten-free" is now withheld when an ingredient is a likely hidden source (stock, bouillon, oats). This corrected three existing recipes: Spaghetti Carbonara (now shows milk), and Lemon Chicken Orzo and Bruschetta (now show wheat and gluten).
 
+**Every dish idea is now a recipe, plus 100 everyday favourites (added 2026-11-02).** The remaining 173 dish ideas became full original recipes (`catalog/library/more-dishes-1.ts` … `more-dishes-7.ts`), so the library no longer has any "idea only" entries. Another 100 popular everyday dishes were added that weren't in the catalogue at all: comfort classics, takeout favourites, soups, salads, sandwiches and sides, and breakfasts, baking and desserts (`comfort-classics.ts`, `takeout-favorites.ts`, `soups-salads-sides.ts`, `breakfast-baking.ts`). Each passed the import pipeline and the duplicate check. That makes **476 complete recipes in 75 cuisines**; 339 have a credited "Similar dish" photo, each looked at before use.
+
+The screens got stricter along the way: goat, veal, rabbit, cured and named meats (char siu, mortadella, nduja…), marshmallows and lard count as meat; goat cheese and fish or cauliflower "steaks" don't; "ham" no longer matches "hamburger buns"; muffins, bagels, waffles, cookies, gingersnaps, black pudding and teff/sorghum flours are read correctly; and "dairy-free" is withheld when a recipe uses chocolate. Diet tags use only required ingredients; allergens include optional ones too.
+
 They start as "not yet reviewed", like the rest.
 
 While adding them, two diet-tag errors in the stored tags were fixed, so the library's search filters now agree with the meal-planning filter:
@@ -145,8 +149,8 @@ Not verified: Spoonacular's real catalogue size; Edamam's full terms; the licenc
 
 ## 4. Recommended way to reach 10,000+
 
-1. **Now (built):** 203 original recipes and 173 dish ideas; the import pipeline, search, variety and menus.
-2. **Review the collection.** Have a person (ideally someone who cooks) review and test the 203 recipes and mark them reviewed or tested. This is what lets the app say "Kitchen-tested".
+1. **Now (built):** 476 original recipes; the import pipeline, search, variety and menus.
+2. **Review the collection.** Have a person (ideally someone who cooks) review and test the 476 recipes and mark them reviewed or tested. This is what lets the app say "Kitchen-tested".
 3. **License a core of 5,000–10,000 recipes you can host.** Get quotes from Edamam Recipe Licensing, CookButler and StockFood. The contract must cover:
    - hosting for the term, image rights, the right to edit and to calculate nutrition;
    - US territory;
